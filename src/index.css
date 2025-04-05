@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-gray-900 dark:text-white;
+  }
+
+  /* For improved accessibility and focus states */
+  a:focus, button:focus, input:focus, select:focus, textarea:focus {
+    @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+  }
+
+  /* Custom scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
+
+/* React Flow specific styles */
+.react-flow__node {
+  @apply font-sans;
+}
+
+.react-flow__node-phase,
+.react-flow__node-task,
+.react-flow__node-milestone {
+  @apply bg-white dark:bg-gray-800 rounded shadow-md border dark:border-gray-700;
+}
+
+.react-flow__handle {
+  @apply bg-blue-500 dark:bg-blue-400;
+}
+
+.react-flow__edge-path {
+  @apply stroke-gray-400 dark:stroke-gray-500 stroke-2;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  @apply stroke-blue-500 dark:stroke-blue-400;
+}
+
+.react-flow__controls {
+  @apply bg-white dark:bg-gray-800 shadow-md border-none;
+}
+
+.react-flow__controls-button {
+  @apply border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700;
+}
+
+.react-flow__controls-button svg {
+  @apply fill-gray-700 dark:fill-gray-300;
+}
+
+.react-flow__minimap {
+  @apply bg-white dark:bg-gray-800 shadow-md rounded-md border-none;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Spinner animation for loading states */
+.spinner {
+  border-radius: 50%;
+  border: 4px solid;
+  border-top-color: transparent !important;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
