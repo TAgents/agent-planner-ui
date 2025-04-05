@@ -1,4 +1,6 @@
 import { PlanNode, FlowNode, FlowEdge, NodeStatus, NodeType } from '../types';
+import { Network, ListChecks, Goal, Calendar, AlertTriangle } from 'lucide-react';
+import React from 'react';
 
 /**
  * Calculates the progress percentage of a plan based on node statuses
@@ -72,19 +74,76 @@ export const getNodeBorderColor = (status: NodeStatus): string => {
 };
 
 /**
+ * Gets the appropriate icon component for a node type
+ * @param nodeType Node type
+ * @returns Lucide icon component or null
+ */
+export const getNodeTypeIcon = (nodeType: NodeType): React.FC<React.SVGProps<SVGSVGElement>> | null => {
+  switch (nodeType) {
+    case 'phase':
+      return Network;
+    case 'task':
+      return ListChecks;
+    case 'milestone':
+      return Goal;
+    case 'root':
+      return ListChecks;
+    default:
+      return null;
+  }
+};
+
+/**
+ * Determines the status of a due date
+ * @param dateString ISO date string (optional)
+ * @returns 'overdue' | 'upcoming' | 'none'
+ */
+export const getDueDateStatus = (dateString: string | undefined | null): 'overdue' | 'upcoming' | 'none' => {
+  if (!dateString) return 'none';
+  const dueDate = new Date(dateString);
+  const now = new Date();
+  dueDate.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+
+  if (dueDate < now) {
+    return 'overdue';
+  }
+  const sevenDaysFromNow = new Date(now);
+  sevenDaysFromNow.setDate(now.getDate() + 7);
+  if (dueDate <= sevenDaysFromNow) {
+    return 'upcoming';
+  }
+
+  return 'none';
+};
+
+/**
+ * Gets the icon and color for due date status
+ * @param status Due date status
+ * @returns Object with Icon component and Tailwind color class, or null
+ */
+export const getDueDateIconAndColor = (status: 'overdue' | 'upcoming' | 'none'): { Icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string } | null => {
+  switch (status) {
+    case 'overdue':
+      return { Icon: AlertTriangle, color: 'text-red-500 dark:text-red-400' };
+    case 'upcoming':
+      return { Icon: Calendar, color: 'text-yellow-500 dark:text-yellow-400' };
+    default:
+      return null;
+  }
+};
+
+/**
  * Transforms plan nodes into React Flow nodes
  * @param nodes Array of plan nodes
  * @returns Array of React Flow nodes
  */
 export const transformToFlowNodes = (nodes: PlanNode[]): FlowNode[] => {
-  // Add some debug logging in development
+  if (!nodes || !Array.isArray(nodes)) return [];
+  
   if (process.env.NODE_ENV === 'development') {
     console.log('Transforming nodes to flow format:', nodes);
   }
-  
-  // This is a simplified implementation
-  // In a real app, you would need a proper layout algorithm
-  if (!nodes || !Array.isArray(nodes)) return [];
   
   return nodes.map((node, index) => {
     if (!node || !node.id) {
@@ -92,22 +151,18 @@ export const transformToFlowNodes = (nodes: PlanNode[]): FlowNode[] => {
       return null;
     }
     
-    // Improved positioning logic with fixed positions
-    // This ensures nodes are always visible in the viewport
     const level = node.parent_id ? 2 : 1;
     const x = 200 + (index % 3) * 300;
-    const y = 100 + level * 100;
+    const y = 100 + level * 150;
     
-    // Custom styling based on node type and status
     const status = node.status || 'not_started';
     const nodeType = node.node_type || 'task';
-    
     const borderColor = getNodeBorderColor(status as NodeStatus);
     const backgroundColor = getNodeBackgroundColor(status as NodeStatus);
     
     return {
       id: node.id,
-      type: nodeType, // Assuming we have custom node types registered
+      type: nodeType,
       data: {
         label: node.title || 'Untitled Node',
         node: node,
@@ -115,12 +170,11 @@ export const transformToFlowNodes = (nodes: PlanNode[]): FlowNode[] => {
       position: { x, y },
       style: {
         background: backgroundColor,
-        border: `1px solid ${borderColor}`,
-        borderRadius: '4px',
-        width: nodeType === 'milestone' ? 220 : 200,
+        border: `2px solid ${borderColor}`,
+        borderRadius: '8px',
       },
     };
-  }).filter(Boolean) as FlowNode[]; // Filter out any null nodes
+  }).filter(Boolean) as FlowNode[];
 };
 
 /**
@@ -130,32 +184,29 @@ export const transformToFlowNodes = (nodes: PlanNode[]): FlowNode[] => {
  */
 export const createFlowEdges = (nodes: PlanNode[]): FlowEdge[] => {
   if (!nodes || !Array.isArray(nodes)) return [];
-  
-  // Add debug logging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Creating flow edges from nodes:', nodes);
-  }
-  
+
   const edges: FlowEdge[] = [];
-  const nodeIds = new Set(nodes.map(node => node.id));
-  
+  const nodeMap = new Map(nodes.map(node => [node.id, node]));
+
   nodes.forEach(node => {
     if (node && node.id && node.parent_id) {
-      // Only create edges if both source and target nodes exist
-      if (nodeIds.has(node.parent_id)) {
+      const parentNode = nodeMap.get(node.parent_id);
+      const targetNode = nodeMap.get(node.id);
+
+      if (parentNode && targetNode) {
         edges.push({
           id: `e-${node.parent_id}-${node.id}`,
           source: node.parent_id,
           target: node.id,
-          animated: node.status === 'in_progress',
-          style: { stroke: '#888', strokeWidth: 1.5 },
+          animated: targetNode.status === 'in_progress',
+          style: { stroke: '#9ca3af', strokeWidth: 1.5 },
         });
       } else {
-        console.warn(`Parent node ${node.parent_id} not found for node ${node.id}`);
+        console.warn(`Edge creation skipped: Parent ${node.parent_id} or Target ${node.id} not found in nodeMap`);
       }
     }
   });
-  
+
   return edges;
 };
 
