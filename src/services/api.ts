@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity } from '../types';
+import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact } from '../types';
 import API_CONFIG from '../config/api.config';
 import { decodeToken } from '../utils/tokenHelper';
 
@@ -216,10 +216,43 @@ export const nodeService = {
   },
   
   getNode: async (planId: string, nodeId: string) => {
-    return request<ApiResponse<PlanNode>>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}`,
-    });
+    console.log(`[api.ts] getNode: fetching node ${nodeId} from plan ${planId}`);
+    try {
+      // Instead of using the dedicated endpoint, let's fetch all nodes and filter
+      const allNodesResponse = await request<any>({
+        method: 'GET',
+        url: `/plans/${planId}/nodes`,
+      });
+      
+      console.log('[api.ts] getNode: Got all nodes response', allNodesResponse);
+      
+      // Process the response based on its structure
+      let nodes: PlanNode[] = [];
+      
+      if (Array.isArray(allNodesResponse)) {
+        // Direct array response
+        nodes = flattenNodes(allNodesResponse);
+      } else if (allNodesResponse && allNodesResponse.data) {
+        // Response with data property
+        nodes = Array.isArray(allNodesResponse.data) 
+          ? flattenNodes(allNodesResponse.data)
+          : [];
+      }
+      
+      // Find the specific node
+      const targetNode = nodes.find((node: PlanNode) => node.id === nodeId);
+      
+      if (targetNode) {
+        console.log('[api.ts] getNode: Found node:', targetNode.id);
+        return { data: targetNode, status: 200 };
+      } else {
+        console.error('[api.ts] getNode: Node not found among', nodes.length, 'nodes');
+        throw new Error('Node not found');
+      }
+    } catch (error: any) {
+      console.error('[api.ts] getNode ERROR:', error);
+      throw error;
+    }
   },
   
   createNode: async (planId: string, data: Partial<PlanNode>) => {
@@ -314,6 +347,42 @@ export const searchService = {
   },
 };
 
+// Logs endpoints
+export const logService = {
+  getLogs: async (planId: string, nodeId: string) => {
+    return request<ApiResponse<Log[]>>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/logs`,
+    });
+  },
+
+  addLogEntry: async (planId: string, nodeId: string, logData: { content: string; log_type: string; tags?: string[]; metadata?: object }) => {
+    return request<ApiResponse<Log>>({
+      method: 'POST',
+      url: `/plans/${planId}/nodes/${nodeId}/detailed-log`,
+      data: logData,
+    });
+  },
+};
+
+// Artifacts endpoints
+export const artifactService = {
+  getArtifacts: async (planId: string, nodeId: string) => {
+    return request<ApiResponse<Artifact[]>>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
+    });
+  },
+
+  addArtifact: async (planId: string, nodeId: string, artifactData: { name: string; content_type: string; url: string; metadata?: object }) => {
+    return request<ApiResponse<Artifact>>({
+      method: 'POST',
+      url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
+      data: artifactData,
+    });
+  },
+};
+
 export default {
   auth: authService,
   plans: planService,
@@ -321,4 +390,6 @@ export default {
   comments: commentService,
   activity: activityService,
   search: searchService,
+  logs: logService,
+  artifacts: artifactService,
 };

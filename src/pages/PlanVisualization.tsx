@@ -32,14 +32,21 @@ import {
 import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
 import { useNodes, useNode } from '../hooks/useNodes';
+import { usePlanActivity } from '../hooks/usePlanActivity';
 import { formatDate, getStatusColor, getStatusLabel, getNodeTypeLabel } from '../utils/planUtils';
-import { NodeType, NodeStatus } from '../types';
+import { NodeType, NodeStatus, Activity } from '../types';
 import { getLayoutedElements } from '../utils/layoutUtils';
 
 // Import custom node components
 import PhaseNode from '../components/nodes/PhaseNode';
 import TaskNode from '../components/nodes/TaskNode';
 import MilestoneNode from '../components/nodes/MilestoneNode';
+
+// Import placeholder/actual Tab components
+import NodeDetailsTab from '../components/details/NodeDetailsTab';
+import NodeCommentsTab from '../components/details/NodeCommentsTab';
+import NodeLogsTab from '../components/details/NodeLogsTab';
+import NodeArtifactsTab from '../components/details/NodeArtifactsTab';
 
 // Custom node types with fallback to TaskNode for any unknown types
 const nodeTypes = {
@@ -53,6 +60,9 @@ const nodeTypes = {
 
 // Helper function to create localStorage key
 const getStorageKey = (planId: string | undefined): string => `planLayout_${planId || 'unknown'}`;
+
+// Enable debug mode for diagnosing UI rendering issues
+const DEBUG_MODE = true;
 
 const PlanVisualization: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
@@ -71,20 +81,75 @@ const PlanVisualization: React.FC = () => {
     updateNodeStatus,
   } = useNodes(planId || '');
 
+  // Fetch selected node details
+  const { node: selectedNode, isLoading: isSelectedNodeLoading } = useNode(
+    planId || '',
+    uiState.nodeDetails.selectedNodeId || ''
+  );
+
+  // Fetch Plan Activity for the Overview sidebar
+  const { activities: recentActivities, isLoading: isActivityLoading } = usePlanActivity(planId || '', 1, 5); // Fetch latest 5
+
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   
+  // State for Node Details Tabs
+  const [activeDetailTab, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
+
   // Local state for node creation
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
 
-  // Fetch selected node details
-  const { node: selectedNode } = useNode(
-    planId || '',
-    uiState.nodeDetails.selectedNodeId || ''
-  );
+  // Logging effect for component re-renders
+  useEffect(() => {
+    console.log('--- PlanVisualization Re-render ---');
+    console.log('Sidebar State:', uiState.sidebar);
+    console.log('Node Details State:', uiState.nodeDetails);
+    console.log('Selected Node Data:', selectedNode);
+    console.log('Is Selected Node Loading:', isSelectedNodeLoading);
+    
+    // Explicitly check conditions for displaying node details
+    console.log('Should show node details?', 
+      uiState.sidebar.isOpen && 
+      uiState.nodeDetails.isOpen && 
+      uiState.nodeDetails.selectedNodeId && 
+      selectedNode !== null
+    );
+  });
+
+  // Logging effect for sidebar state
+  useEffect(() => {
+    if (uiState.sidebar.isOpen) {
+      console.log(`Rendering Sidebar. Node Selected: ${!!(uiState.nodeDetails.isOpen && selectedNode)}`);
+    } else {
+      console.log('Sidebar is closed.');
+    }
+  }, [uiState.sidebar.isOpen, uiState.nodeDetails.isOpen, selectedNode]);
+
+  // Logging effect for node details panel
+  useEffect(() => {
+    if (uiState.nodeDetails.isOpen && selectedNode) {
+      console.log(`RENDERING NODE DETAILS PANEL for node: ${selectedNode.id}`);
+    }
+  }, [uiState.nodeDetails.isOpen, selectedNode]);
+  
+  // Force sidebar open when node details are open
+  useEffect(() => {
+    if (uiState.nodeDetails.isOpen && !uiState.sidebar.isOpen) {
+      console.log('Node details are open but sidebar is closed - forcing sidebar open');
+      // Use the toggleSidebar function instead of setSidebarOpen which doesn't exist
+      toggleSidebar();
+    }
+  }, [uiState.nodeDetails.isOpen, uiState.sidebar.isOpen, toggleSidebar]);
+
+  // Logging effect for plan overview panel
+  useEffect(() => {
+    if (uiState.sidebar.isOpen && !uiState.nodeDetails.isOpen) {
+      console.log('RENDERING PLAN OVERVIEW PANEL');
+    }
+  }, [uiState.sidebar.isOpen, uiState.nodeDetails.isOpen]);
 
   // Effect to load layout and apply stored positions
   useEffect(() => {
@@ -174,9 +239,24 @@ const PlanVisualization: React.FC = () => {
   );
 
   // Handle node click
-  const onNodeClick = (_: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    console.log('Node clicked:', node.id);
+    setActiveDetailTab('details'); // Reset to details tab on new selection
+    
+    // Ensure sidebar is open when selecting a node
+    if (!uiState.sidebar.isOpen) {
+      toggleSidebar();
+    }
+    
+    // Open node details with the selected node ID
     openNodeDetails(node.id);
-  };
+    
+    console.log('After openNodeDetails - UI state:', {
+      sidebarOpen: uiState.sidebar.isOpen,
+      nodeDetailsOpen: uiState.nodeDetails.isOpen,
+      selectedNodeId: uiState.nodeDetails.selectedNodeId
+    });
+  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, setActiveDetailTab]);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -239,14 +319,12 @@ const PlanVisualization: React.FC = () => {
   };
 
   // Calculate progress
-  const calculateProgress = () => {
-    if (!planNodes.length) return 0;
-    
+  const progress = useMemo(() => { // Memoize calculation
+    if (!planNodes || !planNodes.length) return 0;
     const totalNodes = planNodes.length;
     const completedNodes = planNodes.filter(node => node.status === 'completed').length;
-    
     return Math.round((completedNodes / totalNodes) * 100);
-  };
+  }, [planNodes]); // Recalculate only when planNodes change
 
   // Loading state
   if (isPlanLoading || isNodesLoading) {
@@ -327,10 +405,26 @@ const PlanVisualization: React.FC = () => {
             fitViewOptions={{ padding: 0.2 }}
             style={{ background: '#f9fafb' }}
             attributionPosition="bottom-right"
+            data-testid="react-flow-canvas"
           >
             <Controls />
             <MiniMap />
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+            
+            {/* Debug panel showing UI state */}
+            {DEBUG_MODE && (
+              <Panel position="bottom-left" className="bg-white dark:bg-gray-800 border-2 border-gray-300 rounded-lg p-2 max-w-xs text-xs shadow-lg overflow-auto" style={{ maxHeight: '200px' }}>
+                <h4 className="font-bold mb-1">Debug Info</h4>
+                <div className="space-y-1">
+                  <div>Sidebar Open: <span className="font-mono">{String(uiState.sidebar.isOpen)}</span></div>
+                  <div>Node Details Open: <span className="font-mono">{String(uiState.nodeDetails.isOpen)}</span></div>
+                  <div>Selected Node ID: <span className="font-mono">{uiState.nodeDetails.selectedNodeId || 'null'}</span></div>
+                  <div>Selected Node Loaded: <span className="font-mono">{String(!!selectedNode)}</span></div>
+                  <div>Loading Indicators: <span className="font-mono">Plan:{String(isPlanLoading)} Nodes:{String(isNodesLoading)} SelectedNode:{String(isSelectedNodeLoading)}</span></div>
+                  <div>Node Count: <span className="font-mono">{nodes.length}</span></div>
+                </div>
+              </Panel>
+            )}
             
             {/* Debug overlay when no nodes are present */}
             {nodes.length === 0 && !isPlanLoading && !isNodesLoading && (
@@ -432,243 +526,216 @@ const PlanVisualization: React.FC = () => {
           </ReactFlow>
         </div>
 
-        {/* Right sidebar for plan overview */}
+        {/* Right sidebar for plan overview or node details */}
         {uiState.sidebar.isOpen && (
-          <div className="w-64 bg-white dark:bg-gray-800 shadow-md overflow-y-auto">
-            <div className="p-4">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Plan Overview</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Progress</h3>
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                      <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${calculateProgress()}%` }}></div>
-                    </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{calculateProgress()}% Complete</p>
+          <aside className="w-80 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto border-l border-gray-200 dark:border-gray-700 flex-shrink-0" data-sidebar="true">
+            {uiState.nodeDetails.isOpen && uiState.nodeDetails.selectedNodeId ? (
+              <div className="p-4" data-node-details="true" key={`node-details-${uiState.nodeDetails.selectedNodeId}`}>
+                {isSelectedNodeLoading ? (
+                  <div className="text-center p-4">
+                    <div className="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="mt-4 text-gray-600 dark:text-gray-400">Loading node details...</p>
                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
-                  <div className="mt-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      plan.status === 'active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                      plan.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                      plan.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                      'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                    }`}>
-                      {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Nodes</h3>
-                  <div className="mt-2 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Total</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{planNodes.length}</span>
+                ) : selectedNode ? (
+                  <>
+                    {/* Header with Close Button */}
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-medium text-gray-900 dark:text-white truncate" title={selectedNode.title}>
+                        {selectedNode.title}
+                      </h2>
+                      <button
+                        onClick={closeNodeDetails}
+                        className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                        title="Close Details"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Completed</span>
-                      <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                        {planNodes.filter(node => node.status === 'completed').length}
-                      </span>
+                    {/* Basic Info (Status, Type) - Shown above tabs */}
+                    <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center mb-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          selectedNode.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          selectedNode.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          selectedNode.status === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                        }`}>
+                          {getStatusLabel(selectedNode.status)}
+                        </span>
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                          {getNodeTypeLabel(selectedNode.node_type)}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
+                        <span>Created {formatDate(selectedNode.created_at)}</span>
+                        <span className="mx-1">•</span>
+                        <span>Updated {formatDate(selectedNode.updated_at)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">In Progress</span>
-                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                        {planNodes.filter(node => node.status === 'in_progress').length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Not Started</span>
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        {planNodes.filter(node => node.status === 'not_started').length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Blocked</span>
-                      <span className="text-sm font-medium text-red-600 dark:text-red-400">
-                        {planNodes.filter(node => node.status === 'blocked').length}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Recent Activity</h3>
-                  <div className="mt-2 space-y-3">
-                    {/* This would be populated with actual activity data */}
-                    <div className="text-sm">
-                      <p className="text-gray-900 dark:text-white">Node status updated</p>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">2 hours ago</p>
-                    </div>
-                    <div className="text-sm">
-                      <p className="text-gray-900 dark:text-white">Comment added</p>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">4 hours ago</p>
-                    </div>
-                    <div className="text-sm">
-                      <p className="text-gray-900 dark:text-white">New node created</p>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Yesterday at 3:45 PM</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Node details panel */}
-        {uiState.nodeDetails.isOpen && selectedNode && (
-          <div className="w-80 bg-white dark:bg-gray-800 shadow-md overflow-y-auto">
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">{selectedNode.title}</h2>
-                <button 
-                  onClick={closeNodeDetails} 
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="mb-6">
-                <div className="flex items-center mb-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    selectedNode.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                    selectedNode.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                    selectedNode.status === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                  }`}>
-                    {getStatusLabel(selectedNode.status)}
-                  </span>
-                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                    {getNodeTypeLabel(selectedNode.node_type)}
-                  </span>
-                </div>
-                
-                <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
-                  <span>Created {formatDate(selectedNode.created_at)}</span>
-                  <span className="mx-1">•</span>
-                  <span>Updated {formatDate(selectedNode.updated_at)}</span>
-                </div>
-              </div>
+                    {/* Tab Navigation */}
+                    <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+                      <button 
+                        onClick={() => setActiveDetailTab('details')} 
+                        className={`px-3 py-2 text-sm font-medium ${
+                          activeDetailTab === 'details' 
+                            ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                        }`}
+                      >
+                        Details
+                      </button>
+                      <button 
+                        onClick={() => setActiveDetailTab('comments')} 
+                        className={`px-3 py-2 text-sm font-medium ${
+                          activeDetailTab === 'comments' 
+                            ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                        }`}
+                      >
+                        Comments
+                      </button>
+                      <button 
+                        onClick={() => setActiveDetailTab('logs')} 
+                        className={`px-3 py-2 text-sm font-medium ${
+                          activeDetailTab === 'logs' 
+                            ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                        }`}
+                      >
+                        Logs
+                      </button>
+                      <button 
+                        onClick={() => setActiveDetailTab('artifacts')} 
+                        className={`px-3 py-2 text-sm font-medium ${
+                          activeDetailTab === 'artifacts' 
+                            ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                        }`}
+                      >
+                        Artifacts
+                      </button>
+                    </div>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Description</h3>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {selectedNode.description || 'No description provided.'}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Status</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <button 
-                      onClick={() => handleStatusChange(selectedNode.id, 'not_started')}
-                      className={`px-2 py-1 text-xs rounded-md ${
-                        selectedNode.status === 'not_started'
-                          ? 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
-                      }`}
+                    {/* Tab Content */}
+                    <div>
+                      {activeDetailTab === 'details' && <NodeDetailsTab node={selectedNode} onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)} />}
+                      {activeDetailTab === 'comments' && <NodeCommentsTab planId={planId!} nodeId={selectedNode.id} />}
+                      {activeDetailTab === 'logs' && <NodeLogsTab planId={planId!} nodeId={selectedNode.id} />}
+                      {activeDetailTab === 'artifacts' && <NodeArtifactsTab planId={planId!} nodeId={selectedNode.id} />}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center p-4">
+                    <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Node not found</h3>
+                    <p className="text-gray-600 dark:text-gray-400">The selected node could not be loaded or does not exist.</p>
+                    <button
+                      onClick={closeNodeDetails}
+                      className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
-                      Not Started
+                      Return to Overview
                     </button>
-                    <button 
-                      onClick={() => handleStatusChange(selectedNode.id, 'in_progress')}
-                      className={`px-2 py-1 text-xs rounded-md ${
-                        selectedNode.status === 'in_progress'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      In Progress
-                    </button>
-                    <button 
-                      onClick={() => handleStatusChange(selectedNode.id, 'completed')}
-                      className={`px-2 py-1 text-xs rounded-md ${
-                        selectedNode.status === 'completed'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      Completed
-                    </button>
-                    <button 
-                      onClick={() => handleStatusChange(selectedNode.id, 'blocked')}
-                      className={`px-2 py-1 text-xs rounded-md ${
-                        selectedNode.status === 'blocked'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      Blocked
-                    </button>
-                  </div>
-                </div>
-
-                {selectedNode.acceptance_criteria && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Acceptance Criteria</h3>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {selectedNode.acceptance_criteria}
-                    </p>
                   </div>
                 )}
-
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Comments</h3>
-                    <button className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                      Add Comment
-                    </button>
-                  </div>
-                  <div className="mt-2 space-y-3">
-                    {/* This would be populated with actual comments */}
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                      <div className="flex items-start">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <MessageSquare className="w-4 h-4 text-blue-600" />
-                          </div>
+              </div>
+            ) : (
+              <div className="p-4" data-overview="true">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Plan Overview</h2>
+                {isPlanLoading ? (
+                  <div>Loading overview...</div>
+                ) : plan ? (
+                  <div className="space-y-6">
+                    {/* Progress */}
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Progress</h3>
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                          <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
                         </div>
-                        <div className="ml-3">
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">
-                            User
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Yesterday at 2:30 PM
-                          </p>
-                          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                            Example comment
-                          </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{progress}% Complete</p>
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
+                      <div className="mt-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          plan.status === 'active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          plan.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          plan.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                          'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                          {getStatusLabel(plan.status)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Node Counts */}
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Nodes</h3>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Total</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">{planNodes.length}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Completed</span>
+                          <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                            {planNodes.filter(node => node.status === 'completed').length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">In Progress</span>
+                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                            {planNodes.filter(node => node.status === 'in_progress').length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Not Started</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            {planNodes.filter(node => node.status === 'not_started').length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Blocked</span>
+                          <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                            {planNodes.filter(node => node.status === 'blocked').length}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Artifacts</h3>
-                    <button className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                      Add Artifact
-                    </button>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {/* This would be populated with actual artifacts */}
-                    <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md flex items-center">
-                      <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">example_file.md</span>
+                    {/* Recent Activity */}
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Recent Activity</h3>
+                      {isActivityLoading ? (
+                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading activity...</div>
+                      ) : recentActivities.length > 0 ? (
+                        <ul className="mt-2 space-y-3">
+                          {recentActivities.map((activity: Activity) => (
+                            <li key={activity.id} className="text-sm border-b border-gray-100 dark:border-gray-700 pb-2 last:border-b-0">
+                              <p className="text-gray-900 dark:text-white font-medium truncate" title={activity.content || `Activity ${activity.id}`}>
+                                {activity.content || `Activity ${activity.id}`}
+                              </p>
+                              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>{activity.user?.name || 'System/Unknown'}</span>
+                                <span>{formatDate(activity.created_at)}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent activity found.</p>
+                      )}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div>Error loading plan overview.</div>
+                )}
               </div>
-            </div>
-          </div>
+            )}
+          </aside>
         )}
       </div>
     </div>

@@ -134,12 +134,32 @@ export const useNode = (planId: string, nodeId: string) => {
   // Use React Query to fetch a single node
   const { data, isLoading, error, refetch } = useQuery(
     ['node', planId, nodeId],
-    () => nodeService.getNode(planId, nodeId),
+    () => {
+      console.log(`Fetching node details for planId=${planId}, nodeId=${nodeId}`);
+      return nodeService.getNode(planId, nodeId);
+    },
     {
       enabled: !!planId && !!nodeId,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 30 * 1000, // 30 seconds
+      retry: 2, // Retry twice if the request fails
+      retryDelay: 1000, // Wait 1 second between retries
+      refetchOnWindowFocus: false,
+      onSuccess: (data) => {
+        console.log('Node details fetched successfully:', data?.data?.id);
+      },
+      onError: (err) => {
+        console.error('Error fetching node details:', err);
+      }
     }
   );
+
+  // Add more debug info
+  console.log('useNode hook result:', {
+    hasData: !!data,
+    dataObject: data?.data ? true : false,
+    isLoading,
+    hasError: !!error
+  });
 
   return {
     node: data?.data,
