@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactFlow, {
   addEdge,
@@ -11,6 +11,7 @@ import ReactFlow, {
   Connection,
   Edge,
   Node,
+  NodeDragHandler,
   BackgroundVariant,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -50,6 +51,9 @@ const nodeTypes = {
   default: TaskNode,
 };
 
+// Helper function to create localStorage key
+const getStorageKey = (planId: string | undefined): string => `planLayout_${planId || 'unknown'}`;
+
 const PlanVisualization: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const { state: uiState, toggleSidebar, toggleNodeDetails, openNodeDetails, closeNodeDetails } = useUI();
@@ -82,26 +86,86 @@ const PlanVisualization: React.FC = () => {
     uiState.nodeDetails.selectedNodeId || ''
   );
 
-  // Update React Flow data when API data changes
+  // Effect to load layout and apply stored positions
   useEffect(() => {
-    if (initialFlowNodes && initialFlowNodes.length > 0) {
-      // Ensure initialFlowNodes and flowEdges are stable references if needed (useMemo in useNodes hook)
+    if (initialFlowNodes && initialFlowNodes.length > 0 && planId) {
+      console.log('Applying layout and stored positions...');
+      const storageKey = getStorageKey(planId);
+      let savedPositions: { [key: string]: { x: number; y: number } } = {};
+
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          savedPositions = JSON.parse(stored);
+          console.log(`Loaded ${Object.keys(savedPositions).length} positions from localStorage.`);
+        }
+      } catch (e) {
+        console.error("Failed to parse stored positions:", e);
+        savedPositions = {}; // Reset if parsing fails
+      }
+
+      // 1. Calculate initial layout
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-        initialFlowNodes, // Pass the initially formatted nodes
+        // Create a deep copy to avoid modifying the hook's return value directly
+        JSON.parse(JSON.stringify(initialFlowNodes)),
         flowEdges
       );
-      setNodes(layoutedNodes);
-      setEdges(layoutedEdges);
-      console.log('Layout applied, setting nodes/edges for React Flow');
+
+      // 2. Apply saved positions *over* the calculated layout
+      const finalNodes = layoutedNodes.map(node => {
+        const savedPos = savedPositions[node.id];
+        if (savedPos) {
+          console.log(`Applying saved position for node ${node.id}:`, savedPos);
+          return {
+            ...node,
+            position: savedPos, // Override with saved position
+            // Ensure position is absolute for React Flow when applying stored positions
+            positionAbsolute: savedPos,
+          };
+        }
+        return node; // Keep calculated layout position
+      });
+
+      setNodes(finalNodes);
+      setEdges(layoutedEdges); // Edges usually don't change position based on node drag
+
     } else {
-      // Handle empty case (maybe set empty or show debug nodes)
+      // Handle empty case
       setNodes([]);
       setEdges([]);
-      console.log('No initial flow nodes to layout.');
-      // Optionally add your debug nodes here if needed
+      console.log('No initial flow nodes to layout or no planId.');
     }
-    // Dependencies should include the source data and the setter functions
-  }, [initialFlowNodes, flowEdges, setNodes, setEdges]);
+  }, [initialFlowNodes, flowEdges, setNodes, setEdges, planId]);
+
+  // Handler for saving position when dragging stops
+  const handleNodeDragStop: NodeDragHandler = useCallback((event, node) => {
+    if (!planId || !node.position) return; // Need planId and position
+
+    console.log(`Node ${node.id} drag stopped at:`, node.position);
+    const storageKey = getStorageKey(planId);
+    let savedPositions: { [key: string]: { x: number; y: number } } = {};
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        savedPositions = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to parse stored positions before saving:", e);
+      savedPositions = {}; // Reset if parsing fails
+    }
+
+    // Update the position for the dragged node
+    savedPositions[node.id] = node.position;
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(savedPositions));
+      console.log(`Saved position for node ${node.id} to localStorage.`);
+    } catch (e) {
+      console.error("Failed to save positions to localStorage:", e);
+      // Handle potential storage quota errors if necessary
+    }
+  }, [planId]); // Recreate this function if planId changes
 
   // Handle node connections
   const onConnect = useCallback(
@@ -255,6 +319,7 @@ const PlanVisualization: React.FC = () => {
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
+            onNodeDragStop={handleNodeDragStop}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             minZoom={0.1}
             maxZoom={2}
