@@ -33,8 +33,8 @@ import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
 import { useNodes, useNode } from '../hooks/useNodes';
 import { usePlanActivity } from '../hooks/usePlanActivity';
-import { formatDate, getStatusColor, getStatusLabel, getNodeTypeLabel } from '../utils/planUtils';
-import { NodeType, NodeStatus, Activity } from '../types';
+import { formatDate, getStatusColor, getStatusLabel, getNodeTypeLabel, getEdgeStyleByType, getEdgeTypeLabel } from '../utils/planUtils';
+import { NodeType, NodeStatus, Activity, EdgeType } from '../types';
 import { getLayoutedElements } from '../utils/layoutUtils';
 
 // Import custom node components
@@ -58,15 +58,55 @@ const nodeTypes = {
   default: TaskNode,
 };
 
+// Connection legend component
+interface ConnectionLegendProps {
+  show: boolean;
+}
+
+const ConnectionLegend: React.FC<ConnectionLegendProps> = ({ show }) => {
+  if (!show) return null;
+  
+  // Define all edge types to display in the legend
+  const edgeTypes: EdgeType[] = ['hierarchical', 'dependency', 'reference', 'sequence'];
+  
+  return (
+    <Panel position="bottom-left" className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-md max-w-xs z-10">
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Connection Types</h3>
+      <div className="space-y-2">
+        {edgeTypes.map(type => {
+          const style = getEdgeStyleByType(type);
+          return (
+            <div key={type} className="flex items-center">
+              <div className="w-12 flex-shrink-0">
+                <div
+                  className="h-0.5 w-full" 
+                  style={{
+                    backgroundColor: style.stroke,
+                    height: `${Math.max(1, (style.strokeWidth as number || 1) / 2)}px`,
+                    borderBottom: style.strokeDasharray ? `1px ${style.strokeDasharray}` : 'none'
+                  }}
+                />
+              </div>
+              <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">
+                {getEdgeTypeLabel(type)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+};
+
 // Helper function to create localStorage key
 const getStorageKey = (planId: string | undefined): string => `planLayout_${planId || 'unknown'}`;
 
 // Enable debug mode for diagnosing UI rendering issues
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 const PlanVisualization: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
-  const { state: uiState, toggleSidebar, toggleNodeDetails, openNodeDetails, closeNodeDetails } = useUI();
+  const { state: uiState, toggleSidebar: origToggleSidebar, toggleNodeDetails, openNodeDetails, closeNodeDetails: origCloseNodeDetails } = useUI();
   
   // Fetch plan data
   const { plan, isLoading: isPlanLoading } = usePlan(planId || '');
@@ -79,6 +119,7 @@ const PlanVisualization: React.FC = () => {
     isLoading: isNodesLoading,
     createNode,
     updateNodeStatus,
+    deleteNode,
   } = useNodes(planId || '');
 
   // Fetch selected node details
@@ -94,8 +135,27 @@ const PlanVisualization: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   
+  // Create wrapped versions of the UI context functions that also update node selection
+  const toggleSidebar = useCallback(() => {
+    origToggleSidebar();
+    // If closing the sidebar, deselect all nodes
+    if (uiState.sidebar.isOpen) {
+      // We're toggling from open to closed
+      setNodes((nodes) => nodes.map(node => ({ ...node, selected: false })));
+    }
+  }, [origToggleSidebar, uiState.sidebar.isOpen, setNodes]);
+  
+  const closeNodeDetails = useCallback(() => {
+    origCloseNodeDetails();
+    // Deselect all nodes when closing details
+    setNodes((nodes) => nodes.map(node => ({ ...node, selected: false })));
+  }, [origCloseNodeDetails, setNodes]);
+  
   // State for Node Details Tabs
   const [activeDetailTab, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
+
+  // State for connection legend visibility
+  const [showConnectionLegend, setShowConnectionLegend] = useState<boolean>(true);
 
   // Local state for node creation
   const [isCreatingNode, setIsCreatingNode] = useState(false);
@@ -143,6 +203,15 @@ const PlanVisualization: React.FC = () => {
       toggleSidebar();
     }
   }, [uiState.nodeDetails.isOpen, uiState.sidebar.isOpen, toggleSidebar]);
+  
+  // Force node details to close if selected node is not found
+  useEffect(() => {
+    if (uiState.nodeDetails.isOpen && uiState.nodeDetails.selectedNodeId && 
+        !isSelectedNodeLoading && !selectedNode) {
+      console.log('Selected node not found - closing node details panel');
+      closeNodeDetails();
+    }
+  }, [uiState.nodeDetails.isOpen, uiState.nodeDetails.selectedNodeId, isSelectedNodeLoading, selectedNode, closeNodeDetails]);
 
   // Logging effect for plan overview panel
   useEffect(() => {
@@ -150,6 +219,66 @@ const PlanVisualization: React.FC = () => {
       console.log('RENDERING PLAN OVERVIEW PANEL');
     }
   }, [uiState.sidebar.isOpen, uiState.nodeDetails.isOpen]);
+  
+  // Effect to update node styles when a node is selected or deselected
+  useEffect(() => {
+    if (!nodes || nodes.length === 0) return;
+    
+    const updatedNodes = nodes.map(node => {
+      // Check if this node is the selected one
+      const isSelected = uiState.nodeDetails.isOpen && 
+                        uiState.nodeDetails.selectedNodeId === node.id;
+      
+      // Apply a highlight style to the selected node
+      return {
+        ...node,
+        selected: isSelected, // This will trigger the ReactFlow built-in selection styling
+        className: isSelected ? 'selected-node' : '',
+        style: {
+          ...node.style,
+          // Add a glow effect and border to the selected node
+          boxShadow: isSelected ? '0 0 10px rgba(59, 130, 246, 0.7)' : undefined,
+          borderWidth: isSelected ? '2px' : undefined,
+          borderColor: isSelected ? '#3b82f6' : undefined,
+          borderStyle: isSelected ? 'solid' : undefined,
+          zIndex: isSelected ? 1000 : undefined, // Bring selected node to front
+        }
+      };
+    });
+    
+    setNodes(updatedNodes);
+  }, [nodes, setNodes, uiState.nodeDetails.isOpen, uiState.nodeDetails.selectedNodeId]);
+  
+  // Add a pulsing animation style for selected nodes
+  useEffect(() => {
+    // Create a style element if it doesn't exist
+    let styleElement = document.getElementById('node-selection-animation');
+    
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = 'node-selection-animation';
+      document.head.appendChild(styleElement);
+    }
+    
+    // Define the animation
+    styleElement.textContent = `
+      @keyframes pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+      }
+      .selected-node {
+        animation: pulse-border 2s infinite;
+      }
+    `;
+    
+    // Cleanup
+    return () => {
+      if (styleElement) {
+        document.head.removeChild(styleElement);
+      }
+    };
+  }, []);
 
   // Effect to load layout and apply stored positions
   useEffect(() => {
@@ -243,6 +372,13 @@ const PlanVisualization: React.FC = () => {
     console.log('Node clicked:', node.id);
     setActiveDetailTab('details'); // Reset to details tab on new selection
     
+    // Update UI to mark this node as selected
+    const updatedNodes = nodes.map(n => ({
+      ...n,
+      selected: n.id === node.id,
+    }));
+    setNodes(updatedNodes);
+    
     // Ensure sidebar is open when selecting a node
     if (!uiState.sidebar.isOpen) {
       toggleSidebar();
@@ -256,7 +392,7 @@ const PlanVisualization: React.FC = () => {
       nodeDetailsOpen: uiState.nodeDetails.isOpen,
       selectedNodeId: uiState.nodeDetails.selectedNodeId
     });
-  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, setActiveDetailTab]);
+  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, setActiveDetailTab, nodes, setNodes]);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -318,6 +454,18 @@ const PlanVisualization: React.FC = () => {
     });
   };
 
+  // Handle node deletion
+  const handleNodeDelete = (nodeId: string) => {
+    if (!planId) return;
+    
+    deleteNode.mutate(nodeId, {
+      onSuccess: () => {
+        // Close the node details panel after successful deletion
+        closeNodeDetails();
+      }
+    });
+  };
+
   // Calculate progress
   const progress = useMemo(() => { // Memoize calculation
     if (!planNodes || !planNodes.length) return 0;
@@ -372,12 +520,21 @@ const PlanVisualization: React.FC = () => {
               >
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
               </button>
+              <button 
+                onClick={() => setShowConnectionLegend(!showConnectionLegend)}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                title="Toggle connection legend"
+              >
+                <Filter className="w-5 h-5" />
+              </button>
               <button className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700">
                 <Save className="w-5 h-5" />
               </button>
               <button 
                 onClick={toggleSidebar}
                 className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                title="Toggle Sidebar"
+                data-testid="sidebar-toggle"
               >
                 <Sidebar className="w-5 h-5" />
               </button>
@@ -406,25 +563,18 @@ const PlanVisualization: React.FC = () => {
             style={{ background: '#f9fafb' }}
             attributionPosition="bottom-right"
             data-testid="react-flow-canvas"
+            /* Set selected nodes based on sidebar selection */
+            selectNodesOnDrag={false} /* Disable default drag selection behavior */
+            nodesFocusable={true}
+            /* Customize the selected state based on the selected node ID */
+            defaultEdgeOptions={{ focusable: false }}
           >
             <Controls />
             <MiniMap />
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
             
-            {/* Debug panel showing UI state */}
-            {DEBUG_MODE && (
-              <Panel position="bottom-left" className="bg-white dark:bg-gray-800 border-2 border-gray-300 rounded-lg p-2 max-w-xs text-xs shadow-lg overflow-auto" style={{ maxHeight: '200px' }}>
-                <h4 className="font-bold mb-1">Debug Info</h4>
-                <div className="space-y-1">
-                  <div>Sidebar Open: <span className="font-mono">{String(uiState.sidebar.isOpen)}</span></div>
-                  <div>Node Details Open: <span className="font-mono">{String(uiState.nodeDetails.isOpen)}</span></div>
-                  <div>Selected Node ID: <span className="font-mono">{uiState.nodeDetails.selectedNodeId || 'null'}</span></div>
-                  <div>Selected Node Loaded: <span className="font-mono">{String(!!selectedNode)}</span></div>
-                  <div>Loading Indicators: <span className="font-mono">Plan:{String(isPlanLoading)} Nodes:{String(isNodesLoading)} SelectedNode:{String(isSelectedNodeLoading)}</span></div>
-                  <div>Node Count: <span className="font-mono">{nodes.length}</span></div>
-                </div>
-              </Panel>
-            )}
+            {/* Connection Legend */}
+            <ConnectionLegend show={showConnectionLegend} />
             
             {/* Debug overlay when no nodes are present */}
             {nodes.length === 0 && !isPlanLoading && !isNodesLoading && (
@@ -619,23 +769,21 @@ const PlanVisualization: React.FC = () => {
 
                     {/* Tab Content */}
                     <div>
-                      {activeDetailTab === 'details' && <NodeDetailsTab node={selectedNode} onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)} />}
+                      {activeDetailTab === 'details' && <NodeDetailsTab node={selectedNode} onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)} onDelete={() => handleNodeDelete(selectedNode.id)} />}
                       {activeDetailTab === 'comments' && <NodeCommentsTab planId={planId!} nodeId={selectedNode.id} />}
                       {activeDetailTab === 'logs' && <NodeLogsTab planId={planId!} nodeId={selectedNode.id} />}
                       {activeDetailTab === 'artifacts' && <NodeArtifactsTab planId={planId!} nodeId={selectedNode.id} />}
                     </div>
                   </>
                 ) : (
-                  <div className="text-center p-4">
-                    <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Node not found</h3>
-                    <p className="text-gray-600 dark:text-gray-400">The selected node could not be loaded or does not exist.</p>
-                    <button
-                      onClick={closeNodeDetails}
-                      className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
-                    >
-                      Return to Overview
-                    </button>
-                  </div>
+                  // Auto-close node details and switch to overview if node not found
+                  <>
+                    {setTimeout(() => closeNodeDetails(), 0) && false /* Use setTimeout to avoid render issues */}
+                    <div className="text-center p-4">
+                      <div className="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      <p className="mt-4 text-gray-600 dark:text-gray-400">Loading overview...</p>
+                    </div>
+                  </>
                 )}
               </div>
             ) : (

@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlanNode, NodeStatus } from '../../types';
 import { formatDate, getStatusLabel } from '../../utils/planUtils';
+import { Trash2 } from 'lucide-react';
 
 interface NodeDetailsTabProps {
   node: PlanNode;
   onStatusChange: (newStatus: NodeStatus) => void; // Callback to update status
+  onDelete?: () => void; // Optional callback to delete the node
 }
 
-const NodeDetailsTab: React.FC<NodeDetailsTabProps> = ({ node, onStatusChange }) => {
+const NodeDetailsTab: React.FC<NodeDetailsTabProps> = ({ node, onStatusChange, onDelete }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Handle delete confirmation
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (onDelete) {
+      onDelete();
+    }
+    setShowDeleteConfirm(false);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
   return (
     <div className="space-y-6">
       {/* Description */}
@@ -78,6 +97,51 @@ const NodeDetailsTab: React.FC<NodeDetailsTabProps> = ({ node, onStatusChange })
            </pre>
          </div>
        )}
+
+      {/* Delete Node Button (if callback provided and not root node) */}
+      {onDelete && node.node_type === 'root' && (
+        <div className="pt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+          Cannot delete root node
+        </div>
+      )}
+
+      {onDelete && node.node_type !== 'root' && (
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={handleDeleteClick}
+            className="flex items-center justify-center w-full py-2 px-4 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-gray-800 dark:text-red-400 dark:border-red-700 dark:hover:bg-gray-700"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Node
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Confirm Delete</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Are you sure you want to delete "{node.title}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

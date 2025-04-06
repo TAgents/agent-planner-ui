@@ -3,7 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { getStatusColor } from '../../utils/planUtils';
 import { PlanNode } from '../../types';
 
-const MilestoneNode: React.FC<NodeProps> = ({ data }) => {
+const MilestoneNode: React.FC<NodeProps> = ({ data, selected }) => {
   const node: PlanNode = data.node;
   
   // Add defensive checks
@@ -27,7 +27,7 @@ const MilestoneNode: React.FC<NodeProps> = ({ data }) => {
   return (
     <>
       <Handle type="target" position={Position.Top} />
-      <div className="p-4 shadow-md bg-purple-50 border-2 border-purple-200 rounded min-w-[220px]">
+      <div className={`p-4 rounded min-w-[220px] ${selected ? 'bg-purple-200 border-4 border-purple-600 shadow-xl dark:bg-purple-800 dark:border-purple-400' : 'bg-purple-50 border-2 border-purple-200 shadow-md dark:bg-purple-900 dark:border-purple-700'}`}>
         <div className="flex items-center">
           <div className={`w-4 h-4 mr-2 rounded-full ${getStatusColor(status)}`}></div>
           <div className="font-medium text-purple-800">{title}</div>

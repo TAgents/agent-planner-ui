@@ -10,7 +10,7 @@ import {
 import { PlanNode } from '../../types';
 import { MessageSquare, ScrollText, FileText } from 'lucide-react'; // Icons for indicators
 
-const TaskNode: React.FC<NodeProps> = ({ data }) => {
+const TaskNode: React.FC<NodeProps> = ({ data, selected }) => {
   // Add defensive check for node data
   if (!data || !data.node) {
     console.error('TaskNode: Invalid or missing node data provided in props:', data);
@@ -48,7 +48,7 @@ const TaskNode: React.FC<NodeProps> = ({ data }) => {
       {/* <Handle type="source" position={Position.Right} id="right" isConnectable={true} /> */}
 
       {/* Node Content - Use background/border from style prop */}
-      <div className="p-3 rounded-md shadow-sm min-w-[180px] text-gray-900 dark:text-white">
+      <div className={`p-3 rounded-md min-w-[180px] ${selected ? 'text-blue-900 bg-blue-100 border-4 border-blue-500 shadow-xl dark:bg-blue-800 dark:text-white dark:border-blue-400' : 'shadow-sm text-gray-900 dark:text-white'}`}>
         {/* Top Row: Status, Type Icon, Due Date */}
         <div className="flex items-center justify-between mb-2">
            <div className="flex items-center">

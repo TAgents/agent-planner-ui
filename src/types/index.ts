@@ -95,6 +95,15 @@ export interface Activity {
   };
 }
 
+// Edge Types for semantic connections
+export type EdgeType = 'hierarchical' | 'dependency' | 'reference' | 'sequence';
+
+export interface EdgeProperties {
+  type: EdgeType;
+  label?: string;
+  description?: string;
+}
+
 // React Flow Types
 export interface FlowNode {
   id: string;
@@ -117,6 +126,14 @@ export interface FlowEdge {
   target: string;
   animated?: boolean;
   style?: Record<string, any>;
+  data?: {
+    type: EdgeType;
+    label?: string;
+  };
+  type?: string;
+  markerEnd?: string;
+  labelStyle?: Record<string, any>;
+  label?: string;
 }
 
 // User Types
