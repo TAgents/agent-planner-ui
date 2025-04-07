@@ -145,6 +145,18 @@ export interface User {
   role: 'admin' | 'user' | 'guest';
 }
 
+// API Token Types
+export type TokenPermission = 'read' | 'write' | 'admin';
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  permissions: TokenPermission[];
+  created_at: string;
+  last_used: string | null;
+  token?: string; // Only included when first created
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data: T;

@@ -12,6 +12,7 @@ import PlansList from './pages/PlansList';
 import PlanVisualization from './pages/PlanVisualization';
 import Login from './pages/auth/Login';
 import CreatePlan from './pages/plans/CreatePlan';
+import Settings from './pages/Settings';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -42,6 +43,7 @@ const App: React.FC = () => {
                 <Route path="plans" element={<PlansList />} />
                 <Route path="plans/new" element={<CreatePlan />} />
                 <Route path="plans/:planId" element={<PlanVisualization />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
             </Route>
           </Routes>

@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact } from '../types';
+import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact, ApiToken, TokenPermission } from '../types';
 import API_CONFIG from '../config/api.config';
 import { decodeToken } from '../utils/tokenHelper';
 import { createClient } from '@supabase/supabase-js';
@@ -424,6 +424,73 @@ export const artifactService = {
   },
 };
 
+// Debug endpoints
+export const debugService = {
+  debugTokens: async () => {
+    console.log('Calling debug tokens endpoint...');
+    try {
+      const result = await request<any>({
+        method: 'GET',
+        url: '/debug/tokens',
+      });
+      console.log('Debug tokens response:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in debugService.debugTokens:', error);
+      throw error;
+    }
+  },
+};
+
+// API Tokens endpoints
+export const tokenService = {
+  getTokens: async () => {
+    console.log('Fetching tokens from API...');
+    try {
+      const result = await request<ApiToken[] | ApiResponse<ApiToken[]>>({ 
+        method: 'GET',
+        url: '/tokens',
+      });
+      console.log('Raw API response for getTokens:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in tokenService.getTokens:', error);
+      throw error;
+    }
+  },
+  
+  createToken: async (name: string, permissions?: TokenPermission[]) => {
+    console.log('Creating token with name:', name, 'permissions:', permissions);
+    try {
+      const result = await request<ApiToken | ApiResponse<ApiToken>>({ 
+        method: 'POST',
+        url: '/tokens',
+        data: { name, permissions },
+      });
+      console.log('Raw API response for createToken:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in tokenService.createToken:', error);
+      throw error;
+    }
+  },
+  
+  revokeToken: async (tokenId: string) => {
+    console.log('Revoking token:', tokenId);
+    try {
+      const result = await request<any>({  
+        method: 'DELETE',
+        url: `/tokens/${tokenId}`,
+      });
+      console.log('Raw API response for revokeToken:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in tokenService.revokeToken:', error);
+      throw error;
+    }
+  },
+};
+
 export default {
   auth: authService,
   plans: planService,
@@ -433,4 +500,6 @@ export default {
   search: searchService,
   logs: logService,
   artifacts: artifactService,
+  tokens: tokenService,
+  debug: debugService,
 };
