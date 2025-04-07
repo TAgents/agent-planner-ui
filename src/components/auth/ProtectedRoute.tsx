@@ -9,9 +9,9 @@ const ProtectedRoute: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Check if there's an auth token in localStorage
-    const token = localStorage.getItem('auth_token');
-    setIsAuthenticated(!!token);
+    // Check if there's a Supabase session in localStorage
+    const session = localStorage.getItem('supabase_session');
+    setIsAuthenticated(!!session);
   }, []);
 
   // Show loading state while we're checking authentication

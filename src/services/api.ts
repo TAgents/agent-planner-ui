@@ -2,10 +2,13 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact } from '../types';
 import API_CONFIG from '../config/api.config';
 import { decodeToken } from '../utils/tokenHelper';
+import { createClient } from '@supabase/supabase-js';
 
-// Custom JWT token for development - this token is specifically formatted for the backend
-// and uses the user ID from the MCP project's user-credentials.json
-const DEVELOPMENT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4ZjRlNzJiYi1lOTQ5LTQ1ODQtYmFiYi1hZWJhMTZkYTE1YTEiLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQzODU1NDk0LCJleHAiOjE3NDY0NDc0OTR9.778-vwxYJIVduFcp0q0Mtjsv9Jh198ezwPVYn9c6rb8';
+// Create a Supabase client
+const supabaseClient = createClient(
+  API_CONFIG.SUPABASE_URL,
+  API_CONFIG.SUPABASE_ANON_KEY
+);
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -17,21 +20,20 @@ const api = axios.create({
 // Add request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage or use the dev token
-    const storedToken = localStorage.getItem('auth_token');
-    const token = storedToken || DEVELOPMENT_TOKEN;
-    
-    if (token) {
-      console.log('Setting Authorization header with token');
-      config.headers.Authorization = `Bearer ${token}`;
-      
-      // Debug token payload
-      const payload = decodeToken(token);
-      console.log('Token payload:', payload);
-      console.log('Token has userId:', payload?.userId ? 'Yes' : 'No');
-      console.log('Token has email:', payload?.email ? 'Yes' : 'No');
+    // Get session from localStorage
+    const sessionStr = localStorage.getItem('supabase_session');
+    if (sessionStr) {
+      try {
+        const session = JSON.parse(sessionStr);
+        if (session && session.access_token) {
+          console.log('Setting Authorization header with Supabase token');
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+        }
+      } catch (e) {
+        console.error('Failed to parse session', e);
+      }
     } else {
-      console.warn('No auth token found in localStorage');
+      console.warn('No Supabase session found in localStorage');
     }
     return config;
   },
@@ -44,7 +46,7 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     // Handle authentication errors
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('supabase_session');
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -56,7 +58,7 @@ const debugApiCall = (method: string, url: string, data?: any) => {
   if (process.env.NODE_ENV === 'development') {
     console.log(`🔶 API ${method}: ${API_CONFIG.BASE_URL}${url}`, data || '');
     console.log('Headers:', {
-      'Authorization': localStorage.getItem('auth_token') ? 'Bearer [TOKEN]' : 'None',
+      'Authorization': localStorage.getItem('supabase_session') ? 'Bearer [TOKEN]' : 'None',
       'Content-Type': 'application/json'
     });
   }
@@ -82,25 +84,64 @@ const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
 // Authentication endpoints
 export const authService = {
   login: async (email: string, password: string) => {
-    const response = await request<ApiResponse<{ token: string }>>({
-      method: 'POST',
-      url: '/auth/login',
-      data: { email, password },
-    });
-    localStorage.setItem('auth_token', response.data.token);
-    return response;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+  email,
+  password,
+  });
+  
+  if (error) throw new Error(error.message);
+  
+    // Store the session in localStorage
+    localStorage.setItem('supabase_session', JSON.stringify(data.session));
+    
+  return {
+  status: 200,
+  data: {
+    user: data.user,
+      session: data.session
+      }
+    };
   },
   
   register: async (email: string, password: string, name: string) => {
-    return request<ApiResponse<{ token: string }>>({
-      method: 'POST',
-      url: '/auth/register',
-      data: { email, password, name },
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name }
+      }
     });
+    
+    if (error) throw new Error(error.message);
+    
+    if (data.session) {
+      localStorage.setItem('supabase_session', JSON.stringify(data.session));
+    }
+    
+    return {
+      status: 201,
+      data: {
+        user: data.user,
+        session: data.session
+      }
+    };
   },
   
   logout: () => {
-    localStorage.removeItem('auth_token');
+    // Clear session from localStorage
+    localStorage.removeItem('supabase_session');
+    
+    // Sign out from Supabase
+    supabaseClient.auth.signOut();
+    
+    // Also call the API endpoint
+    return request<{message: string}>({
+      method: 'POST',
+      url: '/auth/logout',
+    }).catch(() => {
+      // Even if the API call fails, consider the logout successful
+      return { message: 'Logged out successfully' };
+    });
   },
 };
 

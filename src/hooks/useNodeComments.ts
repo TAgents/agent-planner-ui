@@ -7,7 +7,7 @@ export const useNodeComments = (planId: string, nodeId: string, options = {}) =>
   const queryClient = useQueryClient();
   const queryKey = ['nodeComments', planId, nodeId];
 
-  const { data, isLoading, error, refetch } = useQuery<{ data: Comment[] }>( // Adjust based on actual API response structure
+  const { data: commentsData, isLoading, error, refetch } = useQuery(
     queryKey,
     () => commentService.getComments(planId, nodeId),
     {
@@ -32,7 +32,15 @@ export const useNodeComments = (planId: string, nodeId: string, options = {}) =>
     }
   );
 
-  const comments = data?.data || [];
+  // Safely handle different response formats
+  let comments: Comment[] = [];
+  if (commentsData) {
+    if (Array.isArray(commentsData)) {
+      comments = commentsData;
+    } else if (commentsData.data && Array.isArray(commentsData.data)) {
+      comments = commentsData.data;
+    }
+  }
 
   return {
     comments,

@@ -14,7 +14,23 @@ export const useNodes = (planId: string) => {
   // Use React Query to fetch nodes for a plan
   const { data, isLoading, error, refetch } = useQuery(
     ['nodes', planId],
-    () => nodeService.getNodes(planId),
+    async () => {
+      try {
+        // Check if authentication session exists
+        const sessionStr = localStorage.getItem('supabase_session');
+        if (!sessionStr) {
+          throw new Error('No authentication session found');
+        }
+
+        console.log(`Fetching nodes for plan ${planId} with authentication`);
+        const response = await nodeService.getNodes(planId);
+        console.log('Nodes API response:', response);
+        return response;
+      } catch (err) {
+        console.error(`Error fetching nodes for plan ${planId}:`, err);
+        throw err;
+      }
+    },
     {
       enabled: !!planId,
       staleTime: 5 * 60 * 1000, // 5 minutes
@@ -134,9 +150,22 @@ export const useNode = (planId: string, nodeId: string) => {
   // Use React Query to fetch a single node
   const { data, isLoading, error, refetch } = useQuery(
     ['node', planId, nodeId],
-    () => {
-      console.log(`Fetching node details for planId=${planId}, nodeId=${nodeId}`);
-      return nodeService.getNode(planId, nodeId);
+    async () => {
+      try {
+        // Check if authentication session exists
+        const sessionStr = localStorage.getItem('supabase_session');
+        if (!sessionStr) {
+          throw new Error('No authentication session found');
+        }
+
+        console.log(`Fetching node details for planId=${planId}, nodeId=${nodeId} with authentication`);
+        const response = await nodeService.getNode(planId, nodeId);
+        console.log('Node details API response:', response);
+        return response;
+      } catch (err) {
+        console.error(`Error fetching node details for planId=${planId}, nodeId=${nodeId}:`, err);
+        throw err;
+      }
     },
     {
       enabled: !!planId && !!nodeId,

@@ -9,7 +9,23 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
   // Use React Query to fetch plans with pagination
   const { data, isLoading, error, refetch } = useQuery(
     ['plans', page, limit, status],
-    () => planService.getPlans(page, limit, status),
+    async () => {
+      try {
+        // Check if authentication session exists
+        const sessionStr = localStorage.getItem('supabase_session');
+        if (!sessionStr) {
+          throw new Error('No authentication session found');
+        }
+
+        console.log('Fetching plans with authentication');
+        const response = await planService.getPlans(page, limit, status);
+        console.log('Plans API response:', response);
+        return response;
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+        throw err;
+      }
+    },
     {
       keepPreviousData: true,
       staleTime: 5 * 60 * 1000, // 5 minutes
@@ -102,7 +118,23 @@ export const usePlan = (planId: string) => {
   // Use React Query to fetch a single plan
   const { data, isLoading, error, refetch } = useQuery(
     ['plan', planId],
-    () => planService.getPlan(planId),
+    async () => {
+      try {
+        // Check if authentication session exists
+        const sessionStr = localStorage.getItem('supabase_session');
+        if (!sessionStr) {
+          throw new Error('No authentication session found');
+        }
+
+        console.log(`Fetching plan ${planId} with authentication`);
+        const response = await planService.getPlan(planId);
+        console.log('Plan API response:', response);
+        return response;
+      } catch (err) {
+        console.error(`Error fetching plan ${planId}:`, err);
+        throw err;
+      }
+    },
     {
       enabled: !!planId, // Only run if planId is provided
       staleTime: 5 * 60 * 1000, // 5 minutes

@@ -1,16 +1,66 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Plus, Filter, Clock, CheckCircle, AlertTriangle, Archive } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { Plan, PlanStatus } from '../types';
 import { formatDate } from '../utils/planUtils';
+import { createClient } from '@supabase/supabase-js';
+import API_CONFIG from '../config/api.config';
 
 const PlansList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<PlanStatus | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
   
   const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10, statusFilter);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Check if there's a session in localStorage
+        const sessionStr = localStorage.getItem('supabase_session');
+        if (!sessionStr) {
+          console.error('No Supabase session found in localStorage');
+          navigate('/login');
+          return;
+        }
+
+        // Parse the session
+        let session;
+        try {
+          session = JSON.parse(sessionStr);
+        } catch (e) {
+          console.error('Failed to parse Supabase session:', e);
+          navigate('/login');
+          return;
+        }
+
+        // Create a Supabase client
+        const supabase = createClient(
+          API_CONFIG.SUPABASE_URL,
+          API_CONFIG.SUPABASE_ANON_KEY
+        );
+
+        // Check if the session is valid
+        const { data, error } = await supabase.auth.getUser(session.access_token);
+        if (error || !data.user) {
+          console.error('Invalid Supabase session:', error);
+          navigate('/login');
+          return;
+        }
+
+        console.log('Authenticated user:', data.user);
+
+      } catch (err) {
+        console.error('Authentication check error:', err);
+        navigate('/login');
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   // Status badges
   const getStatusBadge = (status: PlanStatus) => {

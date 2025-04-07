@@ -1,8 +1,8 @@
 Potential Issues/Improvements (High Probability for UI Failure):
 Authentication:
-Token Mismatch/Invalidity: Similar to MCP, the UI relies on an auth token. ProtectedRoute checks localStorage. api.ts uses localStorage.getItem('auth_token') OR falls back to a hardcoded DEVELOPMENT_TOKEN. This hardcoded token is highly suspect. Is it valid for the current API? Does it use the correct secret? Does the userId within it exist and have permissions? This is the #1 place to check. If authentication fails silently (or uses an invalid fallback token), API calls will return 401/403/404s, leading to an empty/broken UI.
-Login Flow: Ensure the Login.tsx component successfully receives a valid JWT from the API and correctly stores it in localStorage under the key auth_token.
-Token Payload: The API's auth.middleware.js expects { userId: ..., email: ... } in the JWT payload. Ensure the token being sent by the UI has this exact structure. Use browser dev tools to inspect the actual token payload being sent. tokenHelper.ts and the debug logs in api.ts are helpful here.
+Supabase Session Issues: The UI now relies on a Supabase session token stored in localStorage. ProtectedRoute checks localStorage for 'supabase_session'. The API service in api.ts retrieves this session token to authenticate requests to the backend. Issues can occur if the token is expired, malformed, or doesn't match what the server expects.
+Login Flow: Ensure the Login component successfully receives a valid Supabase session from the API and correctly stores it in localStorage under the key 'supabase_session'.
+Supabase Token Handling: The backend's auth.middleware.js now extracts the user from Supabase's auth.getUser() method rather than decoding a custom JWT. Ensure the token being sent from the UI is a valid Supabase token.
 API Data Fetching & Structure (usePlans, useNodes):
 Inconsistent API Responses: The hooks (usePlans, useNodes) contain logic to handle different response structures (e.g., array vs. paginated object, direct object vs. { data: ... }). This suggests the API might be returning data inconsistently, or the hooks are overly complex. If the API response doesn't match any expected structure, the hooks will return empty data or error out. Use browser Network tab to inspect raw API responses for /plans and /plans/{id}/nodes.
 Node Data Flattening: useNodes explicitly flattens the hierarchical data received from the /plans/{id}/nodes endpoint. If the API doesn't return a tree structure, or if the flattening logic is flawed, planNodes will be incorrect.
@@ -16,12 +16,11 @@ Dependencies: Check for version compatibility issues between React, React Flow, 
 Debugging Steps for the UI
 
 Authentication First:
-Generate a Valid Token: Use the API's /auth/login endpoint (via the UI or Postman) or the generate-accurate-token.js/register-user.js script (ensure it uses the API's current JWT_SECRET).
+Generate a Valid Supabase Session: Use the API's /auth/login endpoint (via the UI or Postman) to get a valid Supabase session that includes an access_token.
 Verify Token Usage:
-Ensure the token is stored correctly in localStorage as auth_token after login.
-In agent-planner-ui/src/services/api.ts, temporarily remove the hardcoded DEVELOPMENT_TOKEN fallback or replace it with your known valid token to force usage of the localStorage token.
+Ensure the session is stored correctly in localStorage as 'supabase_session' after login.
+In agent-planner-ui/src/services/api.ts, check the Authorization header is being set correctly with the Supabase access token.
 Use browser dev tools (Network tab) to inspect the Authorization: Bearer <token> header being sent with API requests.
-Use a tool like jwt.io or the decodeToken function to inspect the payload of the token being sent. Does it have userId and email? Is it expired?
 Check API Auth Logs: Look at the agent-planner/logs/auth.log and api.log for any authentication errors (401, 403) when the UI makes requests.
 Inspect API Calls:
 Open browser dev tools (Network tab).

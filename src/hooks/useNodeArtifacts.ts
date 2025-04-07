@@ -6,7 +6,7 @@ export const useNodeArtifacts = (planId: string, nodeId: string, options = {}) =
   const queryClient = useQueryClient();
   const queryKey = ['nodeArtifacts', planId, nodeId];
 
-  const { data, isLoading, error, refetch } = useQuery<{ data: Artifact[] }>(
+  const { data: artifactsData, isLoading, error, refetch } = useQuery(
     queryKey,
     () => artifactService.getArtifacts(planId, nodeId),
     {
@@ -30,7 +30,15 @@ export const useNodeArtifacts = (planId: string, nodeId: string, options = {}) =
     }
   );
 
-  const artifacts = data?.data || [];
+  // Safely handle different response formats
+  let artifacts: Artifact[] = [];
+  if (artifactsData) {
+    if (Array.isArray(artifactsData)) {
+      artifacts = artifactsData;
+    } else if (artifactsData.data && Array.isArray(artifactsData.data)) {
+      artifacts = artifactsData.data;
+    }
+  }
 
   return {
     artifacts,

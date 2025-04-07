@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import authService from '../../services/api';
-import { createProperToken, decodeToken } from '../../utils/tokenHelper';
+import api from '../../services/api';
+import { createClient } from '@supabase/supabase-js';
+import API_CONFIG from '../../config/api.config';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('password');
+  const [password, setPassword] = useState('password123');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -16,30 +17,50 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      await authService.auth.login(email, password);
+      const response = await api.auth.login(email, password);
+      console.log('Login successful:', response);
       navigate('/plans');
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = () => {
-    // Use our helper to get a properly formatted token
-    const demoToken = createProperToken();
-    
-    // Decode and inspect the token
+  const handleDemoLogin = async () => {
+    setLoading(true);
     try {
-      const payload = decodeToken(demoToken);
-      console.log('Demo token payload:', payload);
-      
-      // Store the token in localStorage
-      localStorage.setItem('auth_token', demoToken);
+      // Create a Supabase client instance
+      const supabase = createClient(
+        API_CONFIG.SUPABASE_URL,
+        API_CONFIG.SUPABASE_ANON_KEY
+      );
+
+      // Sign in with the demo account credentials
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'admin@example.com',
+        password: 'password123',
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || !data.session) {
+        throw new Error('No session returned from Supabase');
+      }
+
+      // Store the session in localStorage
+      localStorage.setItem('supabase_session', JSON.stringify(data.session));
+
+      // Navigate to plans page
       navigate('/plans');
-    } catch (err) {
-      console.error('Error decoding demo token:', err);
-      setError('Error with demo token. Please try again.');
+    } catch (err: any) {
+      console.error('Demo login error:', err);
+      setError(err.message || 'Failed to login with demo account');
+    } finally {
+      setLoading(false);
     }
   };
 
