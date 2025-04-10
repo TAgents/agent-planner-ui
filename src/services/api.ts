@@ -149,10 +149,20 @@ export const authService = {
 export const planService = {
   getPlans: async (page = 1, limit = 10, status?: string) => {
     // Use a more generic type to handle both array and paginated responses
+    // Make sure we're sending the status parameter correctly
+    const params: Record<string, any> = { page, limit };
+    
+    // Only add status param if it's defined
+    if (status) {
+      params.status = status;
+    }
+
+    console.log('Getting plans with params:', params);
+    
     return request<any>({
       method: 'GET',
       url: '/plans',
-      params: { page, limit, status },
+      params,
     });
   },
   

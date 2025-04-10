@@ -97,8 +97,22 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
     total_pages: Math.ceil((data?.length || 0) / limit)
   } : data;
   
+  // Ensure we have plans data to process
+  let plansWithProgress = [];
+  if (paginatedData?.data) {
+    plansWithProgress = paginatedData.data.map((plan: Plan) => {
+      // If plan already has progress, use it, otherwise set to 0 for now
+      // In a real implementation, we'd calculate this based on nodes completion
+      // We would need to fetch nodes for each plan and calculate progress
+      return {
+        ...plan,
+        progress: typeof plan.progress === 'number' ? plan.progress : 0
+      };
+    });
+  }
+  
   return {
-    plans: paginatedData?.data || [],
+    plans: plansWithProgress,
     total: paginatedData?.total || 0,
     totalPages: paginatedData?.total_pages || 0,
     currentPage: paginatedData?.page || 1,

@@ -20,7 +20,8 @@ const PlansList: React.FC = () => {
   const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
   const navigate = useNavigate();
   
-  const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10, statusFilter);
+  // We'll fetch all plans without server-side filtering
+  const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10);
 
   // Check authentication on component mount
   useEffect(() => {
@@ -99,10 +100,16 @@ const PlansList: React.FC = () => {
     }
   };
 
-  // Filter by status
+  // Filter by status - now uses local filtering
   const handleStatusFilter = (status?: PlanStatus) => {
+    console.log('Setting status filter to:', status);
     setStatusFilter(status);
     setCurrentPage(1);
+    
+    // Clear search when changing status filter
+    if (searchQuery) {
+      clearSearch();
+    }
   };
 
   // Handle search form submission
@@ -117,20 +124,33 @@ const PlansList: React.FC = () => {
     setFilteredPlans([]);
   };
 
-  // Update filtered plans when search query or plans change
+  // Apply both search and status filters
   useEffect(() => {
+    // Start with all plans
+    let filtered = [...plans];
+    
+    // Apply status filter if set
+    if (statusFilter) {
+      filtered = filtered.filter(plan => plan.status === statusFilter);
+    }
+    
+    // Then apply search filter if needed
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      const filtered = plans.filter((plan: Plan) => 
+      filtered = filtered.filter(plan => 
         plan.title.toLowerCase().includes(query) || 
         (plan.description && plan.description.toLowerCase().includes(query))
       );
       
       setFilteredPlans(filtered);
+    } else if (statusFilter) {
+      // If we have only status filter but no search query
+      setFilteredPlans(filtered);
     } else {
+      // No filters applied
       setFilteredPlans([]);
     }
-  }, [searchQuery, plans]);
+  }, [searchQuery, statusFilter, plans]);
 
   // Pagination
   const handlePageChange = (page: number) => {
@@ -148,8 +168,11 @@ const PlansList: React.FC = () => {
     );
   }
 
-  // Determine which plans to display: filtered or all
-  const displayedPlans = searchQuery.trim() ? filteredPlans : plans;
+  // Determine which plans to display:
+  // - filtered plans if we have search query or status filter
+  // - all plans otherwise
+  const isFiltering = searchQuery.trim() || statusFilter !== undefined;
+  const displayedPlans = isFiltering ? filteredPlans : plans;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -242,14 +265,20 @@ const PlansList: React.FC = () => {
           </div>
         </div>
 
-        {/* Search status bar - only show when filtering */}
-        {searchQuery.trim() && (
+        {/* Filter status bar - show when filtering by search or status */}
+        {isFiltering && (
           <div className="mb-4 flex flex-col space-y-4">
             <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900 p-3 rounded-lg shadow-sm">
               <div className="flex items-center">
-                <Search className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-2" />
+                <Filter className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-2" />
                 <span className="text-blue-700 dark:text-blue-300 text-sm">
-                  Filtering plans for <strong>"{searchQuery}"</strong>
+                  {searchQuery ? (
+                    <>Filtering plans for <strong>"{searchQuery}"</strong></>
+                  ) : statusFilter ? (
+                    <>Showing <strong>{statusFilter}</strong> plans</>
+                  ) : (
+                    <>Filtering plans</>
+                  )}
                   {filteredPlans.length > 0 && (
                     <span className="ml-2 text-xs bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded-full">
                       {filteredPlans.length} {filteredPlans.length === 1 ? 'result' : 'results'}
@@ -258,17 +287,28 @@ const PlansList: React.FC = () => {
                 </span>
               </div>
               <button
-                onClick={clearSearch}
+                onClick={() => {
+                  clearSearch();
+                  handleStatusFilter(undefined);
+                }}
                 className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 text-sm font-medium transition duration-200"
               >
-                Clear filter
+                Clear filters
               </button>
             </div>
             
             {/* Show "no results" message when filtering returns empty results */}
             {filteredPlans.length === 0 && !isLoading && (
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm text-center border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-600 dark:text-gray-400">No plans found matching "{searchQuery}"</p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {searchQuery ? (
+                    <>No plans found matching "{searchQuery}"</>
+                  ) : statusFilter ? (
+                    <>No {statusFilter} plans found</>
+                  ) : (
+                    <>No matching plans</>
+                  )}
+                </p>
               </div>
             )}
           </div>
@@ -292,7 +332,7 @@ const PlansList: React.FC = () => {
                 Create your first plan
               </Link>
             </div>
-          ) : searchQuery.trim() && filteredPlans.length === 0 ? (
+          ) : isFiltering && filteredPlans.length === 0 ? (
             // Don't show anything here since we already show a message above
             <div></div>
           ) : (
@@ -320,10 +360,12 @@ const PlansList: React.FC = () => {
                           <div className="overflow-hidden h-2 text-xs flex rounded-full bg-gray-200 dark:bg-gray-700">
                             <div 
                               className={`rounded-full ${plan.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`} 
-                              style={{ width: `${plan.progress || 0}%` }}
+                              style={{ width: `${typeof plan.progress === 'number' ? plan.progress : 0}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 inline-block">{plan.progress || 0}%</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 inline-block">
+                            {typeof plan.progress === 'number' ? plan.progress : 0}%
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -335,7 +377,7 @@ const PlansList: React.FC = () => {
         </div>
 
         {/* Pagination - only show when not filtering and there are multiple pages */}
-        {totalPages > 1 && !searchQuery.trim() && (
+        {totalPages > 1 && !isFiltering && (
           <div className="flex justify-center mt-6">
             <nav className="flex items-center">
               <button
