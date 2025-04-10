@@ -313,12 +313,12 @@ export const createFlowEdges = (nodes: PlanNode[]): FlowEdge[] => {
 };
 
 /**
- * Formats a date string in a user-friendly format
- * @param dateString ISO date string
+ * Formats a date string or Date object in a user-friendly format
+ * @param dateInput ISO date string or Date object
  * @returns Formatted date string
  */
-export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
+export const formatDate = (dateInput: string | Date): string => {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',

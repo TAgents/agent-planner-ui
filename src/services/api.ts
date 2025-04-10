@@ -386,6 +386,27 @@ export const searchService = {
       params: { q: query },
     });
   },
+  
+  // New comprehensive plan search endpoint
+  searchPlanContents: async (planId: string, query: string) => {
+    console.log(`[api.ts] Searching plan ${planId} for: ${query}`);
+    return request<ApiResponse<{
+      query: string;
+      results: Array<{
+        id: string;
+        type: string;
+        title: string;
+        content: string;
+        created_at: string;
+        user_id: string;
+      }>;
+      count: number;
+    }>>({
+      method: 'GET',
+      url: `/search/plan/${planId}`,
+      params: { query },
+    });
+  },
 };
 
 // Logs endpoints
@@ -420,6 +441,28 @@ export const artifactService = {
       method: 'POST',
       url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
       data: artifactData,
+    });
+  },
+
+  getArtifact: async (planId: string, nodeId: string, artifactId: string) => {
+    return request<ApiResponse<Artifact>>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
+    });
+  },
+
+  updateArtifact: async (planId: string, nodeId: string, artifactId: string, artifactData: { name?: string; content_type?: string; url?: string; metadata?: object }) => {
+    return request<ApiResponse<Artifact>>({
+      method: 'PUT',
+      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
+      data: artifactData,
+    });
+  },
+
+  deleteArtifact: async (planId: string, nodeId: string, artifactId: string) => {
+    return request<ApiResponse<null>>({
+      method: 'DELETE',
+      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
     });
   },
 };

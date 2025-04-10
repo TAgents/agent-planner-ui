@@ -25,7 +25,21 @@ export const useNodeArtifacts = (planId: string, nodeId: string, options = {}) =
       },
       onError: (err: any) => {
         console.error("Error adding artifact:", err);
-         // Handle error feedback
+        // Handle error feedback
+      }
+    }
+  );
+
+  const deleteArtifactMutation = useMutation(
+    (artifactId: string) =>
+      artifactService.deleteArtifact(planId, nodeId, artifactId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(queryKey);
+      },
+      onError: (err: any) => {
+        console.error("Error deleting artifact:", err);
+        // Handle error feedback
       }
     }
   );
@@ -47,5 +61,7 @@ export const useNodeArtifacts = (planId: string, nodeId: string, options = {}) =
     refetch,
     addArtifact: addArtifactMutation.mutate,
     isAddingArtifact: addArtifactMutation.isLoading,
+    deleteArtifact: deleteArtifactMutation.mutate,
+    isDeletingArtifact: deleteArtifactMutation.isLoading,
   };
 };

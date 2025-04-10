@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PlanNode, NodeStatus } from '../../types';
 import { formatDate, getStatusLabel } from '../../utils/planUtils';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Copy } from 'lucide-react';
 
 interface NodeDetailsTabProps {
   node: PlanNode;
@@ -27,8 +27,34 @@ const NodeDetailsTab: React.FC<NodeDetailsTabProps> = ({ node, onStatusChange, o
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
   };
+  
+  // Copy to clipboard function
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+  
   return (
     <div className="space-y-6">
+      {/* Node ID */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Node ID</h3>
+        <div className="mt-1 flex items-center">
+          <code className="text-xs bg-gray-100 dark:bg-gray-900 p-1 rounded font-mono overflow-auto flex-grow">
+            {node.id}
+          </code>
+          <button 
+            onClick={() => copyToClipboard(node.id)}
+            className="ml-2 text-blue-500 hover:text-blue-700 p-1"
+            title="Copy node ID"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {/* Description */}
       <div>
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Description</h3>
@@ -147,4 +173,4 @@ const NodeDetailsTab: React.FC<NodeDetailsTabProps> = ({ node, onStatusChange, o
   );
 };
 
-export default NodeDetailsTab; 
+export default NodeDetailsTab;

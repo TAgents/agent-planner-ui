@@ -7,10 +7,17 @@ import { formatDate } from '../utils/planUtils';
 import { createClient } from '@supabase/supabase-js';
 import API_CONFIG from '../config/api.config';
 
+// Define an interface for filtered plans
+interface FilterResult {
+  plan: Plan;
+  matches: boolean;
+}
+
 const PlansList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<PlanStatus | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
   const navigate = useNavigate();
   
   const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10, statusFilter);
@@ -98,12 +105,32 @@ const PlansList: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Search functionality
+  // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // This would typically call an API with the search query
-    console.log('Searching for:', searchQuery);
+    // The actual filtering is handled by the useEffect below
   };
+  
+  // Clear search functionality
+  const clearSearch = () => {
+    setSearchQuery('');
+    setFilteredPlans([]);
+  };
+
+  // Update filtered plans when search query or plans change
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const filtered = plans.filter((plan: Plan) => 
+        plan.title.toLowerCase().includes(query) || 
+        (plan.description && plan.description.toLowerCase().includes(query))
+      );
+      
+      setFilteredPlans(filtered);
+    } else {
+      setFilteredPlans([]);
+    }
+  }, [searchQuery, plans]);
 
   // Pagination
   const handlePageChange = (page: number) => {
@@ -120,6 +147,9 @@ const PlansList: React.FC = () => {
       </div>
     );
   }
+
+  // Determine which plans to display: filtered or all
+  const displayedPlans = searchQuery.trim() ? filteredPlans : plans;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -143,11 +173,39 @@ const PlansList: React.FC = () => {
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-10 pr-12 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="Search plans..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  clearSearch();
+                }
+              }}
+              aria-label="Search plans"
             />
+            {searchQuery && (
+              <button 
+                type="button"
+                className="absolute inset-y-0 right-10 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                onClick={clearSearch}
+                aria-label="Clear search"
+              >
+                <span className="sr-only">Clear</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+            <button 
+              type="submit"
+              className="absolute inset-y-0 right-0 px-3 flex items-center bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Search"
+              disabled={!searchQuery.trim()}
+            >
+              <span className="sr-only">Search</span>
+              <Search className="h-4 w-4" />
+            </button>
           </form>
           
           <div className="flex space-x-2">
@@ -184,6 +242,38 @@ const PlansList: React.FC = () => {
           </div>
         </div>
 
+        {/* Search status bar - only show when filtering */}
+        {searchQuery.trim() && (
+          <div className="mb-4 flex flex-col space-y-4">
+            <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900 p-3 rounded-md">
+              <div className="flex items-center">
+                <Search className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-2" />
+                <span className="text-blue-700 dark:text-blue-300 text-sm">
+                  Filtering plans for <strong>"{searchQuery}"</strong>
+                  {filteredPlans.length > 0 && (
+                    <span className="ml-2 text-xs bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded-full">
+                      {filteredPlans.length} {filteredPlans.length === 1 ? 'result' : 'results'}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <button
+                onClick={clearSearch}
+                className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 text-sm font-medium"
+              >
+                Clear filter
+              </button>
+            </div>
+            
+            {/* Show "no results" message when filtering returns empty results */}
+            {filteredPlans.length === 0 && !isLoading && (
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow text-center">
+                <p className="text-gray-600 dark:text-gray-400">No plans found matching "{searchQuery}"</p>
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* Plans List */}
         <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
           {isLoading ? (
@@ -202,9 +292,12 @@ const PlansList: React.FC = () => {
                 Create your first plan
               </Link>
             </div>
+          ) : searchQuery.trim() && filteredPlans.length === 0 ? (
+            // Don't show anything here since we already show a message above
+            <div></div>
           ) : (
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {plans.map((plan: any) => (
+              {displayedPlans.map((plan: any) => (
                 <li key={plan.id}>
                   <Link to={`/plans/${plan.id}`} className="block hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
                     <div className="px-4 py-4 sm:px-6">
@@ -241,8 +334,8 @@ const PlansList: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {/* Pagination - only show when not filtering and there are multiple pages */}
+        {totalPages > 1 && !searchQuery.trim() && (
           <div className="flex justify-center mt-6">
             <nav className="flex items-center">
               <button
