@@ -70,7 +70,7 @@ const ConnectionLegend: React.FC<ConnectionLegendProps> = ({ show }) => {
   const edgeTypes: EdgeType[] = ['hierarchical', 'dependency', 'reference', 'sequence'];
   
   return (
-    <Panel position="bottom-left" className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-md max-w-xs z-10">
+    <Panel position="bottom-left" className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm max-w-xs z-10">
       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Connection Types</h3>
       <div className="space-y-2">
         {edgeTypes.map(type => {
@@ -504,35 +504,42 @@ const PlanVisualization: React.FC = () => {
   return (
     <div className="h-screen flex flex-col">
       {/* Top navigation */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm z-10">
+      <header className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 shadow-md z-10 border-b border-blue-100 dark:border-gray-700">
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
-              <Link to="/plans" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+              <Link to="/plans" className="text-gray-600 hover:text-blue-700 dark:text-gray-300 dark:hover:text-blue-400 bg-white dark:bg-gray-700 p-2 rounded-lg shadow-sm transition duration-200 border border-gray-200 dark:border-gray-600">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="ml-4 text-xl font-bold text-gray-900 dark:text-white">{plan.title}</h1>
+              <div className="ml-4 flex items-center">
+                <span className="h-8 w-8 flex items-center justify-center bg-blue-500 text-white rounded-lg shadow-sm mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white"><span className="text-blue-600 dark:text-blue-400">Plan:</span> {plan.title}</h1>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <button 
                 onClick={toggleFullScreen}
-                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                className="p-2 rounded-lg text-gray-600 hover:text-blue-700 bg-white hover:bg-blue-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-600 transition duration-200 shadow-sm border border-gray-200 dark:border-gray-600"
               >
                 {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
               </button>
               <button 
                 onClick={() => setShowConnectionLegend(!showConnectionLegend)}
-                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                className="p-2 rounded-lg text-gray-600 hover:text-blue-700 bg-white hover:bg-blue-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-600 transition duration-200 shadow-sm border border-gray-200 dark:border-gray-600"
                 title="Toggle connection legend"
               >
                 <Filter className="w-5 h-5" />
               </button>
-              <button className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700">
+              <button className="p-2 rounded-lg text-gray-600 hover:text-blue-700 bg-white hover:bg-blue-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-600 transition duration-200 shadow-sm border border-gray-200 dark:border-gray-600">
                 <Save className="w-5 h-5" />
               </button>
               <button 
                 onClick={toggleSidebar}
-                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                className="p-2 rounded-lg text-gray-600 hover:text-blue-700 bg-white hover:bg-blue-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-600 transition duration-200 shadow-sm border border-gray-200 dark:border-gray-600"
                 title="Toggle Sidebar"
                 data-testid="sidebar-toggle"
               >
@@ -597,15 +604,15 @@ const PlanVisualization: React.FC = () => {
               </Panel>
             )}
             
-            <Panel position="top-right" className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-md space-y-2">
+            <Panel position="top-right" className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-2">
               <button 
                 onClick={handleCreateNode}
-                className="flex items-center justify-center w-full p-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:bg-gray-700 dark:hover:bg-gray-600"
+                className="flex items-center justify-center w-full p-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100 dark:border-blue-800 dark:text-blue-400 dark:bg-gray-700 dark:hover:bg-gray-600 transition duration-200"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Add Node
               </button>
-              <button className="flex items-center justify-center w-full p-2 text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-md dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600">
+              <button className="flex items-center justify-center w-full p-2 text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 dark:border-gray-700 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition duration-200">
                 <Filter className="w-4 h-4 mr-1" />
                 Filter
               </button>
@@ -613,7 +620,7 @@ const PlanVisualization: React.FC = () => {
             
             {/* Node creation form */}
             {isCreatingNode && (
-              <Panel position="top-center" className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-md w-96">
+              <Panel position="top-center" className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-96">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Create New Node</h3>
                 <div className="space-y-4">
                   <div>
@@ -621,7 +628,7 @@ const PlanVisualization: React.FC = () => {
                     <select 
                       value={newNodeType}
                       onChange={(e) => setNewNodeType(e.target.value as NodeType)}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg transition duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
                       <option value="phase">Phase</option>
                       <option value="task">Task</option>
@@ -634,7 +641,7 @@ const PlanVisualization: React.FC = () => {
                     <select 
                       value={newNodeParentId || ''}
                       onChange={(e) => setNewNodeParentId(e.target.value || null)}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg transition duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
                       <option value="">No Parent (Root Level)</option>
                       {planNodes.map(node => (
@@ -647,7 +654,7 @@ const PlanVisualization: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
                     <input 
                       type="text" 
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       placeholder="Enter node title"
                       id="new-node-title"
                     />
@@ -656,7 +663,7 @@ const PlanVisualization: React.FC = () => {
                   <div className="flex justify-end space-x-2">
                     <button 
                       onClick={() => setIsCreatingNode(false)}
-                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition duration-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                     >
                       Cancel
                     </button>
@@ -665,7 +672,7 @@ const PlanVisualization: React.FC = () => {
                         const titleInput = document.getElementById('new-node-title') as HTMLInputElement;
                         submitNewNode(titleInput.value);
                       }}
-                      className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                      className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       Create
                     </button>
@@ -678,12 +685,12 @@ const PlanVisualization: React.FC = () => {
 
         {/* Right sidebar for plan overview or node details */}
         {uiState.sidebar.isOpen && (
-          <aside className="w-80 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto border-l border-gray-200 dark:border-gray-700 flex-shrink-0" data-sidebar="true">
+          <aside className="w-80 bg-white dark:bg-gray-800 shadow-md overflow-y-auto border-l border-gray-200 dark:border-gray-700 flex-shrink-0 rounded-tl-lg" data-sidebar="true">
             {uiState.nodeDetails.isOpen && uiState.nodeDetails.selectedNodeId ? (
               <div className="p-4" data-node-details="true" key={`node-details-${uiState.nodeDetails.selectedNodeId}`}>
                 {isSelectedNodeLoading ? (
                   <div className="text-center p-4">
-                    <div className="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <div className="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto shadow"></div>
                     <p className="mt-4 text-gray-600 dark:text-gray-400">Loading node details...</p>
                   </div>
                 ) : selectedNode ? (
@@ -695,7 +702,7 @@ const PlanVisualization: React.FC = () => {
                       </h2>
                       <button
                         onClick={closeNodeDetails}
-                        className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition duration-200"
                         title="Close Details"
                       >
                         <ChevronRight className="w-5 h-5" />
@@ -704,7 +711,7 @@ const PlanVisualization: React.FC = () => {
                     {/* Basic Info (Status, Type) - Shown above tabs */}
                     <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center mb-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium shadow-sm ${
                           selectedNode.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                           selectedNode.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                           selectedNode.status === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
@@ -727,7 +734,7 @@ const PlanVisualization: React.FC = () => {
                     <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
                       <button 
                         onClick={() => setActiveDetailTab('details')} 
-                        className={`px-3 py-2 text-sm font-medium ${
+                        className={`px-4 py-2.5 text-sm font-medium transition duration-200 ${
                           activeDetailTab === 'details' 
                             ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -737,7 +744,7 @@ const PlanVisualization: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => setActiveDetailTab('comments')} 
-                        className={`px-3 py-2 text-sm font-medium ${
+                        className={`px-4 py-2.5 text-sm font-medium transition duration-200 ${
                           activeDetailTab === 'comments' 
                             ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -747,7 +754,7 @@ const PlanVisualization: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => setActiveDetailTab('logs')} 
-                        className={`px-3 py-2 text-sm font-medium ${
+                        className={`px-4 py-2.5 text-sm font-medium transition duration-200 ${
                           activeDetailTab === 'logs' 
                             ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -757,7 +764,7 @@ const PlanVisualization: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => setActiveDetailTab('artifacts')} 
-                        className={`px-3 py-2 text-sm font-medium ${
+                        className={`px-4 py-2.5 text-sm font-medium transition duration-200 ${
                           activeDetailTab === 'artifacts' 
                             ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' 
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -790,15 +797,18 @@ const PlanVisualization: React.FC = () => {
               <div className="p-4" data-overview="true">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Plan Overview</h2>
                 {isPlanLoading ? (
-                  <div>Loading overview...</div>
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm flex items-center justify-center">
+                    <div className="spinner w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mr-3 shadow"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading overview...</p>
+                  </div>
                 ) : plan ? (
                   <div className="space-y-6">
                     {/* Progress */}
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Progress</h3>
                       <div className="mt-2">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                          <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 shadow-inner">
+                          <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{progress}% Complete</p>
                       </div>
@@ -808,7 +818,7 @@ const PlanVisualization: React.FC = () => {
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
                       <div className="mt-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full shadow-sm ${
                           plan.status === 'active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                           plan.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                           plan.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
@@ -862,7 +872,7 @@ const PlanVisualization: React.FC = () => {
                       ) : recentActivities.length > 0 ? (
                         <ul className="mt-2 space-y-3">
                           {recentActivities.map((activity: Activity) => (
-                            <li key={activity.id} className="text-sm border-b border-gray-100 dark:border-gray-700 pb-2 last:border-b-0">
+                            <li key={activity.id} className="text-sm border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700 last:border-b-0 shadow-sm">
                               <p className="text-gray-900 dark:text-white font-medium truncate" title={activity.content || `Activity ${activity.id}`}>
                                 {activity.content || `Activity ${activity.id}`}
                               </p>
@@ -874,7 +884,7 @@ const PlanVisualization: React.FC = () => {
                           ))}
                         </ul>
                       ) : (
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent activity found.</p>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">No recent activity found.</p>
                       )}
                     </div>
                   </div>

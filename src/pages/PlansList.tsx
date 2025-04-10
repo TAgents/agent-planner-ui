@@ -153,12 +153,12 @@ const PlansList: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Plans</h1>
           <Link
             to="/plans/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Plan
@@ -173,7 +173,7 @@ const PlansList: React.FC = () => {
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-12 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg leading-5 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-200"
               placeholder="Search plans..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -187,7 +187,7 @@ const PlansList: React.FC = () => {
             {searchQuery && (
               <button 
                 type="button"
-                className="absolute inset-y-0 right-10 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                className="absolute inset-y-0 right-10 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition duration-150"
                 onClick={clearSearch}
                 aria-label="Clear search"
               >
@@ -199,7 +199,7 @@ const PlansList: React.FC = () => {
             )}
             <button 
               type="submit"
-              className="absolute inset-y-0 right-0 px-3 flex items-center bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="absolute inset-y-0 right-0 px-3 flex items-center bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
               aria-label="Search"
               disabled={!searchQuery.trim()}
             >
@@ -210,30 +210,30 @@ const PlansList: React.FC = () => {
           
           <div className="flex space-x-2">
             <button 
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-200 ${
                 statusFilter === undefined 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                  : 'bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800' 
+                  : 'bg-white text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
               onClick={() => handleStatusFilter(undefined)}
             >
               All
             </button>
             <button 
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-200 ${
                 statusFilter === 'active' 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                  : 'bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800' 
+                  : 'bg-white text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
               onClick={() => handleStatusFilter('active')}
             >
               Active
             </button>
             <button 
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-200 ${
                 statusFilter === 'completed' 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                  : 'bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800' 
+                  : 'bg-white text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
               onClick={() => handleStatusFilter('completed')}
             >
@@ -245,7 +245,7 @@ const PlansList: React.FC = () => {
         {/* Search status bar - only show when filtering */}
         {searchQuery.trim() && (
           <div className="mb-4 flex flex-col space-y-4">
-            <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900 p-3 rounded-md">
+            <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900 p-3 rounded-lg shadow-sm">
               <div className="flex items-center">
                 <Search className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-2" />
                 <span className="text-blue-700 dark:text-blue-300 text-sm">
@@ -259,7 +259,7 @@ const PlansList: React.FC = () => {
               </div>
               <button
                 onClick={clearSearch}
-                className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 text-sm font-medium"
+                className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 text-sm font-medium transition duration-200"
               >
                 Clear filter
               </button>
@@ -267,7 +267,7 @@ const PlansList: React.FC = () => {
             
             {/* Show "no results" message when filtering returns empty results */}
             {filteredPlans.length === 0 && !isLoading && (
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow text-center">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm text-center border border-gray-200 dark:border-gray-700">
                 <p className="text-gray-600 dark:text-gray-400">No plans found matching "{searchQuery}"</p>
               </div>
             )}
@@ -275,7 +275,7 @@ const PlansList: React.FC = () => {
         )}
         
         {/* Plans List */}
-        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+        <div className="bg-white dark:bg-gray-800 shadow-sm overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
           {isLoading ? (
             <div className="p-6 text-center">
               <div className="spinner w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -286,7 +286,7 @@ const PlansList: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400">No plans found</p>
               <Link
                 to="/plans/new"
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-200"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create your first plan
@@ -299,31 +299,31 @@ const PlansList: React.FC = () => {
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {displayedPlans.map((plan: any) => (
                 <li key={plan.id}>
-                  <Link to={`/plans/${plan.id}`} className="block hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                  <Link to={`/plans/${plan.id}`} className="block hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                     <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center">
-                          {getStatusIcon(plan.status)}
-                          <p className="ml-3 text-sm font-medium text-gray-900 dark:text-white">{plan.title}</p>
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          {getStatusBadge(plan.status)}
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400 sm:mt-0">
-                            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                              <div 
-                                className={`h-2.5 rounded-full ${plan.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`} 
-                                style={{ width: `${plan.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span className="ml-2">{plan.progress || 0}%</span>
+                          <div className="flex-shrink-0 w-10 h-10 bg-blue-50 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                            {getStatusIcon(plan.status)}
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="text-base font-medium text-gray-900 dark:text-white">{plan.title}</h3>
+                            <div className="mt-1">{getStatusBadge(plan.status)}</div>
                           </div>
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400 sm:mt-0">
-                          <p>Updated {formatDate(plan.updated_at)}</p>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          Updated {formatDate(plan.updated_at)}
+                        </span>
+                      </div>
+                      <div className="ml-13 pl-0">
+                        <div className="relative pt-1">
+                          <div className="overflow-hidden h-2 text-xs flex rounded-full bg-gray-200 dark:bg-gray-700">
+                            <div 
+                              className={`rounded-full ${plan.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`} 
+                              style={{ width: `${plan.progress || 0}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 inline-block">{plan.progress || 0}%</span>
                         </div>
                       </div>
                     </div>
@@ -341,19 +341,19 @@ const PlansList: React.FC = () => {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-1 rounded-md mr-2 bg-white border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
+                className="px-3 py-1.5 rounded-lg mr-2 bg-white shadow-sm border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Previous
               </button>
-              <div className="flex space-x-1">
+              <div className="flex space-x-1.5">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-1 rounded-md ${
+                    className={`px-3 py-1.5 rounded-lg shadow-sm transition duration-200 ${
                       currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
+                        ? 'bg-blue-600 text-white border border-blue-600'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
                     }`}
                   >
                     {page}
@@ -363,7 +363,7 @@ const PlansList: React.FC = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded-md ml-2 bg-white border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
+                className="px-3 py-1.5 rounded-lg ml-2 bg-white shadow-sm border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition duration-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Next
               </button>

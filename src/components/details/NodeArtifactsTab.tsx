@@ -336,8 +336,8 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
       )}
 
       {/* Add Artifact Form */}
-      <form onSubmit={handleAddArtifact} className="mt-4 space-y-3 p-3 border rounded dark:border-gray-600">
-        <h4 className="text-xs font-medium mb-2">Add Artifact</h4>
+      <form onSubmit={handleAddArtifact} className="mt-4 space-y-3 p-4 border border-blue-100 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 shadow-sm">
+        <h4 className="text-sm font-medium mb-2 text-blue-700 dark:text-blue-400">Add New Artifact</h4>
         <div>
           <label htmlFor="artifactName" className="text-xs sr-only">Name</label>
           <input 
@@ -347,7 +347,7 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
             onChange={handleNameChange} 
             placeholder="Artifact Name" 
             required 
-            className={`w-full p-1.5 border rounded text-sm ${
+            className={`w-full p-2 border rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
               showDuplicateWarning 
                 ? 'border-yellow-500 dark:bg-gray-700 dark:border-yellow-500' 
                 : 'dark:bg-gray-700 dark:border-gray-600'
@@ -370,7 +370,7 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
             onChange={e => setContentType(e.target.value)} 
             placeholder="Content Type (e.g., text/markdown)" 
             required 
-            className="w-full p-1.5 border rounded dark:bg-gray-700 dark:border-gray-600 text-sm" 
+            className="w-full p-2 border rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 dark:bg-gray-700 dark:border-gray-600" 
             disabled={isAddingArtifact}
           />
         </div>
@@ -383,7 +383,7 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
             onChange={e => setUrl(e.target.value)} 
             placeholder="URL or File Path" 
             required 
-            className="w-full p-1.5 border rounded dark:bg-gray-700 dark:border-gray-600 text-sm" 
+            className="w-full p-2 border rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 dark:bg-gray-700 dark:border-gray-600" 
             disabled={isAddingArtifact}
           />
         </div>
@@ -391,7 +391,7 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
           <button
             type="submit"
             disabled={isAddingArtifact || !name.trim() || !contentType.trim() || !url.trim()}
-            className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-xs"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50 text-sm font-medium transition duration-200 focus:ring-2 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
           >
             {isAddingArtifact ? 'Adding...' : 'Add Artifact'}
           </button>
@@ -399,13 +399,20 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
       </form>
 
       {/* Artifacts List */}
-      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-6 border-t pt-4 dark:border-gray-700">
-        Existing Artifacts ({artifacts.length})
-      </h3>
+      <div className="flex items-center justify-between mt-6 border-t pt-4 dark:border-gray-700">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Existing Artifacts ({artifacts.length})
+        </h3>
+        {artifacts.length > 0 && (
+          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+            Click <LinkIcon className="inline-block w-3 h-3 mx-1" /> to download
+          </span>
+        )}
+      </div>
       {artifacts.length > 0 ? (
         <ul className="space-y-2">
           {artifacts.map((artifact: Artifact) => (
-            <li key={artifact.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-sm">
+            <li key={artifact.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-sm hover:shadow-md transition duration-200">
               <div className="flex justify-between items-start">
                 <div className="flex items-start space-x-2 overflow-hidden">
                   <Paperclip className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
