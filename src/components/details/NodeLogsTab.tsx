@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNodeLogs } from '../../hooks/useNodeLogs';
 import { Log } from '../../types';
 import { formatDate } from '../../utils/planUtils';
@@ -20,17 +20,40 @@ const getLogIcon = (logType: Log['log_type']) => {
 }
 
 const NodeLogsTab: React.FC<NodeLogsTabProps> = ({ planId, nodeId }) => {
-  const { logs, isLoading, error, addLogEntry, isAddingLog } = useNodeLogs(planId, nodeId);
+  const { logs, isLoading, error, addLogEntry, isAddingLog, refetch } = useNodeLogs(planId, nodeId);
+  
+  // Refetch logs when plan or node IDs change
+  useEffect(() => {
+    console.log(`NodeLogsTab: planId=${planId}, nodeId=${nodeId} - fetching logs`);
+    if (planId && nodeId) {
+      refetch();
+    }
+  }, [planId, nodeId, refetch]);
+  
+  // Track when log is being added and refetch when complete
+  const [prevIsAddingLog, setPrevIsAddingLog] = useState(false);
+  useEffect(() => {
+    // If we were adding a log and now we're not, refetch
+    if (prevIsAddingLog && !isAddingLog) {
+      console.log('NodeLogsTab: Log addition completed, refetching logs');
+      refetch();
+    }
+    setPrevIsAddingLog(isAddingLog);
+  }, [isAddingLog, prevIsAddingLog, refetch]);
   const [newLogContent, setNewLogContent] = useState('');
   const [newLogType, setNewLogType] = useState<Log['log_type']>('reasoning');
 
   const handleAddLog = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLogContent.trim()) return;
+    console.log(`Adding log entry: ${newLogContent}, type: ${newLogType}`);
     addLogEntry({ content: newLogContent, log_type: newLogType }, {
         onSuccess: () => {
+            console.log('Log added successfully, resetting form');
             setNewLogContent('');
             setNewLogType('reasoning'); // Reset type
+            // Immediately refetch logs to ensure UI is updated
+            refetch();
         }
     });
   };
@@ -77,7 +100,13 @@ const NodeLogsTab: React.FC<NodeLogsTabProps> = ({ planId, nodeId }) => {
       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-6 border-t pt-4 dark:border-gray-700">
         Existing Logs ({logs.length})
       </h3>
-      {logs.length > 0 ? (
+
+      {isLoading ? (
+        <div className="p-3 text-center text-gray-500 dark:text-gray-400">
+          <div className="inline-block animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+          Loading logs...
+        </div>
+      ) : logs.length > 0 ? (
         <ul className="space-y-3">
           {logs.map((log: Log) => {
             const LogIcon = getLogIcon(log.log_type);
@@ -92,11 +121,19 @@ const NodeLogsTab: React.FC<NodeLogsTabProps> = ({ planId, nodeId }) => {
                      <span>{formatDate(log.created_at)}</span>
                   </div>
                 </li>
-            )
-            })}
+            );
+          })}
         </ul>
       ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No logs yet.</p>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 p-3">No logs yet.</p>
+          <button 
+            onClick={() => refetch()} 
+            className="text-xs text-blue-500 dark:text-blue-400 hover:underline mt-2"
+          >
+            Refresh logs
+          </button>
+        </div>
       )}
     </div>
   );

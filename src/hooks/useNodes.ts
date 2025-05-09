@@ -65,8 +65,8 @@ export const useNodes = (planId: string) => {
   // Memoize flattened nodes
   const nodes = useMemo(() => flattenNodes(nodesTree), [nodesTree]);
   
-  // Add debugging for node data
-  if (process.env.NODE_ENV === 'development') {
+  // Add debugging for node data only when explicitly enabled
+  if (process.env.NODE_ENV === 'development' && window.DEBUG_ENABLED) {
     console.log('Nodes tree structure:', nodesTree);
     console.log('Flattened nodes:', nodes);
   }
@@ -80,8 +80,8 @@ export const useNodes = (planId: string) => {
     (newNode: Partial<PlanNode>) => nodeService.createNode(planId, newNode),
     {
       onSuccess: () => {
-        // Manually refetch the nodes instead of invalidating the query to prevent infinite loops
-        setTimeout(() => refetch(), 500); // Add slight delay to allow backend to process
+        // Directly refetch the nodes instead of using setTimeout
+        refetch();
       },
     }
   );
@@ -92,8 +92,8 @@ export const useNodes = (planId: string) => {
       nodeService.updateNode(planId, nodeId, data),
     {
       onSuccess: (data) => {
-        // Manually refetch instead of invalidating queries
-        setTimeout(() => refetch(), 500); // Add slight delay to allow backend to process
+        // Directly refetch instead of using setTimeout
+        refetch();
         // Also update the node details if it's currently selected
         if (data.data?.id) {
           queryClient.invalidateQueries(['node', planId, data.data.id]);
@@ -108,8 +108,8 @@ export const useNodes = (planId: string) => {
       nodeService.updateNodeStatus(planId, nodeId, status),
     {
       onSuccess: (data) => {
-        // Manually refetch instead of invalidating queries
-        setTimeout(() => refetch(), 500); // Add slight delay to allow backend to process
+        // Directly refetch instead of using setTimeout
+        refetch();
         // Also update the node details if it's currently selected
         if (data.data?.id) {
           queryClient.invalidateQueries(['node', planId, data.data.id]);
@@ -123,8 +123,8 @@ export const useNodes = (planId: string) => {
     (nodeId: string) => nodeService.deleteNode(planId, nodeId),
     {
       onSuccess: () => {
-        // Manually refetch instead of invalidating queries
-        setTimeout(() => refetch(), 500); // Add slight delay to allow backend to process
+        // Directly refetch instead of using setTimeout
+        refetch();
       },
     }
   );
@@ -182,13 +182,15 @@ export const useNode = (planId: string, nodeId: string) => {
     }
   );
 
-  // Add more debug info
-  console.log('useNode hook result:', {
-    hasData: !!data,
-    dataObject: data?.data ? true : false,
-    isLoading,
-    hasError: !!error
-  });
+  // Add debug info only when explicitly enabled
+  if (window.DEBUG_ENABLED) {
+    console.log('useNode hook result:', {
+      hasData: !!data,
+      dataObject: data?.data ? true : false,
+      isLoading,
+      hasError: !!error
+    });
+  }
 
   return {
     node: data?.data,

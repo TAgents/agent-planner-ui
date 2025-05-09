@@ -422,18 +422,44 @@ export const searchService = {
 // Logs endpoints
 export const logService = {
   getLogs: async (planId: string, nodeId: string) => {
-    return request<ApiResponse<Log[]>>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/logs`,
-    });
+    console.log(`[api.ts] Getting logs for plan=${planId}, node=${nodeId}`);
+    try {
+      // First check if the node exists by getting node details
+      const nodeResp = await request<any>({
+        method: 'GET',
+        url: `/plans/${planId}/nodes/${nodeId}`,
+      });
+      
+      console.log('[api.ts] Node exists, fetching logs');
+      
+      // Now get the logs
+      const response = await request<any>({
+        method: 'GET',
+        url: `/plans/${planId}/nodes/${nodeId}/logs`,
+      });
+      console.log('[api.ts] Logs API response:', response);
+      return response;
+    } catch (error) {
+      console.error('[api.ts] Error fetching logs:', error);
+      // Return empty array instead of throwing to handle errors gracefully
+      return [];
+    }
   },
 
   addLogEntry: async (planId: string, nodeId: string, logData: { content: string; log_type: string; tags?: string[]; metadata?: object }) => {
-    return request<ApiResponse<Log>>({
-      method: 'POST',
-      url: `/plans/${planId}/nodes/${nodeId}/detailed-log`,
-      data: logData,
-    });
+    console.log(`[api.ts] Adding log entry for plan=${planId}, node=${nodeId}:`, logData);
+    try {
+      const response = await request<ApiResponse<Log>>({
+        method: 'POST',
+        url: `/plans/${planId}/nodes/${nodeId}/log`,
+        data: logData,
+      });
+      console.log('[api.ts] Add log response:', response);
+      return response;
+    } catch (error) {
+      console.error('[api.ts] Error adding log entry:', error);
+      throw error;
+    }
   },
 };
 

@@ -104,6 +104,11 @@ const getStorageKey = (planId: string | undefined): string => `planLayout_${plan
 // Enable debug mode for diagnosing UI rendering issues
 const DEBUG_MODE = false;
 
+// Set global debug flag for hooks to use
+if (typeof window !== 'undefined') {
+  window.DEBUG_ENABLED = DEBUG_MODE;
+}
+
 const PlanVisualization: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const { state: uiState, toggleSidebar: origToggleSidebar, toggleNodeDetails, openNodeDetails, closeNodeDetails: origCloseNodeDetails } = useUI();
@@ -162,36 +167,42 @@ const PlanVisualization: React.FC = () => {
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
 
-  // Logging effect for component re-renders
+  // Logging effect for component re-renders - ONLY in DEBUG_MODE
   useEffect(() => {
-    console.log('--- PlanVisualization Re-render ---');
-    console.log('Sidebar State:', uiState.sidebar);
-    console.log('Node Details State:', uiState.nodeDetails);
-    console.log('Selected Node Data:', selectedNode);
-    console.log('Is Selected Node Loading:', isSelectedNodeLoading);
-    
-    // Explicitly check conditions for displaying node details
-    console.log('Should show node details?', 
-      uiState.sidebar.isOpen && 
-      uiState.nodeDetails.isOpen && 
-      uiState.nodeDetails.selectedNodeId && 
-      selectedNode !== null
-    );
-  });
+    if (DEBUG_MODE) {
+      console.log('--- PlanVisualization Re-render ---');
+      console.log('Sidebar State:', uiState.sidebar);
+      console.log('Node Details State:', uiState.nodeDetails);
+      console.log('Selected Node Data:', selectedNode);
+      console.log('Is Selected Node Loading:', isSelectedNodeLoading);
+      
+      // Explicitly check conditions for displaying node details
+      console.log('Should show node details?', 
+        uiState.sidebar.isOpen && 
+        uiState.nodeDetails.isOpen && 
+        uiState.nodeDetails.selectedNodeId && 
+        selectedNode !== null
+      );
+    }
+  }, [uiState.sidebar, uiState.nodeDetails, selectedNode, isSelectedNodeLoading]);
 
-  // Logging effect for sidebar state
+  // Logging effect for sidebar state - ONLY in DEBUG_MODE
   useEffect(() => {
-    if (uiState.sidebar.isOpen) {
-      console.log(`Rendering Sidebar. Node Selected: ${!!(uiState.nodeDetails.isOpen && selectedNode)}`);
-    } else {
-      console.log('Sidebar is closed.');
+    if (DEBUG_MODE) {
+      if (uiState.sidebar.isOpen) {
+        console.log(`Rendering Sidebar. Node Selected: ${!!(uiState.nodeDetails.isOpen && selectedNode)}`);
+      } else {
+        console.log('Sidebar is closed.');
+      }
     }
   }, [uiState.sidebar.isOpen, uiState.nodeDetails.isOpen, selectedNode]);
 
-  // Logging effect for node details panel
+  // Logging effect for node details panel - ONLY in DEBUG_MODE
   useEffect(() => {
-    if (uiState.nodeDetails.isOpen && selectedNode) {
-      console.log(`RENDERING NODE DETAILS PANEL for node: ${selectedNode.id}`);
+    if (DEBUG_MODE) {
+      if (uiState.nodeDetails.isOpen && selectedNode) {
+        console.log(`RENDERING NODE DETAILS PANEL for node: ${selectedNode.id}`);
+      }
     }
   }, [uiState.nodeDetails.isOpen, selectedNode]);
   
@@ -213,10 +224,12 @@ const PlanVisualization: React.FC = () => {
     }
   }, [uiState.nodeDetails.isOpen, uiState.nodeDetails.selectedNodeId, isSelectedNodeLoading, selectedNode, closeNodeDetails]);
 
-  // Logging effect for plan overview panel
+  // Logging effect for plan overview panel - ONLY in DEBUG_MODE
   useEffect(() => {
-    if (uiState.sidebar.isOpen && !uiState.nodeDetails.isOpen) {
-      console.log('RENDERING PLAN OVERVIEW PANEL');
+    if (DEBUG_MODE) {
+      if (uiState.sidebar.isOpen && !uiState.nodeDetails.isOpen) {
+        console.log('RENDERING PLAN OVERVIEW PANEL');
+      }
     }
   }, [uiState.sidebar.isOpen, uiState.nodeDetails.isOpen]);
   
@@ -783,14 +796,11 @@ const PlanVisualization: React.FC = () => {
                     </div>
                   </>
                 ) : (
-                  // Auto-close node details and switch to overview if node not found
-                  <>
-                    {setTimeout(() => closeNodeDetails(), 0) && false /* Use setTimeout to avoid render issues */}
-                    <div className="text-center p-4">
-                      <div className="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                      <p className="mt-4 text-gray-600 dark:text-gray-400">Loading overview...</p>
-                    </div>
-                  </>
+                  // Properly handle node not found case without setTimeout
+                  <div className="text-center p-4">
+                    <div className="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="mt-4 text-gray-600 dark:text-gray-400">Node not found, returning to overview...</p>
+                  </div>
                 )}
               </div>
             ) : (

@@ -174,7 +174,10 @@ export const usePlan = (planId: string) => {
     }
   }
 
-  console.log('Plan data:', planData);
+  // Log only when explicitly enabled
+  if (window.DEBUG_ENABLED) {
+    console.log('Plan data:', planData);
+  }
 
   return {
     plan: planData?.data,
