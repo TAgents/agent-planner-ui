@@ -1,93 +1,88 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, Filter, Clock, CheckCircle, AlertTriangle, Archive } from 'lucide-react';
+import { 
+  Search, Plus, Filter, Clock, CheckCircle, Archive, 
+  Edit2, Star, MoreVertical, Users, CheckSquare, Calendar,
+  Tag, FileText
+} from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { Plan, PlanStatus } from '../types';
 import { formatDate } from '../utils/planUtils';
 import { createClient } from '@supabase/supabase-js';
 import API_CONFIG from '../config/api.config';
 
-// Define an interface for filtered plans
-interface FilterResult {
-  plan: Plan;
-  matches: boolean;
-}
+// Create Supabase client outside component to prevent recreation
+const supabase = createClient(
+  API_CONFIG.SUPABASE_URL,
+  API_CONFIG.SUPABASE_ANON_KEY
+);
 
 const PlansList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<PlanStatus | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
+  const [hoveredPlanId, setHoveredPlanId] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  // We'll fetch all plans without server-side filtering
-  const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10);
+  const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10, statusFilter);
 
-  // Check authentication on component mount
+  // Check authentication only once on mount
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       try {
-        // Check if there's a session in localStorage
         const sessionStr = localStorage.getItem('supabase_session');
         if (!sessionStr) {
-          console.error('No Supabase session found in localStorage');
-          navigate('/login');
+          if (mounted) navigate('/login');
           return;
         }
 
-        // Parse the session
         let session;
         try {
           session = JSON.parse(sessionStr);
         } catch (e) {
-          console.error('Failed to parse Supabase session:', e);
-          navigate('/login');
+          if (mounted) navigate('/login');
           return;
         }
 
-        // Create a Supabase client
-        const supabase = createClient(
-          API_CONFIG.SUPABASE_URL,
-          API_CONFIG.SUPABASE_ANON_KEY
-        );
-
-        // Check if the session is valid
         const { data, error } = await supabase.auth.getUser(session.access_token);
         if (error || !data.user) {
-          console.error('Invalid Supabase session:', error);
-          navigate('/login');
-          return;
+          if (mounted) navigate('/login');
         }
-
-        console.log('Authenticated user:', data.user);
-
       } catch (err) {
-        console.error('Authentication check error:', err);
-        navigate('/login');
+        if (mounted) navigate('/login');
       }
     };
 
     checkAuth();
-  }, [navigate]);
 
-  // Status badges
-  const getStatusBadge = (status: PlanStatus) => {
-    switch(status) {
-      case 'active':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Active</span>;
-      case 'completed':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>;
-      case 'draft':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Draft</span>;
-      case 'archived':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Archived</span>;
-      default:
-        return null;
-    }
-  };
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency array - run only once
 
-  // Status icons
-  const getStatusIcon = (status: PlanStatus) => {
+  // Memoize status badge rendering
+  const getStatusBadge = useCallback((status: PlanStatus) => {
+    const badges = {
+      active: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-800 dark:text-blue-200', label: 'Active' },
+      completed: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-800 dark:text-green-200', label: 'Completed' },
+      draft: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-200', label: 'Draft' },
+      archived: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', label: 'Archived' }
+    };
+    
+    const badge = badges[status];
+    if (!badge) return null;
+    
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${badge.bg} ${badge.text}`}>
+        {badge.label}
+      </span>
+    );
+  }, []);
+
+  // Memoize status icon rendering
+  const getStatusIcon = useCallback((status: PlanStatus) => {
     switch(status) {
       case 'active':
         return <Clock className="w-5 h-5 text-blue-500" />;
@@ -98,64 +93,80 @@ const PlansList: React.FC = () => {
       default:
         return <Clock className="w-5 h-5 text-gray-400" />;
     }
-  };
+  }, []);
 
-  // Filter by status - now uses local filtering
-  const handleStatusFilter = (status?: PlanStatus) => {
-    console.log('Setting status filter to:', status);
+  // Get progress color based on status and percentage
+  const getProgressColor = useCallback((status: PlanStatus, progress: number) => {
+    if (status === 'completed') return 'bg-green-500';
+    if (progress === 0) return 'bg-gray-400';
+    if (progress < 30) return 'bg-red-500';
+    if (progress < 70) return 'bg-yellow-500';
+    return 'bg-blue-500';
+  }, []);
+
+  // Memoize handlers
+  const handleStatusFilter = useCallback((status?: PlanStatus) => {
     setStatusFilter(status);
     setCurrentPage(1);
-    
-    // Clear search when changing status filter
-    if (searchQuery) {
-      clearSearch();
-    }
-  };
-
-  // Handle search form submission
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // The actual filtering is handled by the useEffect below
-  };
-  
-  // Clear search functionality
-  const clearSearch = () => {
     setSearchQuery('');
-    setFilteredPlans([]);
-  };
+  }, []);
 
-  // Apply both search and status filters
-  useEffect(() => {
-    // Start with all plans
-    let filtered = [...plans];
-    
-    // Apply status filter if set
-    if (statusFilter) {
-      filtered = filtered.filter(plan => plan.status === statusFilter);
-    }
-    
-    // Then apply search filter if needed
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(plan => 
-        plan.title.toLowerCase().includes(query) || 
-        (plan.description && plan.description.toLowerCase().includes(query))
-      );
-      
-      setFilteredPlans(filtered);
-    } else if (statusFilter) {
-      // If we have only status filter but no search query
-      setFilteredPlans(filtered);
-    } else {
-      // No filters applied
-      setFilteredPlans([]);
-    }
-  }, [searchQuery, statusFilter, plans]);
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+  }, []);
+  
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+  }, []);
 
-  // Pagination
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-  };
+  }, []);
+
+  // Prevent action propagation on card hover actions
+  const handleActionClick = useCallback((e: React.MouseEvent, action: () => void) => {
+    e.preventDefault();
+    e.stopPropagation();
+    action();
+  }, []);
+
+  // Memoize filtered plans
+  const filteredPlans = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    
+    const query = searchQuery.toLowerCase().trim();
+    return plans.filter((plan: Plan) => 
+      plan.title.toLowerCase().includes(query) || 
+      (plan.description && plan.description.toLowerCase().includes(query))
+    );
+  }, [searchQuery, plans]);
+
+  const isSearching = searchQuery.trim() !== '';
+  const displayedPlans = isSearching ? filteredPlans : plans;
+
+  // Mock data for enhanced cards (in real app, this would come from the API)
+  // Use a ref to store metadata persistently across renders
+  const planMetadataRef = React.useRef<Map<string, any>>(new Map());
+
+  const getPlanMetadata = useCallback((planId: string) => {
+    // Check if we already have metadata for this plan
+    if (planMetadataRef.current.has(planId)) {
+      return planMetadataRef.current.get(planId);
+    }
+
+    // Generate metadata only once per plan ID
+    const totalTasks = Math.floor(Math.random() * 30) + 10;
+    const metadata = {
+      assignees: Math.floor(Math.random() * 5) + 1,
+      totalTasks,
+      completedTasks: Math.min(Math.floor(Math.random() * totalTasks), totalTasks),
+      dueInDays: Math.floor(Math.random() * 30) + 1,
+    };
+
+    // Store it in the ref for future use
+    planMetadataRef.current.set(planId, metadata);
+    return metadata;
+  }, []);
 
   if (error) {
     return (
@@ -167,12 +178,6 @@ const PlansList: React.FC = () => {
       </div>
     );
   }
-
-  // Determine which plans to display:
-  // - filtered plans if we have search query or status filter
-  // - all plans otherwise
-  const isFiltering = searchQuery.trim() || statusFilter !== undefined;
-  const displayedPlans = isFiltering ? filteredPlans : plans;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -265,8 +270,8 @@ const PlansList: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter status bar - show when filtering by search or status */}
-        {isFiltering && (
+        {/* Filter status bar */}
+        {(isSearching || statusFilter) && (
           <div className="mb-4 flex flex-col space-y-4">
             <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900 p-3 rounded-lg shadow-sm">
               <div className="flex items-center">
@@ -279,11 +284,9 @@ const PlansList: React.FC = () => {
                   ) : (
                     <>Filtering plans</>
                   )}
-                  {filteredPlans.length > 0 && (
-                    <span className="ml-2 text-xs bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded-full">
-                      {filteredPlans.length} {filteredPlans.length === 1 ? 'result' : 'results'}
-                    </span>
-                  )}
+                  <span className="ml-2 text-xs bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded-full">
+                    {isSearching ? filteredPlans.length : total} {(isSearching ? filteredPlans.length : total) === 1 ? 'result' : 'results'}
+                  </span>
                 </span>
               </div>
               <button
@@ -297,8 +300,7 @@ const PlansList: React.FC = () => {
               </button>
             </div>
             
-            {/* Show "no results" message when filtering returns empty results */}
-            {filteredPlans.length === 0 && !isLoading && (
+            {((isSearching && filteredPlans.length === 0) || (!isSearching && plans.length === 0)) && !isLoading && (
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm text-center border border-gray-200 dark:border-gray-700">
                 <p className="text-gray-600 dark:text-gray-400">
                   {searchQuery ? (
@@ -306,7 +308,7 @@ const PlansList: React.FC = () => {
                   ) : statusFilter ? (
                     <>No {statusFilter} plans found</>
                   ) : (
-                    <>No matching plans</>
+                    <>No plans found</>
                   )}
                 </p>
               </div>
@@ -314,71 +316,145 @@ const PlansList: React.FC = () => {
           </div>
         )}
         
-        {/* Plans List */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
+        {/* Enhanced Plans List */}
+        <div className="space-y-4">
           {isLoading ? (
-            <div className="p-6 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700">
               <div className="spinner w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
               <p className="mt-2 text-gray-600 dark:text-gray-400">Loading plans...</p>
             </div>
           ) : plans.length === 0 ? (
-            <div className="p-6 text-center">
-              <p className="text-gray-600 dark:text-gray-400">No plans found</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700">
+              <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
+                <FileText className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No plans yet</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Get started by creating your first plan</p>
               <Link
                 to="/plans/new"
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-200"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-200"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create your first plan
               </Link>
             </div>
-          ) : isFiltering && filteredPlans.length === 0 ? (
-            // Don't show anything here since we already show a message above
-            <div></div>
+          ) : isSearching && filteredPlans.length === 0 ? (
+            null
           ) : (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {displayedPlans.map((plan: any) => (
-                <li key={plan.id}>
-                  <Link to={`/plans/${plan.id}`} className="block hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 w-10 h-10 bg-blue-50 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                            {getStatusIcon(plan.status)}
+            <div className="grid gap-4">
+              {displayedPlans.map((plan: Plan) => {
+                const metadata = getPlanMetadata(plan.id);
+                const progress = typeof plan.progress === 'number' ? plan.progress : 0;
+                
+                return (
+                  <Link 
+                    key={plan.id}
+                    to={`/plans/${plan.id}`}
+                    className="group relative block"
+                    onMouseEnter={() => setHoveredPlanId(plan.id)}
+                    onMouseLeave={() => setHoveredPlanId(null)}
+                  >
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-700 overflow-hidden">
+                      {/* Progress background indicator */}
+                      <div 
+                        className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+                        style={{width: `${progress}%`}} 
+                      />
+                      
+                      {/* Quick actions on hover */}
+                      <div className={`absolute top-4 right-4 flex gap-2 transition-opacity duration-200 z-10 ${hoveredPlanId === plan.id ? 'opacity-100' : 'opacity-0'}`}>
+                        <button 
+                          onClick={(e) => handleActionClick(e, () => navigate(`/plans/${plan.id}/edit`))}
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600"
+                          aria-label="Edit plan"
+                        >
+                          <Edit2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleActionClick(e, () => console.log('Star plan:', plan.id))}
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600"
+                          aria-label="Star plan"
+                        >
+                          <Star className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleActionClick(e, () => console.log('More options:', plan.id))}
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600"
+                          aria-label="More options"
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </button>
+                      </div>
+                      
+                      {/* Plan content */}
+                      <div className="relative">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start space-x-4">
+                            <div className="flex-shrink-0 w-12 h-12 bg-blue-50 dark:bg-blue-900 rounded-full flex items-center justify-center relative z-0">
+                              {getStatusIcon(plan.status)}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                                {plan.title}
+                              </h3>
+                              {plan.description && (
+                                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
+                                  {plan.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="ml-3">
-                            <h3 className="text-base font-medium text-gray-900 dark:text-white">{plan.title}</h3>
-                            <div className="mt-1">{getStatusBadge(plan.status)}</div>
+                          <div className="flex-shrink-0 ml-4">
+                            {getStatusBadge(plan.status)}
                           </div>
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          Updated {formatDate(plan.updated_at)}
-                        </span>
-                      </div>
-                      <div className="ml-13 pl-0">
-                        <div className="relative pt-1">
-                          <div className="overflow-hidden h-2 text-xs flex rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div 
-                              className={`rounded-full ${plan.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`} 
-                              style={{ width: `${typeof plan.progress === 'number' ? plan.progress : 0}%` }}
-                            ></div>
+                        
+                        {/* Progress bar */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{progress}%</span>
                           </div>
-                          <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 inline-block">
-                            {typeof plan.progress === 'number' ? plan.progress : 0}%
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${getProgressColor(plan.status, progress)}`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Metadata */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <span className="flex items-center gap-1.5">
+                              <Users className="w-4 h-4" />
+                              <span>{metadata.assignees} assignees</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <CheckSquare className="w-4 h-4" />
+                              <span>{metadata.completedTasks}/{metadata.totalTasks} tasks</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4" />
+                              <span>Due in {metadata.dueInDays} days</span>
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Updated {formatDate(plan.updated_at)}
                           </span>
                         </div>
                       </div>
                     </div>
                   </Link>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* Pagination - only show when not filtering and there are multiple pages */}
-        {totalPages > 1 && !isFiltering && (
-          <div className="flex justify-center mt-6">
+        {/* Pagination */}
+        {totalPages > 1 && !isSearching && (
+          <div className="flex justify-center mt-8">
             <nav className="flex items-center">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}

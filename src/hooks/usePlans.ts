@@ -90,7 +90,8 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
   
   // If data is an array, convert it to paginated format
   const paginatedData = isArray ? {
-    data: data,
+    // Slice the array to get only the items for the current page
+    data: data.slice((page - 1) * limit, page * limit),
     total: data?.length || 0,
     page: page,
     page_size: limit,
