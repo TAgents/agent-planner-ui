@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactFlow, {
   addEdge,
@@ -27,6 +27,14 @@ import {
   FileText,
   ChevronRight,
   MoreHorizontal,
+  Eye,
+  BarChart3,
+  Calendar,
+  Users,
+  AlertCircle,
+  Tag,
+  GitBranch,
+  Keyboard,
 } from 'lucide-react';
 
 import { useUI } from '../contexts/UIContext';
@@ -161,11 +169,29 @@ const PlanVisualization: React.FC = () => {
 
   // State for connection legend visibility
   const [showConnectionLegend, setShowConnectionLegend] = useState<boolean>(true);
+  
+  // Information Layers state
+  const [activeLayer, setActiveLayer] = useState<'overview' | 'progress' | 'timeline' | 'resources' | 'risks'>('overview');
+  const [showLabels, setShowLabels] = useState(true);
+  const [showProgress, setShowProgress] = useState(true);
+  const [showDependencies, setShowDependencies] = useState(true);
+  const reactFlowInstance = useRef<any>(null);
+  const [currentZoom, setCurrentZoom] = useState(1);
+  
+  // Layer definitions
+  const layers = [
+    { id: 'overview', label: 'Overview', icon: Eye, description: 'Basic node structure and status' },
+    { id: 'progress', label: 'Progress', icon: BarChart3, description: 'Completion status and metrics' },
+    { id: 'timeline', label: 'Timeline', icon: Calendar, description: 'Dates and deadlines' },
+    { id: 'resources', label: 'Resources', icon: Users, description: 'Assignments and workload' },
+    { id: 'risks', label: 'Risks', icon: AlertCircle, description: 'Blockers and issues' },
+  ];
 
   // Local state for node creation
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   // Logging effect for component re-renders - ONLY in DEBUG_MODE
   useEffect(() => {
@@ -233,6 +259,53 @@ const PlanVisualization: React.FC = () => {
     }
   }, [uiState.sidebar.isOpen, uiState.nodeDetails.isOpen]);
   
+  // Keyboard shortcuts for layer switching
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      // Layer shortcuts (1-5)
+      if (e.key >= '1' && e.key <= '5') {
+        const layerIndex = parseInt(e.key) - 1;
+        if (layers[layerIndex]) {
+          setActiveLayer(layers[layerIndex].id as any);
+        }
+      }
+      
+      // Toggle shortcuts
+      if (e.key === 'l' || e.key === 'L') {
+        setShowLabels(!showLabels);
+      }
+      if (e.key === 'p' || e.key === 'P') {
+        setShowProgress(!showProgress);
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        setShowDependencies(!showDependencies);
+      }
+      
+      // Zoom shortcuts
+      if (e.key === '+' || e.key === '=') {
+        if (reactFlowInstance.current) {
+          reactFlowInstance.current.zoomIn();
+        }
+      }
+      if (e.key === '-' || e.key === '_') {
+        if (reactFlowInstance.current) {
+          reactFlowInstance.current.zoomOut();
+        }
+      }
+      if (e.key === '0') {
+        if (reactFlowInstance.current) {
+          reactFlowInstance.current.fitView({ padding: 0.2 });
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showLabels, showProgress, showDependencies, layers]);
+  
   // Effect to update node styles when a node is selected or deselected
   useEffect(() => {
     if (!nodes || nodes.length === 0) return;
@@ -255,12 +328,35 @@ const PlanVisualization: React.FC = () => {
           borderColor: isSelected ? '#3b82f6' : undefined,
           borderStyle: isSelected ? 'solid' : undefined,
           zIndex: isSelected ? 1000 : undefined, // Bring selected node to front
+        },
+        // Pass layer and view information to nodes
+        data: {
+          ...node.data,
+          activeLayer,
+          currentZoom,
+          showLabels,
+          showProgress,
+          showDependencies,
         }
       };
     });
     
     setNodes(updatedNodes);
-  }, [nodes, setNodes, uiState.nodeDetails.isOpen, uiState.nodeDetails.selectedNodeId]);
+  }, [nodes, setNodes, uiState.nodeDetails.isOpen, uiState.nodeDetails.selectedNodeId, activeLayer, currentZoom, showLabels, showProgress]);
+  
+  // Effect to handle edge visibility based on showDependencies
+  useEffect(() => {
+    setEdges((edges) => 
+      edges.map(edge => ({
+        ...edge,
+        hidden: !showDependencies && edge.type !== 'hierarchical',
+        style: {
+          ...edge.style,
+          opacity: showDependencies ? 1 : (edge.type === 'hierarchical' ? 0.5 : 0),
+        }
+      }))
+    );
+  }, [showDependencies, setEdges]);
   
   // Add a pulsing animation style for selected nodes
   useEffect(() => {
@@ -334,7 +430,13 @@ const PlanVisualization: React.FC = () => {
       });
 
       setNodes(finalNodes);
-      setEdges(layoutedEdges); // Edges usually don't change position based on node drag
+      
+      // Apply edge visibility based on showDependencies
+      const visibleEdges = layoutedEdges.map(edge => ({
+        ...edge,
+        hidden: !showDependencies && edge.type !== 'hierarchical', // Hide non-hierarchical edges when dependencies are off
+      }));
+      setEdges(visibleEdges);
 
     } else {
       // Handle empty case
@@ -342,7 +444,7 @@ const PlanVisualization: React.FC = () => {
       setEdges([]);
       console.log('No initial flow nodes to layout or no planId.');
     }
-  }, [initialFlowNodes, flowEdges, setNodes, setEdges, planId]);
+  }, [initialFlowNodes, flowEdges, setNodes, setEdges, planId, showDependencies]);
 
   // Handler for saving position when dragging stops
   const handleNodeDragStop: NodeDragHandler = useCallback((event, node) => {
@@ -533,6 +635,104 @@ const PlanVisualization: React.FC = () => {
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white"><span className="text-blue-600 dark:text-blue-400">Plan:</span> {plan.title}</h1>
               </div>
             </div>
+            
+            {/* Layer Controls */}
+            <div className="flex items-center gap-4">
+              {/* Layer selector */}
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                {layers.map((layer) => (
+                  <button
+                    key={layer.id}
+                    onClick={() => setActiveLayer(layer.id as any)}
+                    className={`
+                      px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5
+                      ${activeLayer === layer.id ? 
+                        'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 
+                        'text-gray-600 dark:text-gray-400 hover:text-gray-800'
+                      }
+                    `}
+                    title={layer.description}
+                  >
+                    <layer.icon className="w-4 h-4" />
+                    <span className="hidden lg:inline">{layer.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* View toggles */}
+              <div className="flex items-center gap-1 border-l pl-3 border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowLabels(!showLabels)}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    showLabels ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  title="Toggle labels (L)"
+                >
+                  <Tag className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowProgress(!showProgress)}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    showProgress ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  title="Toggle progress bars (P)"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowDependencies(!showDependencies)}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    showDependencies ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  title="Toggle dependencies (D)"
+                >
+                  <GitBranch className="w-4 h-4" />
+                </button>
+                
+                {/* Keyboard shortcuts help */}
+                <div className="relative ml-2">
+                  <button
+                    onMouseEnter={() => setShowKeyboardHelp(true)}
+                    onMouseLeave={() => setShowKeyboardHelp(false)}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    title="Keyboard shortcuts"
+                  >
+                    <Keyboard className="w-4 h-4" />
+                  </button>
+                  
+                  {showKeyboardHelp && (
+                    <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
+                      <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white">Keyboard Shortcuts</h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Layers:</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600 dark:text-gray-400">
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">1</kbd> Overview</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">2</kbd> Progress</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">3</kbd> Timeline</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">4</kbd> Resources</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">5</kbd> Risks</div>
+                        </div>
+                        
+                        <div className="font-medium text-gray-700 dark:text-gray-300 mt-3 mb-1">Toggles:</div>
+                        <div className="space-y-1 text-gray-600 dark:text-gray-400">
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">L</kbd> Toggle labels</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">P</kbd> Toggle progress</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">D</kbd> Toggle dependencies</div>
+                        </div>
+                        
+                        <div className="font-medium text-gray-700 dark:text-gray-300 mt-3 mb-1">Zoom:</div>
+                        <div className="space-y-1 text-gray-600 dark:text-gray-400">
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">+</kbd> Zoom in</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">-</kbd> Zoom out</div>
+                          <div><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">0</kbd> Fit to view</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
             <div className="flex items-center space-x-4">
               <button 
                 onClick={toggleFullScreen}
@@ -575,6 +775,14 @@ const PlanVisualization: React.FC = () => {
             onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
             onNodeDragStop={handleNodeDragStop}
+            onInit={(instance) => {
+              reactFlowInstance.current = instance;
+            }}
+            onMove={(event, viewport) => {
+              if (viewport.zoom !== currentZoom) {
+                setCurrentZoom(viewport.zoom);
+              }
+            }}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             minZoom={0.1}
             maxZoom={2}
@@ -595,6 +803,47 @@ const PlanVisualization: React.FC = () => {
             
             {/* Connection Legend */}
             <ConnectionLegend show={showConnectionLegend} />
+            
+            {/* Layer Information Panel */}
+            <Panel position="bottom-left" className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm max-w-xs" style={{ bottom: showConnectionLegend ? '160px' : '20px' }}>
+              <div className="flex items-center gap-2 mb-2">
+                {(() => {
+                  const activeLayerData = layers.find(l => l.id === activeLayer);
+                  if (!activeLayerData) return null;
+                  const IconComponent = activeLayerData.icon;
+                  return (
+                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900 rounded">
+                      <IconComponent className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  );
+                })()}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                    {layers.find(l => l.id === activeLayer)?.label} View
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {layers.find(l => l.id === activeLayer)?.description}
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Zoom:</span>
+                  <span>{Math.round(currentZoom * 100)}%</span>
+                  {currentZoom < 0.5 && <span className="text-orange-600">(Minimal)</span>}
+                  {currentZoom >= 0.5 && currentZoom < 0.8 && <span className="text-blue-600">(Compact)</span>}
+                  {currentZoom >= 0.8 && <span className="text-green-600">(Detailed)</span>}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="font-medium">Active toggles:</span>
+                  <div className="flex gap-1">
+                    {showLabels && <Tag className="w-3 h-3 text-blue-600" />}
+                    {showProgress && <BarChart3 className="w-3 h-3 text-blue-600" />}
+                    {showDependencies && <GitBranch className="w-3 h-3 text-blue-600" />}
+                  </div>
+                </div>
+              </div>
+            </Panel>
             
             {/* Debug overlay when no nodes are present */}
             {nodes.length === 0 && !isPlanLoading && !isNodesLoading && (
