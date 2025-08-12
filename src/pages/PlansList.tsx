@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Plus, Filter, Clock, CheckCircle, Archive, 
   Edit2, Star, MoreVertical, Users, CheckSquare, Calendar,
-  Tag, FileText
+  Tag, FileText, Sparkles
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { Plan, PlanStatus } from '../types';
@@ -184,13 +184,22 @@ const PlansList: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Plans</h1>
-          <Link
-            to="/plans/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Plan
-          </Link>
+          <div className="flex gap-3">
+            <Link
+              to="/plans/ai-create"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Create with AI
+            </Link>
+            <Link
+              to="/plans/new"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Manually
+            </Link>
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -330,13 +339,22 @@ const PlansList: React.FC = () => {
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No plans yet</h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">Get started by creating your first plan</p>
-              <Link
-                to="/plans/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-200"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create your first plan
-              </Link>
+              <div className="flex gap-3 justify-center">
+                <Link
+                  to="/plans/ai-create"
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition duration-200"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Create with AI
+                </Link>
+                <Link
+                  to="/plans/new"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Manually
+                </Link>
+              </div>
             </div>
           ) : isSearching && filteredPlans.length === 0 ? (
             null
