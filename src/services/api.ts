@@ -373,7 +373,7 @@ export const activityService = {
   getPlanActivity: async (planId: string, page = 1, limit = 20) => {
     return request<PaginatedResponse<Activity>>({
       method: 'GET',
-      url: `/plans/${planId}/activity`,
+      url: `/activity/plans/${planId}/activity`,
       params: { page, limit },
     });
   },

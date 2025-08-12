@@ -31,14 +31,21 @@ const PhaseNode: React.FC<NodeProps> = ({ data, selected }) => {
   const showLabels = data.showLabels !== false;
   const showProgress = data.showProgress !== false;
   
-  // Mock data for phase (in real app, this would come from the API)
-  const progress = Math.floor(Math.random() * 100);
-  const totalTasks = Math.floor(Math.random() * 20) + 5;
-  const completedTasks = Math.floor(progress / 100 * totalTasks);
-  const childPhases = Math.floor(Math.random() * 3) + 1;
-  const teamSize = Math.floor(Math.random() * 10) + 3;
-  const hasRisk = Math.random() > 0.8;
-  const dueDate = new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000);
+  // Generate stable mock data based on node ID (similar to TaskNode)
+  const nodeIdHash = node.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+  
+  // Use node metadata if available, otherwise use stable mock data
+  const progress = node.metadata?.progress ?? (nodeIdHash % 101); // 0-100
+  const totalTasks = node.metadata?.subtask_count ?? ((nodeIdHash % 16) + 5); // 5-20
+  const completedTasks = node.metadata?.completed_subtask_count ?? Math.floor(progress / 100 * totalTasks);
+  const childPhases = node.metadata?.phase_count ?? ((nodeIdHash % 3) + 1); // 1-3
+  const teamSize = node.metadata?.team_size ?? ((nodeIdHash % 8) + 3); // 3-10
+  const hasRisk = node.metadata?.risk_level === 'high' || (nodeIdHash % 10 > 7);
+  
+  // Generate stable date based on node ID
+  const baseDueDate = new Date('2025-01-01').getTime();
+  const daysOffset = (nodeIdHash % 60) * 24 * 60 * 60 * 1000; // 0-60 days from base
+  const dueDate = new Date(baseDueDate + daysOffset);
   
   // Minimal view
   if (currentZoom < 0.5) {
@@ -160,7 +167,7 @@ const PhaseNode: React.FC<NodeProps> = ({ data, selected }) => {
             </div>
             <div className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
               <div>Due: {dueDate.toLocaleDateString()}</div>
-              <div>Duration: {Math.floor(Math.random() * 30) + 10} days</div>
+              <div>Duration: {Math.floor((nodeIdHash % 20) + 10)} days</div>
               <div className={`font-medium ${new Date() > dueDate ? 'text-red-600' : 'text-green-600'}`}>
                 {new Date() > dueDate ? 'Overdue' : 'On Track'}
               </div>
@@ -196,7 +203,7 @@ const PhaseNode: React.FC<NodeProps> = ({ data, selected }) => {
                   <span className="text-sm font-medium text-red-600">Phase at Risk</span>
                 </div>
                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Multiple blockers detected. {Math.floor(Math.random() * 5) + 1} tasks are blocked.
+                  Multiple blockers detected. {Math.floor((nodeIdHash % 5) + 1)} tasks are blocked.
                 </p>
                 <div className="text-xs text-blue-600 dark:text-blue-400">
                   Impact: High - May delay dependent phases

@@ -30,17 +30,26 @@ const MilestoneNode: React.FC<NodeProps> = ({ data, selected }) => {
   const currentZoom = data.currentZoom || 1;
   const showLabels = data.showLabels !== false;
   
-  // Mock milestone data
-  const dueDate = node.due_date || new Date(Date.now() + Math.random() * 60 * 24 * 60 * 60 * 1000);
-  const dependencies = Math.floor(Math.random() * 5) + 1;
-  const isKeyMilestone = Math.random() > 0.5;
+  // Generate stable mock data based on node ID (similar to TaskNode)
+  const nodeIdHash = node.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+  
+  // Use node data if available, otherwise use stable mock data
+  const baseDueDate = new Date('2025-01-01').getTime();
+  const daysOffset = (nodeIdHash % 60) * 24 * 60 * 60 * 1000; // 0-60 days from base
+  const dueDate = node.due_date || new Date(baseDueDate + daysOffset);
+  
+  const dependencies = node.metadata?.dependency_count ?? ((nodeIdHash % 5) + 1);
+  const isKeyMilestone = node.metadata?.is_key_milestone ?? (nodeIdHash % 2 === 0);
   const completionCriteria = [
     'All development tasks complete',
     'Testing phase passed',
     'Documentation finalized'
   ];
-  const progress = status === 'completed' ? 100 : Math.floor(Math.random() * 80);
-  const hasRisk = status !== 'completed' && Math.random() > 0.7;
+  const progress = status === 'completed' ? 100 : 
+                   node.metadata?.progress ?? 
+                   (nodeIdHash % 81); // 0-80
+  const hasRisk = status !== 'completed' && 
+                  (node.metadata?.risk_level === 'high' || nodeIdHash % 10 > 6);
   
   // Minimal view
   if (currentZoom < 0.5) {
@@ -180,7 +189,7 @@ const MilestoneNode: React.FC<NodeProps> = ({ data, selected }) => {
             </div>
             <div className="text-xs text-purple-600 dark:text-purple-400 space-y-1">
               <div>{dependencies} prerequisite tasks</div>
-              <div>Blocks {Math.floor(Math.random() * 3) + 1} downstream tasks</div>
+              <div>Blocks {(nodeIdHash % 3) + 1} downstream tasks</div>
             </div>
             {isKeyMilestone && (
               <div className="mt-2 pt-2 border-t border-purple-200 dark:border-purple-700">
