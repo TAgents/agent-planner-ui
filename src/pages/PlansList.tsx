@@ -8,14 +8,6 @@ import {
 import { usePlans } from '../hooks/usePlans';
 import { Plan, PlanStatus } from '../types';
 import { formatDate } from '../utils/planUtils';
-import { createClient } from '@supabase/supabase-js';
-import API_CONFIG from '../config/api.config';
-
-// Create Supabase client outside component to prevent recreation
-const supabase = createClient(
-  API_CONFIG.SUPABASE_URL,
-  API_CONFIG.SUPABASE_ANON_KEY
-);
 
 const PlansList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,39 +20,26 @@ const PlansList: React.FC = () => {
 
   // Check authentication only once on mount
   useEffect(() => {
-    let mounted = true;
+    const checkAuth = () => {
+      // Check if we have a session token
+      const sessionStr = localStorage.getItem('auth_session');
+      if (!sessionStr) {
+        navigate('/login');
+        return;
+      }
 
-    const checkAuth = async () => {
       try {
-        const sessionStr = localStorage.getItem('supabase_session');
-        if (!sessionStr) {
-          if (mounted) navigate('/login');
-          return;
+        const session = JSON.parse(sessionStr);
+        if (!session || !session.access_token) {
+          navigate('/login');
         }
-
-        let session;
-        try {
-          session = JSON.parse(sessionStr);
-        } catch (e) {
-          if (mounted) navigate('/login');
-          return;
-        }
-
-        const { data, error } = await supabase.auth.getUser(session.access_token);
-        if (error || !data.user) {
-          if (mounted) navigate('/login');
-        }
-      } catch (err) {
-        if (mounted) navigate('/login');
+      } catch (e) {
+        navigate('/login');
       }
     };
 
     checkAuth();
-
-    return () => {
-      mounted = false;
-    };
-  }, []); // Empty dependency array - run only once
+  }, [navigate]); // Add navigate to dependencies
 
   // Memoize status badge rendering
   const getStatusBadge = useCallback((status: PlanStatus) => {

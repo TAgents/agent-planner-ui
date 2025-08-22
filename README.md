@@ -8,6 +8,7 @@ Agent Planner UI is a front-end interface for the Agent Planner system. It provi
 
 ## Features
 
+- **AI-Powered Plan Generation**: Create comprehensive plans using natural language prompts
 - View a list of plans with status and progress information
 - Visualize plan structures as interactive node graphs using React Flow
 - Create and manage plan nodes (phases, tasks, milestones)
@@ -24,6 +25,7 @@ Agent Planner UI is a front-end interface for the Agent Planner system. It provi
 - **TailwindCSS**: Utility-first styling
 - **React Router**: Navigation and routing
 - **Axios**: API communication
+- **OpenRouter AI**: AI-powered plan generation
 
 ## Getting Started
 
@@ -46,6 +48,17 @@ npm install
 # or
 yarn install
 ```
+
+### Configuration
+
+1. Copy the `.env` file and add your API keys:
+
+```bash
+# OpenRouter API key for AI plan generation
+REACT_APP_OPENROUTER_API_KEY=your_openrouter_api_key_here
+```
+
+2. Get your OpenRouter API key from [https://openrouter.ai/keys](https://openrouter.ai/keys)
 
 ### Development
 
@@ -77,10 +90,14 @@ The built files will be in the `build` directory.
     - `/common`: Generic components
     - `/layout`: Layout components
     - `/nodes`: Custom React Flow nodes
+    - `/plans`: Plan-specific components (AI prompt, generation modal)
   - `/contexts`: React Context providers
   - `/hooks`: Custom React hooks
+    - `useAIPlanGeneration`: Hook for AI plan generation
   - `/pages`: Route components
+    - `/plans/AICreatePlan`: AI-powered plan creation page
   - `/services`: API services
+    - `aiPlanService`: OpenRouter AI integration
   - `/types`: TypeScript type definitions
   - `/utils`: Helper functions
 

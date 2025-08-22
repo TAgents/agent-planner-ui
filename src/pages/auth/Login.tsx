@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { createClient } from '@supabase/supabase-js';
-import API_CONFIG from '../../config/api.config';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('admin@example.com');
@@ -19,7 +17,13 @@ const Login: React.FC = () => {
     try {
       const response = await api.auth.login(email, password);
       console.log('Login successful:', response);
+      
+      // Trigger a custom event to notify ProtectedRoute
+      window.dispatchEvent(new Event('auth-change'));
+      
+      console.log('Attempting to navigate to /plans');
       navigate('/plans');
+      console.log('Navigate called successfully');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Failed to login');
@@ -30,31 +34,16 @@ const Login: React.FC = () => {
 
   const handleDemoLogin = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      // Create a Supabase client instance
-      const supabase = createClient(
-        API_CONFIG.SUPABASE_URL,
-        API_CONFIG.SUPABASE_ANON_KEY
-      );
-
-      // Sign in with the demo account credentials
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'admin@example.com',
-        password: 'password123',
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data || !data.session) {
-        throw new Error('No session returned from Supabase');
-      }
-
-      // Store the session in localStorage
-      localStorage.setItem('supabase_session', JSON.stringify(data.session));
-
-      // Navigate to plans page
+      // Use the same login flow through our API
+      const response = await api.auth.login('demo@example.com', 'Demo123456!');
+      console.log('Demo login successful:', response);
+      
+      // Trigger a custom event to notify ProtectedRoute
+      window.dispatchEvent(new Event('auth-change'));
+      
       navigate('/plans');
     } catch (err: any) {
       console.error('Demo login error:', err);
@@ -145,9 +134,10 @@ const Login: React.FC = () => {
           
           <button
             onClick={handleDemoLogin}
-            className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800"
+            disabled={loading}
+            className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login with Demo Account
+            {loading ? 'Logging in...' : 'Login with Demo Account'}
           </button>
         </div>
       </div>

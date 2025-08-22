@@ -12,7 +12,7 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
     async () => {
       try {
         // Check if authentication session exists
-        const sessionStr = localStorage.getItem('supabase_session');
+        const sessionStr = localStorage.getItem('auth_session');
         if (!sessionStr) {
           throw new Error('No authentication session found');
         }
@@ -136,7 +136,7 @@ export const usePlan = (planId: string) => {
     async () => {
       try {
         // Check if authentication session exists
-        const sessionStr = localStorage.getItem('supabase_session');
+        const sessionStr = localStorage.getItem('auth_session');
         if (!sessionStr) {
           throw new Error('No authentication session found');
         }

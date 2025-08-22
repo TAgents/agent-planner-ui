@@ -1,14 +1,19 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact, ApiToken, TokenPermission } from '../types';
-import API_CONFIG from '../config/api.config';
-import { decodeToken } from '../utils/tokenHelper';
-import { createClient } from '@supabase/supabase-js';
 
-// Create a Supabase client
-const supabaseClient = createClient(
-  API_CONFIG.SUPABASE_URL,
-  API_CONFIG.SUPABASE_ANON_KEY
-);
+// API Configuration - only needs the API URL
+const API_CONFIG = {
+  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
+  TIMEOUT: 30000,
+  HEADERS: {
+    'Content-Type': 'application/json',
+  },
+};
+
+console.log('API Configuration:', {
+  BASE_URL: API_CONFIG.BASE_URL,
+  ENV_VAR: process.env.REACT_APP_API_URL
+});
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -20,20 +25,37 @@ const api = axios.create({
 // Add request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
-    // Get session from localStorage
-    const sessionStr = localStorage.getItem('supabase_session');
+    // Get token from localStorage (stored after login)
+    const sessionStr = localStorage.getItem('auth_session');
+    console.log('Interceptor checking auth_session:', sessionStr ? 'Found' : 'Not found');
+    
     if (sessionStr) {
       try {
         const session = JSON.parse(sessionStr);
-        if (session && session.access_token) {
-          console.log('Setting Authorization header with Supabase token');
-          config.headers.Authorization = `Bearer ${session.access_token}`;
+        console.log('Parsed session object:', session);
+        
+        // Try different token field names
+        let token = null;
+        if (session.access_token) {
+          token = session.access_token;
+        } else if (session.accessToken) {
+          token = session.accessToken;
+        } else if (typeof session === 'string') {
+          // Maybe the session IS the token
+          token = session;
+        }
+        
+        if (token) {
+          console.log('Setting Authorization header with token');
+          config.headers.Authorization = `Bearer ${token}`;
+        } else {
+          console.warn('No token found in session. Session keys:', Object.keys(session || {}));
         }
       } catch (e) {
         console.error('Failed to parse session', e);
       }
     } else {
-      console.warn('No Supabase session found in localStorage');
+      console.warn('No auth_session found in localStorage');
     }
     return config;
   },
@@ -46,7 +68,7 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     // Handle authentication errors
     if (error.response?.status === 401) {
-      localStorage.removeItem('supabase_session');
+      localStorage.removeItem('auth_session');
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -58,7 +80,7 @@ const debugApiCall = (method: string, url: string, data?: any) => {
   if (process.env.NODE_ENV === 'development') {
     console.log(`🔶 API ${method}: ${API_CONFIG.BASE_URL}${url}`, data || '');
     console.log('Headers:', {
-      'Authorization': localStorage.getItem('supabase_session') ? 'Bearer [TOKEN]' : 'None',
+      'Authorization': localStorage.getItem('auth_session') ? 'Bearer [TOKEN]' : 'None',
       'Content-Type': 'application/json'
     });
   }
@@ -74,74 +96,94 @@ const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      const message = error.response?.data?.message || error.message;
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
       throw new Error(message);
     }
     throw error;
   }
 };
 
-// Authentication endpoints
+// Authentication endpoints - now using your API instead of direct Supabase
 export const authService = {
   login: async (email: string, password: string) => {
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-  email,
-  password,
-  });
-  
-  if (error) throw new Error(error.message);
-  
-    // Store the session in localStorage
-    localStorage.setItem('supabase_session', JSON.stringify(data.session));
-    
-  return {
-  status: 200,
-  data: {
-    user: data.user,
-      session: data.session
+    try {
+      console.log('Attempting login to:', `${API_CONFIG.BASE_URL}/auth/login`);
+      console.log('With credentials:', { email, password: '***' });
+      
+      const response = await request<{
+        user: any;
+        session: any;
+      }>({
+        method: 'POST',
+        url: '/auth/login',
+        data: { email, password }
+      });
+      
+      console.log('Login response received:', response);
+      
+      // Store the session in localStorage
+      if (response.session) {
+        console.log('Storing session in localStorage');
+        localStorage.setItem('auth_session', JSON.stringify(response.session));
+      } else {
+        console.warn('No session in response:', response);
       }
-    };
+      
+      return {
+        status: 200,
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
+      throw error;
+    }
   },
   
   register: async (email: string, password: string, name: string) => {
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name }
+    try {
+      const response = await request<{
+        user: any;
+        session: any;
+      }>({
+        method: 'POST',
+        url: '/auth/register',
+        data: { email, password, name }
+      });
+      
+      // Store the session if registration is successful
+      if (response.session) {
+        localStorage.setItem('auth_session', JSON.stringify(response.session));
       }
-    });
-    
-    if (error) throw new Error(error.message);
-    
-    if (data.session) {
-      localStorage.setItem('supabase_session', JSON.stringify(data.session));
+      
+      return {
+        status: 201,
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      throw error;
     }
-    
-    return {
-      status: 201,
-      data: {
-        user: data.user,
-        session: data.session
-      }
-    };
   },
   
-  logout: () => {
-    // Clear session from localStorage
-    localStorage.removeItem('supabase_session');
-    
-    // Sign out from Supabase
-    supabaseClient.auth.signOut();
-    
-    // Also call the API endpoint
-    return request<{message: string}>({
-      method: 'POST',
-      url: '/auth/logout',
-    }).catch(() => {
-      // Even if the API call fails, consider the logout successful
+  logout: async () => {
+    try {
+      // Call the API logout endpoint
+      await request<{message: string}>({
+        method: 'POST',
+        url: '/auth/logout',
+      });
+    } catch (error) {
+      // Even if the API call fails, clear local session
+      console.error('Logout API error:', error);
+    } finally {
+      // Always clear local session
+      localStorage.removeItem('auth_session');
       return { message: 'Logged out successfully' };
-    });
+    }
   },
 };
 

@@ -4,7 +4,6 @@ import { useNodeArtifacts } from '../../hooks/useNodeArtifacts';
 import { Artifact } from '../../types';
 import { formatDate } from '../../utils/planUtils';
 import { Paperclip, Link as LinkIcon, Trash2, AlertTriangle, Info, X } from 'lucide-react';
-import API_CONFIG from '../../config/api.config';
 
 // Helper function to intelligently format file paths for display
 const formatFilePath = (path: string): string => {
@@ -149,7 +148,7 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
     }
     
     // For local files, use the API endpoint
-    const apiBaseUrl = API_CONFIG.BASE_URL;
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
     
     // Try direct access first if we're in development
     if (process.env.NODE_ENV === 'development') {
@@ -212,7 +211,7 @@ const NodeArtifactsTab: React.FC<NodeArtifactsTabProps> = ({ planId, nodeId }) =
     const downloadUrl = `${apiBaseUrl}/download?path=${encodeURIComponent(filePath)}&filename=${encodeURIComponent(fileName)}`;
     
     // Get the auth token
-    const sessionStr = localStorage.getItem('supabase_session');
+    const sessionStr = localStorage.getItem('auth_session');
     let authToken = '';
     
     if (sessionStr) {

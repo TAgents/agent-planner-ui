@@ -1,0 +1,36 @@
+# Build stage
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Build with production API URL only
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_NAME="Agent Planner"
+
+RUN npm run build
+
+# Serve stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install serve
+RUN npm install -g serve
+
+# Copy built files
+COPY --from=builder /app/build ./build
+
+# Create non-root user
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+USER appuser
+
+EXPOSE 8080
+
+CMD ["serve", "-s", "build", "-l", "8080"]
