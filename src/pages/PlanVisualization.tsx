@@ -35,7 +35,9 @@ import {
   Tag,
   GitBranch,
   Keyboard,
+  Share2,
 } from 'lucide-react';
+import ShareButton from '../components/sharing/ShareButton';
 
 import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
@@ -734,6 +736,11 @@ const PlanVisualization: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <ShareButton 
+                planId={planId || ''}
+                planTitle={plan.title}
+                variant="compact"
+              />
               <button 
                 onClick={toggleFullScreen}
                 className="p-2 rounded-lg text-gray-600 hover:text-blue-700 bg-white hover:bg-blue-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-600 transition duration-200 shadow-sm border border-gray-200 dark:border-gray-600"

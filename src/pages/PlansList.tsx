@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Plus, Filter, Clock, CheckCircle, Archive, 
   Edit2, Star, MoreVertical, Users, CheckSquare, Calendar,
-  FileText, Sparkles
+  FileText, Sparkles, Share2
 } from 'lucide-react';
+import ShareButton from '../components/sharing/ShareButton';
+import CollaboratorAvatars from '../components/sharing/CollaboratorAvatars';
 import { usePlans } from '../hooks/usePlans';
 import { Plan, PlanStatus } from '../types';
 import { formatDate } from '../utils/planUtils';
@@ -357,6 +359,13 @@ const PlansList: React.FC = () => {
                 const metadata = getPlanMetadata(plan.id);
                 const progress = typeof plan.progress === 'number' ? plan.progress : 0;
                 
+                // Mock collaborators data - in production, this would come from the API
+                const mockCollaborators = metadata.assignees > 1 ? [
+                  { id: '1', name: 'John Doe', email: 'john@example.com' },
+                  { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
+                  { id: '3', name: 'Bob Johnson', email: 'bob@example.com' },
+                ] : [];
+                
                 return (
                   <Link 
                     key={plan.id}
@@ -374,6 +383,14 @@ const PlansList: React.FC = () => {
                       
                       {/* Quick actions on hover */}
                       <div className={`absolute top-4 right-4 flex gap-2 transition-opacity duration-200 z-10 ${hoveredPlanId === plan.id ? 'opacity-100' : 'opacity-0'}`}>
+                        <div onClick={(e) => e.preventDefault()}>
+                          <ShareButton 
+                            planId={plan.id}
+                            planTitle={plan.title}
+                            variant="icon"
+                            className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600"
+                          />
+                        </div>
                         <button 
                           onClick={(e) => handleActionClick(e, () => navigate(`/plans/${plan.id}/edit`))}
                           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600"
@@ -437,10 +454,22 @@ const PlansList: React.FC = () => {
                         {/* Metadata */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <span className="flex items-center gap-1.5">
-                              <Users className="w-4 h-4" />
-                              <span>{metadata.assignees} assignees</span>
-                            </span>
+                            {mockCollaborators.length > 0 ? (
+                              <div className="flex items-center gap-2">
+                                <CollaboratorAvatars
+                                  collaborators={mockCollaborators}
+                                  size="sm"
+                                  maxDisplay={3}
+                                  showTooltip={false}
+                                />
+                                <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">Shared</span>
+                              </div>
+                            ) : (
+                              <span className="flex items-center gap-1.5">
+                                <Users className="w-4 h-4" />
+                                <span>{metadata.assignees} assignees</span>
+                              </span>
+                            )}
                             <span className="flex items-center gap-1.5">
                               <CheckSquare className="w-4 h-4" />
                               <span>{metadata.completedTasks}/{metadata.totalTasks} tasks</span>

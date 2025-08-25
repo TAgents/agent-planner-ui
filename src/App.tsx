@@ -10,6 +10,7 @@ import MainLayout from './components/layout/MainLayout';
 // Pages
 import PlansList from './pages/PlansList';
 import PlanVisualization from './pages/PlanVisualization';
+import SharedPlans from './pages/SharedPlans';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -52,6 +53,7 @@ const App: React.FC = () => {
                 <Route path="plans/new" element={<CreatePlan />} />
                 <Route path="plans/ai-create" element={<AICreatePlan />} />
                 <Route path="plans/:planId" element={<PlanVisualization />} />
+                <Route path="shared" element={<SharedPlans />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<UserProfile />} />
               </Route>

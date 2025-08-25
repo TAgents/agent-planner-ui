@@ -246,7 +246,7 @@ export const authService = {
     try {
       const response = await request<any>({
         method: 'GET',
-        url: '/auth/profile'
+        url: '/users/profile'
       });
       return { status: 200, data: response };
     } catch (error: any) {
@@ -259,7 +259,7 @@ export const authService = {
     try {
       const response = await request<any>({
         method: 'PUT',
-        url: '/auth/profile',
+        url: '/users/profile',
         data
       });
       return { status: 200, data: response };
@@ -273,7 +273,7 @@ export const authService = {
     try {
       const response = await request<{ message: string }>({
         method: 'POST',
-        url: '/auth/change-password',
+        url: '/users/change-password',
         data: { currentPassword, newPassword }
       });
       return { status: 200, data: response };
@@ -369,6 +369,53 @@ export const planService = {
     return request<ApiResponse<null>>({
       method: 'DELETE',
       url: `/plans/${planId}`,
+    });
+  },
+  
+  // Collaboration endpoints
+  getCollaborators: async (planId: string) => {
+    try {
+      const response = await request<any>({
+        method: 'GET',
+        url: `/plans/${planId}/collaborators`,
+      });
+      return response;
+    } catch (error) {
+      console.log('Collaborators endpoint not available, returning mock data');
+      // Return mock data if the endpoint doesn't exist yet
+      // This allows the UI to work while the backend is being implemented
+      return [
+        {
+          id: 'owner-id',
+          email: 'owner@example.com',
+          name: 'Plan Owner',
+          role: 'owner',
+          created_at: new Date().toISOString()
+        }
+      ];
+    }
+  },
+  
+  addCollaborator: async (planId: string, data: { email: string; role: 'viewer' | 'editor' | 'admin' }) => {
+    return request<any>({
+      method: 'POST',
+      url: `/plans/${planId}/collaborators`,
+      data,
+    });
+  },
+  
+  removeCollaborator: async (planId: string, userId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/plans/${planId}/collaborators/${userId}`,
+    });
+  },
+  
+  updateCollaboratorRole: async (planId: string, userId: string, role: 'viewer' | 'editor' | 'admin') => {
+    return request<any>({
+      method: 'PUT',
+      url: `/plans/${planId}/collaborators/${userId}`,
+      data: { role },
     });
   },
 };
