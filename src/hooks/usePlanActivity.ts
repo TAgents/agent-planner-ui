@@ -4,7 +4,19 @@ import { activityService } from '../services/api';
 import { PaginatedResponse, Activity } from '../types'; // Adjust Activity type if needed
 
 export const usePlanActivity = (planId: string, page = 1, limit = 5, options = {}) => {
-  const queryKey = ['planActivity', planId, page, limit];
+  // Get user ID from session to use in query key
+  const sessionStr = localStorage.getItem('auth_session');
+  let userId = 'anonymous';
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      userId = session.user?.id || session.user?.email || 'anonymous';
+    } catch (e) {
+      console.error('Error parsing session:', e);
+    }
+  }
+
+  const queryKey = ['planActivity', userId, planId, page, limit];
 
   const { data, isLoading, error, refetch } = useQuery<PaginatedResponse<Activity>>(
     queryKey,

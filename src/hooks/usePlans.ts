@@ -6,18 +6,30 @@ import { Plan } from '../types';
  * Hook for fetching and managing plans
  */
 export const usePlans = (page = 1, limit = 10, status?: string) => {
+  // Get user ID from session to use in query key
+  const sessionStr = localStorage.getItem('auth_session');
+  let userId = 'anonymous';
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      userId = session.user?.id || session.user?.email || 'anonymous';
+    } catch (e) {
+      console.error('Error parsing session:', e);
+    }
+  }
+  
   // Use React Query to fetch plans with pagination
+  // Include userId in the query key to separate cache per user
   const { data, isLoading, error, refetch } = useQuery(
-    ['plans', page, limit, status],
+    ['plans', userId, page, limit, status],
     async () => {
       try {
         // Check if authentication session exists
-        const sessionStr = localStorage.getItem('auth_session');
         if (!sessionStr) {
           throw new Error('No authentication session found');
         }
 
-        console.log('Fetching plans with authentication');
+        console.log('Fetching plans with authentication for user:', userId);
         const response = await planService.getPlans(page, limit, status);
         console.log('Plans API response:', response);
         return response;
@@ -130,18 +142,30 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
  * Hook for fetching a single plan
  */
 export const usePlan = (planId: string) => {
+  // Get user ID from session to use in query key
+  const sessionStr = localStorage.getItem('auth_session');
+  let userId = 'anonymous';
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      userId = session.user?.id || session.user?.email || 'anonymous';
+    } catch (e) {
+      console.error('Error parsing session:', e);
+    }
+  }
+  
   // Use React Query to fetch a single plan
+  // Include userId in the query key to separate cache per user
   const { data, isLoading, error, refetch } = useQuery(
-    ['plan', planId],
+    ['plan', userId, planId],
     async () => {
       try {
         // Check if authentication session exists
-        const sessionStr = localStorage.getItem('auth_session');
         if (!sessionStr) {
           throw new Error('No authentication session found');
         }
 
-        console.log(`Fetching plan ${planId} with authentication`);
+        console.log(`Fetching plan ${planId} with authentication for user:`, userId);
         const response = await planService.getPlan(planId);
         console.log('Plan API response:', response);
         return response;

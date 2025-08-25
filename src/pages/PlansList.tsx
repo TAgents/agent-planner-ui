@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Plus, Filter, Clock, CheckCircle, Archive, 
   Edit2, Star, MoreVertical, Users, CheckSquare, Calendar,
-  Tag, FileText, Sparkles
+  FileText, Sparkles
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { Plan, PlanStatus } from '../types';
@@ -16,7 +16,7 @@ const PlansList: React.FC = () => {
   const [hoveredPlanId, setHoveredPlanId] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  const { plans, isLoading, error, total, totalPages } = usePlans(currentPage, 10, statusFilter);
+  const { plans, isLoading, error, total, totalPages, refetch } = usePlans(currentPage, 10, statusFilter);
 
   // Check authentication only once on mount
   useEffect(() => {
@@ -40,6 +40,20 @@ const PlansList: React.FC = () => {
 
     checkAuth();
   }, [navigate]); // Add navigate to dependencies
+
+  // Listen for auth changes and refetch data
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log('Auth change detected in PlansList, refetching data...');
+      refetch();
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
+  }, [refetch]);
 
   // Memoize status badge rendering
   const getStatusBadge = useCallback((status: PlanStatus) => {

@@ -11,18 +11,30 @@ import 'reactflow/dist/style.css';
 export const useNodes = (planId: string) => {
   const queryClient = useQueryClient();
 
+  // Get user ID from session to use in query key
+  const sessionStr = localStorage.getItem('auth_session');
+  let userId = 'anonymous';
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      userId = session.user?.id || session.user?.email || 'anonymous';
+    } catch (e) {
+      console.error('Error parsing session:', e);
+    }
+  }
+
   // Use React Query to fetch nodes for a plan
+  // Include userId in the query key to separate cache per user
   const { data, isLoading, error, refetch } = useQuery(
-    ['nodes', planId],
+    ['nodes', userId, planId],
     async () => {
       try {
         // Check if authentication session exists
-        const sessionStr = localStorage.getItem('supabase_session');
         if (!sessionStr) {
           throw new Error('No authentication session found');
         }
 
-        console.log(`Fetching nodes for plan ${planId} with authentication`);
+        console.log(`Fetching nodes for plan ${planId} with authentication for user:`, userId);
         const response = await nodeService.getNodes(planId);
         console.log('Nodes API response:', response);
         return response;
@@ -96,7 +108,7 @@ export const useNodes = (planId: string) => {
         refetch();
         // Also update the node details if it's currently selected
         if (data.data?.id) {
-          queryClient.invalidateQueries(['node', planId, data.data.id]);
+          queryClient.invalidateQueries(['node', userId, planId, data.data.id]);
         }
       },
     }
@@ -112,7 +124,7 @@ export const useNodes = (planId: string) => {
         refetch();
         // Also update the node details if it's currently selected
         if (data.data?.id) {
-          queryClient.invalidateQueries(['node', planId, data.data.id]);
+          queryClient.invalidateQueries(['node', userId, planId, data.data.id]);
         }
       },
     }
@@ -147,18 +159,30 @@ export const useNodes = (planId: string) => {
  * Hook for fetching a single node
  */
 export const useNode = (planId: string, nodeId: string) => {
+  // Get user ID from session to use in query key
+  const sessionStr = localStorage.getItem('auth_session');
+  let userId = 'anonymous';
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      userId = session.user?.id || session.user?.email || 'anonymous';
+    } catch (e) {
+      console.error('Error parsing session:', e);
+    }
+  }
+
   // Use React Query to fetch a single node
+  // Include userId in the query key to separate cache per user
   const { data, isLoading, error, refetch } = useQuery(
-    ['node', planId, nodeId],
+    ['node', userId, planId, nodeId],
     async () => {
       try {
         // Check if authentication session exists
-        const sessionStr = localStorage.getItem('supabase_session');
         if (!sessionStr) {
           throw new Error('No authentication session found');
         }
 
-        console.log(`Fetching node details for planId=${planId}, nodeId=${nodeId} with authentication`);
+        console.log(`Fetching node details for planId=${planId}, nodeId=${nodeId} with authentication for user:`, userId);
         const response = await nodeService.getNode(planId, nodeId);
         console.log('Node details API response:', response);
         return response;

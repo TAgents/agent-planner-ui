@@ -11,9 +11,13 @@ import MainLayout from './components/layout/MainLayout';
 import PlansList from './pages/PlansList';
 import PlanVisualization from './pages/PlanVisualization';
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
 import Settings from './pages/Settings';
+import UserProfile from './pages/profile/UserProfile';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -36,6 +40,9 @@ const App: React.FC = () => {
           <Routes>
             {/* Authentication Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Protected Main Application Routes */}
             <Route element={<ProtectedRoute />}>
@@ -46,6 +53,7 @@ const App: React.FC = () => {
                 <Route path="plans/ai-create" element={<AICreatePlan />} />
                 <Route path="plans/:planId" element={<PlanVisualization />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="profile" element={<UserProfile />} />
               </Route>
             </Route>
           </Routes>

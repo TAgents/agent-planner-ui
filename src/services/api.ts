@@ -185,6 +185,138 @@ export const authService = {
       return { message: 'Logged out successfully' };
     }
   },
+  
+  forgotPassword: async (email: string) => {
+    try {
+      const response = await request<{ message: string }>({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        data: { email }
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  },
+  
+  resetPassword: async (token: string, password: string) => {
+    try {
+      const response = await request<{ message: string }>({
+        method: 'POST',
+        url: '/auth/reset-password',
+        data: { token, password }
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
+  },
+  
+  verifyEmail: async (token: string) => {
+    try {
+      const response = await request<{ message: string; user: any }>({
+        method: 'POST',
+        url: '/auth/verify-email',
+        data: { token }
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Verify email error:', error);
+      throw error;
+    }
+  },
+  
+  resendVerification: async (email: string) => {
+    try {
+      const response = await request<{ message: string }>({
+        method: 'POST',
+        url: '/auth/resend-verification',
+        data: { email }
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Resend verification error:', error);
+      throw error;
+    }
+  },
+  
+  getProfile: async () => {
+    try {
+      const response = await request<any>({
+        method: 'GET',
+        url: '/auth/profile'
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Get profile error:', error);
+      throw error;
+    }
+  },
+  
+  updateProfile: async (data: { name?: string; organization?: string; avatar_url?: string }) => {
+    try {
+      const response = await request<any>({
+        method: 'PUT',
+        url: '/auth/profile',
+        data
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  },
+  
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      const response = await request<{ message: string }>({
+        method: 'POST',
+        url: '/auth/change-password',
+        data: { currentPassword, newPassword }
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      throw error;
+    }
+  },
+  
+  uploadAvatar: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const response = await api.post<{ message: string; avatar_url: string }>(
+        '/upload/avatar',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      return { status: 200, data: response.data };
+    } catch (error: any) {
+      console.error('Upload avatar error:', error);
+      throw error;
+    }
+  },
+  
+  deleteAvatar: async () => {
+    try {
+      const response = await request<{ message: string }>({
+        method: 'DELETE',
+        url: '/upload/avatar'
+      });
+      return { status: 200, data: response };
+    } catch (error: any) {
+      console.error('Delete avatar error:', error);
+      throw error;
+    }
+  },
 };
 
 // Plans endpoints
