@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -16,7 +16,8 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
-import { formatDate, getStatusColor, getStatusLabel } from '../utils/planUtils';
+import { useNodes } from '../hooks/useNodes';
+import { formatDate } from '../utils/planUtils';
 import { Plan, PlanNode } from '../types';
 
 // Empty state component for first-time users
@@ -96,60 +97,91 @@ const EmptyPlansGuide: React.FC = () => {
   );
 };
 
-// Plan card component
-const PlanCard: React.FC<{ plan: Plan & { nodes?: PlanNode[] }; viewMode: 'grid' | 'list' }> = ({ plan, viewMode }) => {
-  // Note: nodes might not be included in the plan list response
-  // In a real app, you'd either fetch this separately or include it in the API response
-  const nodeCount = 0; // Will be populated from metadata or separate API call
-  const completedNodes = 0;
+// Enhanced Plan card component that fetches its own node data
+const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, viewMode }) => {
+  const { nodes, isLoading } = useNodes(plan.id);
+  
+  // Calculate progress from actual nodes
+  const nodeCount = nodes?.length || 0;
+  const completedNodes = nodes?.filter(n => n.status === 'completed').length || 0;
+  const inProgressNodes = nodes?.filter(n => n.status === 'in_progress').length || 0;
   const progress = nodeCount > 0 ? Math.round((completedNodes / nodeCount) * 100) : 0;
+
+  // Determine status color classes
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'completed':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      case 'archived':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  };
 
   if (viewMode === 'list') {
     return (
       <Link 
         to={`/plans/${plan.id}`}
-        className="block p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700"
+        className="block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700 overflow-hidden"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <div className="p-4">
+          <div className="flex items-center gap-4">
+            {/* Icon */}
+            <div className="flex-shrink-0">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
+            
+            {/* Title and Description */}
             <div className="flex-1 min-w-0">
               <h3 className="font-medium text-gray-900 dark:text-white truncate">
                 {plan.title}
               </h3>
               {plan.description && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">
                   {plan.description}
                 </p>
               )}
             </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {nodeCount} nodes
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all"
-                  style={{ width: `${progress}%` }}
-                />
+            
+            {/* Stats Section */}
+            <div className="flex items-center gap-4 flex-shrink-0">
+              {/* Node Count */}
+              <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[60px] text-right">
+                {isLoading ? (
+                  <span className="inline-block w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                ) : (
+                  `${nodeCount} nodes`
+                )}
               </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {progress}%
+              
+              {/* Progress Bar */}
+              <div className="flex items-center gap-2">
+                <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-10 text-right">
+                  {isLoading ? '-' : `${progress}%`}
+                </span>
+              </div>
+              
+              {/* Status Badge */}
+              <span className={`px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusClasses(plan.status)}`}>
+                {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
               </span>
+              
+              {/* Chevron */}
+              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </div>
-            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-              plan.status === 'active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-              plan.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-            }`}>
-              {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-            </span>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
           </div>
         </div>
       </Link>
@@ -165,11 +197,7 @@ const PlanCard: React.FC<{ plan: Plan & { nodes?: PlanNode[] }; viewMode: 'grid'
         <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
           <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
         </div>
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-          plan.status === 'active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-          plan.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-        }`}>
+        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusClasses(plan.status)}`}>
           {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
         </span>
       </div>
@@ -188,19 +216,49 @@ const PlanCard: React.FC<{ plan: Plan & { nodes?: PlanNode[] }; viewMode: 'grid'
         <div>
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
             <span>Progress</span>
-            <span>{progress}%</span>
+            <span>{isLoading ? '...' : `${progress}%`}</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
+            {isLoading ? (
+              <div className="h-2 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse" />
+            ) : (
+              <div 
+                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            )}
           </div>
         </div>
         
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-          <span>{nodeCount} nodes</span>
-          <span>Updated {formatDate(plan.updated_at)}</span>
+        <div className="flex justify-between text-xs">
+          <div className="text-gray-500 dark:text-gray-400">
+            {isLoading ? (
+              <span className="inline-block w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            ) : (
+              <span>
+                {nodeCount > 0 ? (
+                  <>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{nodeCount}</span> nodes
+                    {completedNodes > 0 && (
+                      <span className="text-green-600 dark:text-green-400 ml-2">
+                        • {completedNodes} done
+                      </span>
+                    )}
+                    {inProgressNodes > 0 && (
+                      <span className="text-blue-600 dark:text-blue-400 ml-2">
+                        • {inProgressNodes} active
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  'No nodes yet'
+                )}
+              </span>
+            )}
+          </div>
+          <span className="text-gray-500 dark:text-gray-400">
+            {formatDate(plan.updated_at)}
+          </span>
         </div>
       </div>
     </Link>
@@ -211,7 +269,7 @@ const PlansListSimplified: React.FC = () => {
   const { plans, isLoading } = usePlans(1, 100);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Default to list view
 
   // Filter plans
   const filteredPlans = plans.filter((plan: Plan) => {
@@ -223,7 +281,7 @@ const PlansListSimplified: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="spinner w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your plans...</p>
@@ -294,7 +352,7 @@ const PlansListSimplified: React.FC = () => {
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                     }`}
                   >
-                    {status}
+                    {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
                   </button>
                 ))}
               </div>
