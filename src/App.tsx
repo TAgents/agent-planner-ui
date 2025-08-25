@@ -8,8 +8,8 @@ import { UIProvider } from './contexts/UIContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
-import PlansList from './pages/PlansList';
-import PlanVisualization from './pages/PlanVisualization';
+import PlansList from './pages/PlansListSimplified'; // Using simplified version
+import PlanVisualization from './pages/PlanVisualizationSimplified'; // Using simplified version
 import SharedPlans from './pages/SharedPlans';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
