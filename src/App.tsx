@@ -9,7 +9,7 @@ import MainLayout from './components/layout/MainLayout';
 
 // Pages
 import PlansList from './pages/PlansListSimplified'; // Using simplified version
-import PlanVisualization from './pages/PlanVisualizationSimplified'; // Using simplified version
+import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
 import SharedPlans from './pages/SharedPlans';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';

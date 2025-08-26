@@ -26,13 +26,18 @@ import {
   HelpCircle,
   Settings2,
   X,
+  GitBranch,
+  Layers,
+  List,
+  Grid3x3,
 } from 'lucide-react';
 
-// Import new simplified components
+// Import new components
 import ViewControls, { ViewMode } from '../components/visualization/ViewControls';
 import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
 import CompactSidebar from '../components/visualization/CompactSidebar';
 import OnboardingTour from '../components/visualization/OnboardingTour';
+import ImprovedTreeNavigation from '../components/visualization/ImprovedTreeNavigation';
 import ShareButton from '../components/sharing/ShareButton';
 
 // Import existing components
@@ -72,8 +77,11 @@ const nodeTypes = {
   default: SimplifiedTaskNode as any,
 };
 
-// Help Modal Component
-const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+// View Layout Types
+type LayoutMode = 'graph' | 'tree' | 'split';
+
+// Enhanced Help Modal Component
+const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void; layoutMode: LayoutMode }> = ({ isOpen, onClose, layoutMode }) => {
   if (!isOpen) return null;
 
   return (
@@ -86,34 +94,65 @@ const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
           </button>
         </div>
         
-        <div className="space-y-3 text-sm">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="text-gray-600 dark:text-gray-400">
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">N</kbd> Add Node
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">S</kbd> Toggle Sidebar
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">+</kbd> Zoom In
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">-</kbd> Zoom Out
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">0</kbd> Fit View
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">?</kbd> Show Help
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">General</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">N</kbd> Add Node
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">S</kbd> Toggle Sidebar
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">T</kbd> Tree View
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">G</kbd> Graph View
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">?</kbd> Show Help
+              </div>
             </div>
           </div>
+          
+          {layoutMode === 'graph' && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Graph View</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-gray-600 dark:text-gray-400">
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">+</kbd> Zoom In
+                </div>
+                <div className="text-gray-600 dark:text-gray-400">
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">-</kbd> Zoom Out
+                </div>
+                <div className="text-gray-600 dark:text-gray-400">
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">0</kbd> Fit View
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {(layoutMode === 'tree' || layoutMode === 'split') && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tree View</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-gray-600 dark:text-gray-400">
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">⌘F</kbd> Search
+                </div>
+                <div className="text-gray-600 dark:text-gray-400">
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd> Clear Search
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const PlanVisualizationSimplified: React.FC = () => {
+const PlanVisualizationEnhanced: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const { state: uiState, toggleSidebar, openNodeDetails, closeNodeDetails } = useUI();
   
@@ -138,13 +177,15 @@ const PlanVisualizationSimplified: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   
-  // Simplified view state
+  // Enhanced view state
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('graph');
   const [activeView, setActiveView] = useState<ViewMode>('overview');
   const [showLabels, setShowLabels] = useState(true);
   const [showProgress, setShowProgress] = useState(true);
   const [showDependencies, setShowDependencies] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [treeViewMode, setTreeViewMode] = useState<'compact' | 'detailed'>('detailed');
   
   // UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -156,6 +197,21 @@ const PlanVisualizationSimplified: React.FC = () => {
   const reactFlowInstance = useRef<any>(null);
   const [currentZoom, setCurrentZoom] = useState(1);
 
+  // Load saved layout preference
+  useEffect(() => {
+    const savedLayout = localStorage.getItem(`planLayout_mode_${planId}`);
+    if (savedLayout && ['graph', 'tree', 'split'].includes(savedLayout)) {
+      setLayoutMode(savedLayout as LayoutMode);
+    }
+  }, [planId]);
+
+  // Save layout preference
+  useEffect(() => {
+    if (planId) {
+      localStorage.setItem(`planLayout_mode_${planId}`, layoutMode);
+    }
+  }, [layoutMode, planId]);
+
   // Check if this is a new user
   useEffect(() => {
     const hasSeenTour = localStorage.getItem('agent_planner_tour_completed');
@@ -166,7 +222,7 @@ const PlanVisualizationSimplified: React.FC = () => {
     }
   }, [planNodes]);
 
-  // Keyboard shortcuts - simplified
+  // Enhanced keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -174,6 +230,17 @@ const PlanVisualizationSimplified: React.FC = () => {
       // Help
       if (e.key === '?') {
         setShowHelp(!showHelp);
+      }
+      
+      // Layout switching
+      if (e.key === 't' || e.key === 'T') {
+        setLayoutMode('tree');
+      }
+      if (e.key === 'g' || e.key === 'G') {
+        setLayoutMode('graph');
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        setLayoutMode('split');
       }
       
       // Quick actions
@@ -184,21 +251,23 @@ const PlanVisualizationSimplified: React.FC = () => {
         toggleSidebar();
       }
       
-      // Zoom
-      if (e.key === '+' || e.key === '=') {
-        reactFlowInstance.current?.zoomIn();
-      }
-      if (e.key === '-') {
-        reactFlowInstance.current?.zoomOut();
-      }
-      if (e.key === '0') {
-        reactFlowInstance.current?.fitView({ padding: 0.2 });
+      // Zoom (only in graph mode)
+      if (layoutMode === 'graph' || layoutMode === 'split') {
+        if (e.key === '+' || e.key === '=') {
+          reactFlowInstance.current?.zoomIn();
+        }
+        if (e.key === '-') {
+          reactFlowInstance.current?.zoomOut();
+        }
+        if (e.key === '0') {
+          reactFlowInstance.current?.fitView({ padding: 0.2 });
+        }
       }
     };
     
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showHelp, toggleSidebar]);
+  }, [showHelp, toggleSidebar, layoutMode]);
 
   // Update nodes with view state
   useEffect(() => {
@@ -290,7 +359,7 @@ const PlanVisualizationSimplified: React.FC = () => {
     [setEdges]
   );
 
-  // Handle node click
+  // Handle node click (from graph)
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setActiveDetailTab('details');
     setNodes((nodes) => nodes.map(n => ({ ...n, selected: n.id === node.id })));
@@ -299,6 +368,29 @@ const PlanVisualizationSimplified: React.FC = () => {
     }
     openNodeDetails(node.id);
   }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, setNodes]);
+
+  // Handle node selection (from tree)
+  const handleNodeSelect = useCallback((nodeId: string) => {
+    setActiveDetailTab('details');
+    if (!uiState.sidebar.isOpen) {
+      toggleSidebar();
+    }
+    openNodeDetails(nodeId);
+    
+    // Also update ReactFlow selection if in split mode
+    if (layoutMode === 'split') {
+      setNodes((nodes) => nodes.map(n => ({ ...n, selected: n.id === nodeId })));
+      
+      // Focus the node in the graph view
+      const node = nodes.find(n => n.id === nodeId);
+      if (node && reactFlowInstance.current) {
+        reactFlowInstance.current.setCenter(node.position.x, node.position.y, {
+          zoom: 1.5,
+          duration: 800
+        });
+      }
+    }
+  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, layoutMode, setNodes, nodes]);
 
   // Fullscreen handling
   const toggleFullScreen = () => {
@@ -383,7 +475,7 @@ const PlanVisualizationSimplified: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Simplified Header */}
+      {/* Enhanced Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm z-10 border-b border-gray-200 dark:border-gray-700">
         <div className="px-4 h-14 flex items-center justify-between">
           {/* Left section */}
@@ -396,18 +488,60 @@ const PlanVisualizationSimplified: React.FC = () => {
             </h1>
           </div>
 
-          {/* Center section - View Controls */}
-          <div data-tour="view-controls">
-            <ViewControls
-              activeView={activeView}
-              onViewChange={setActiveView}
-              showLabels={showLabels}
-              showProgress={showProgress}
-              showDependencies={showDependencies}
-              onToggleLabels={() => setShowLabels(!showLabels)}
-              onToggleProgress={() => setShowProgress(!showProgress)}
-              onToggleDependencies={() => setShowDependencies(!showDependencies)}
-            />
+          {/* Center section - Enhanced View Controls */}
+          <div className="flex items-center gap-4">
+            {/* Layout Mode Toggle */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setLayoutMode('graph')}
+                className={`p-1.5 rounded transition-colors ${
+                  layoutMode === 'graph' 
+                    ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title="Graph View (G)"
+              >
+                <GitBranch className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setLayoutMode('tree')}
+                className={`p-1.5 rounded transition-colors ${
+                  layoutMode === 'tree' 
+                    ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title="Tree View (T)"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setLayoutMode('split')}
+                className={`p-1.5 rounded transition-colors ${
+                  layoutMode === 'split' 
+                    ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title="Split View (D)"
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {/* Original View Controls (for graph mode) */}
+            {(layoutMode === 'graph' || layoutMode === 'split') && (
+              <div data-tour="view-controls">
+                <ViewControls
+                  activeView={activeView}
+                  onViewChange={setActiveView}
+                  showLabels={showLabels}
+                  showProgress={showProgress}
+                  showDependencies={showDependencies}
+                  onToggleLabels={() => setShowLabels(!showLabels)}
+                  onToggleProgress={() => setShowProgress(!showProgress)}
+                  onToggleDependencies={() => setShowDependencies(!showDependencies)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right section */}
@@ -453,134 +587,151 @@ const PlanVisualizationSimplified: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 relative">
-          {/* Show empty state if no nodes */}
-          {nodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
-            <EmptyStateGuide 
-              planTitle={plan.title}
-              onCreateFirstNode={handleCreateNode}
-            />
-          ) : (
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onNodeClick={onNodeClick}
-              nodeTypes={nodeTypes}
-              onNodeDragStop={handleNodeDragStop}
-              onInit={(instance) => {
-                reactFlowInstance.current = instance;
-              }}
-              onMove={(event, viewport) => {
-                if (viewport.zoom !== currentZoom) {
-                  setCurrentZoom(viewport.zoom);
-                }
-              }}
-              defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-              minZoom={0.1}
-              maxZoom={2}
-              fitView={true}
-              fitViewOptions={{ padding: 0.2 }}
-              style={{ background: '#f9fafb' }}
-              attributionPosition="bottom-right"
-            >
-              <Controls />
-              <MiniMap 
-                nodeStrokeColor={(n) => {
-                  if (n.selected) return '#3b82f6';
-                  return '#e5e7eb';
-                }}
-                nodeColor={(n) => {
-                  if (n.selected) return '#dbeafe';
-                  return '#ffffff';
-                }}
-                pannable
-                zoomable
+        {/* Tree Navigation (for tree or split mode) */}
+        {(layoutMode === 'tree' || layoutMode === 'split') && (
+          <ImprovedTreeNavigation
+            nodes={planNodes}
+            selectedNodeId={uiState.nodeDetails.selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+            onNodeStatusChange={handleStatusChange}
+            onNodeCreate={() => handleCreateNode()}
+            onNodeEdit={(nodeId) => console.log('Edit node:', nodeId)}
+            onNodeDelete={handleNodeDelete}
+            viewMode={treeViewMode}
+          />
+        )}
+        
+        {/* Graph View */}
+        {(layoutMode === 'graph' || layoutMode === 'split') && (
+          <div className="flex-1 relative">
+            {/* Show empty state if no nodes */}
+            {nodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
+              <EmptyStateGuide 
+                planTitle={plan.title}
+                onCreateFirstNode={handleCreateNode}
               />
-              <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-              
-              {/* Simplified Add Node Button */}
-              <Panel position="top-right" className="space-y-2">
-                <button 
-                  onClick={handleCreateNode}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
-                  data-tour="add-node"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Node
-                </button>
-              </Panel>
-              
-              {/* Node creation form */}
-              {isCreatingNode && (
-                <Panel position="top-center" className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-96">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Node</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-                      <select 
-                        value={newNodeType}
-                        onChange={(e) => setNewNodeType(e.target.value as NodeType)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="phase">Phase</option>
-                        <option value="task">Task</option>
-                        <option value="milestone">Milestone</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent</label>
-                      <select 
-                        value={newNodeParentId || ''}
-                        onChange={(e) => setNewNodeParentId(e.target.value || null)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">No Parent (Root)</option>
-                        {planNodes.map(node => (
-                          <option key={node.id} value={node.id}>{node.title}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
-                      <input 
-                        type="text" 
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter node title"
-                        id="new-node-title"
-                        autoFocus
-                      />
-                    </div>
-                    
-                    <div className="flex justify-end gap-2">
-                      <button 
-                        onClick={() => setIsCreatingNode(false)}
-                        className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        onClick={() => {
-                          const titleInput = document.getElementById('new-node-title') as HTMLInputElement;
-                          if (titleInput.value) {
-                            submitNewNode(titleInput.value);
-                          }
-                        }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                      >
-                        Create
-                      </button>
-                    </div>
-                  </div>
+            ) : (
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                nodeTypes={nodeTypes}
+                onNodeDragStop={handleNodeDragStop}
+                onInit={(instance) => {
+                  reactFlowInstance.current = instance;
+                }}
+                onMove={(event, viewport) => {
+                  if (viewport.zoom !== currentZoom) {
+                    setCurrentZoom(viewport.zoom);
+                  }
+                }}
+                defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+                minZoom={0.1}
+                maxZoom={2}
+                fitView={true}
+                fitViewOptions={{ padding: 0.2 }}
+                style={{ background: '#f9fafb' }}
+                attributionPosition="bottom-right"
+              >
+                <Controls />
+                <MiniMap 
+                  nodeStrokeColor={(n) => {
+                    if (n.selected) return '#3b82f6';
+                    return '#e5e7eb';
+                  }}
+                  nodeColor={(n) => {
+                    if (n.selected) return '#dbeafe';
+                    return '#ffffff';
+                  }}
+                  pannable
+                  zoomable
+                />
+                <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+                
+                {/* Add Node Button */}
+                <Panel position="top-right" className="space-y-2">
+                  <button 
+                    onClick={handleCreateNode}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
+                    data-tour="add-node"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Node
+                  </button>
                 </Panel>
-              )}
-            </ReactFlow>
-          )}
-        </div>
+                
+                {/* Node creation form */}
+                {isCreatingNode && (
+                  <Panel position="top-center" className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-96">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Node</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select 
+                          value={newNodeType}
+                          onChange={(e) => setNewNodeType(e.target.value as NodeType)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="phase">Phase</option>
+                          <option value="task">Task</option>
+                          <option value="milestone">Milestone</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent</label>
+                        <select 
+                          value={newNodeParentId || ''}
+                          onChange={(e) => setNewNodeParentId(e.target.value || null)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="">No Parent (Root)</option>
+                          {planNodes.map(node => (
+                            <option key={node.id} value={node.id}>{node.title}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                        <input 
+                          type="text" 
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Enter node title"
+                          id="new-node-title"
+                          autoFocus
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => setIsCreatingNode(false)}
+                          className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const titleInput = document.getElementById('new-node-title') as HTMLInputElement;
+                            if (titleInput.value) {
+                              submitNewNode(titleInput.value);
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                          Create
+                        </button>
+                      </div>
+                    </div>
+                  </Panel>
+                )}
+              </ReactFlow>
+            )}
+          </div>
+        )}
 
         {/* Sidebar */}
         {uiState.sidebar.isOpen && (
@@ -649,8 +800,8 @@ const PlanVisualizationSimplified: React.FC = () => {
                   </div>
                 </div>
               </aside>
-            ) : (
-              // Compact Sidebar for Plan Overview
+            ) : layoutMode !== 'tree' && layoutMode !== 'split' ? (
+              // Compact Sidebar for Plan Overview (only when tree is not visible)
               <CompactSidebar
                 plan={plan}
                 nodes={planNodes}
@@ -658,7 +809,7 @@ const PlanVisualizationSimplified: React.FC = () => {
                 isActivityLoading={isActivityLoading}
                 onClose={toggleSidebar}
               />
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -673,9 +824,10 @@ const PlanVisualizationSimplified: React.FC = () => {
       <HelpModal 
         isOpen={showHelp}
         onClose={() => setShowHelp(false)}
+        layoutMode={layoutMode}
       />
     </div>
   );
 };
 
-export default PlanVisualizationSimplified;
+export default PlanVisualizationEnhanced;
