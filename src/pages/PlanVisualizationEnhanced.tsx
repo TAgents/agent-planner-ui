@@ -63,11 +63,8 @@ import {
   SimplifiedRootNode 
 } from '../components/nodes/SimplifiedNodes';
 
-// Import detail tabs
-import NodeDetailsTab from '../components/details/NodeDetailsTab';
-import NodeCommentsTab from '../components/details/NodeCommentsTab';
-import NodeLogsTab from '../components/details/NodeLogsTab';
-import NodeArtifactsTab from '../components/details/NodeArtifactsTab';
+// Import detail components
+import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 
 const nodeTypes = {
   root: SimplifiedRootNode as any,
@@ -196,6 +193,45 @@ const PlanVisualizationEnhanced: React.FC = () => {
   
   const reactFlowInstance = useRef<any>(null);
   const [currentZoom, setCurrentZoom] = useState(1);
+  
+  // Mock activities for demonstration
+  const mockActivities = useMemo(() => [
+    {
+      id: '1',
+      nodeId: selectedNode?.id || '',
+      type: 'status_change' as const,
+      actor: { id: '1', name: 'John Doe', avatar: undefined },
+      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+      data: { fromStatus: 'not_started' as NodeStatus, toStatus: 'in_progress' as NodeStatus }
+    },
+    {
+      id: '2',
+      nodeId: selectedNode?.id || '',
+      type: 'comment' as const,
+      actor: { id: '2', name: 'Sarah Smith', avatar: undefined },
+      timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
+      data: { text: 'Started working on this. Will update the team once the initial draft is ready.' }
+    },
+    {
+      id: '3',
+      nodeId: selectedNode?.id || '',
+      type: 'file_upload' as const,
+      actor: { id: '1', name: 'John Doe', avatar: undefined },
+      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
+      data: { fileName: 'design-mockup.pdf', fileSize: '2.4 MB', fileType: 'application/pdf' }
+    }
+  ], [selectedNode]);
+
+  // Handle activity actions
+  const handleCommentAdd = useCallback((text: string, mentions?: string[]) => {
+    console.log('Adding comment:', text, 'Mentions:', mentions);
+    // TODO: Add API call to create comment
+  }, []);
+
+  const handleFileUpload = useCallback((files: File[]) => {
+    console.log('Uploading files:', files);
+    // TODO: Add API call to upload files
+  }, []);
 
   // Load saved layout preference
   useEffect(() => {
@@ -737,68 +773,22 @@ const PlanVisualizationEnhanced: React.FC = () => {
         {uiState.sidebar.isOpen && (
           <>
             {uiState.nodeDetails.isOpen && selectedNode ? (
-              // Node Details Panel
-              <aside className="w-96 bg-white dark:bg-gray-800 shadow-md overflow-y-auto border-l border-gray-200 dark:border-gray-700">
-                <div className="p-4">
-                  {/* Header */}
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                      {selectedNode.title}
-                    </h2>
-                    <button
-                      onClick={closeNodeDetails}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Status and Type */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      selectedNode.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      selectedNode.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      selectedNode.status === 'blocked' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {getStatusLabel(selectedNode.status)}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {getNodeTypeLabel(selectedNode.node_type)}
-                    </span>
-                  </div>
-
-                  {/* Tabs */}
-                  <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
-                    {(['details', 'comments', 'logs', 'artifacts'] as const).map(tab => (
-                      <button 
-                        key={tab}
-                        onClick={() => setActiveDetailTab(tab)} 
-                        className={`px-3 py-2 text-sm font-medium capitalize transition-colors ${
-                          activeDetailTab === tab 
-                            ? 'border-b-2 border-blue-500 text-blue-600' 
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Tab Content */}
-                  <div>
-                    {activeDetailTab === 'details' && (
-                      <NodeDetailsTab 
-                        node={selectedNode} 
-                        onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)} 
-                        onDelete={() => handleNodeDelete(selectedNode.id)} 
-                      />
-                    )}
-                    {activeDetailTab === 'comments' && <NodeCommentsTab planId={planId!} nodeId={selectedNode.id} />}
-                    {activeDetailTab === 'logs' && <NodeLogsTab planId={planId!} nodeId={selectedNode.id} />}
-                    {activeDetailTab === 'artifacts' && <NodeArtifactsTab planId={planId!} nodeId={selectedNode.id} />}
-                  </div>
-                </div>
+              // Unified Node Details Panel - Increased width for better content visibility
+              <aside className="w-[640px] xl:w-[720px] shadow-md overflow-hidden border-l border-gray-200 dark:border-gray-700 flex">
+                <UnifiedNodeDetails
+                  node={selectedNode}
+                  activities={mockActivities}
+                  currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
+                  activeUsers={[
+                    { id: '2', name: 'Sarah Smith', email: 'sarah@example.com', role: 'user' },
+                    { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'user' }
+                  ]}
+                  onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
+                  onCommentAdd={handleCommentAdd}
+                  onFileUpload={handleFileUpload}
+                  onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
+                  onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
+                />
               </aside>
             ) : layoutMode !== 'tree' && layoutMode !== 'split' ? (
               // Compact Sidebar for Plan Overview (only when tree is not visible)
