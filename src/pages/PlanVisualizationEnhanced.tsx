@@ -194,38 +194,10 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const reactFlowInstance = useRef<any>(null);
   const [currentZoom, setCurrentZoom] = useState(1);
   
-  // Mock activities for demonstration
-  const mockActivities = useMemo(() => [
-    {
-      id: '1',
-      nodeId: selectedNode?.id || '',
-      type: 'status_change' as const,
-      actor: { id: '1', name: 'John Doe', avatar: undefined },
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-      data: { fromStatus: 'not_started' as NodeStatus, toStatus: 'in_progress' as NodeStatus }
-    },
-    {
-      id: '2',
-      nodeId: selectedNode?.id || '',
-      type: 'comment' as const,
-      actor: { id: '2', name: 'Sarah Smith', avatar: undefined },
-      timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-      data: { text: 'Started working on this. Will update the team once the initial draft is ready.' }
-    },
-    {
-      id: '3',
-      nodeId: selectedNode?.id || '',
-      type: 'file_upload' as const,
-      actor: { id: '1', name: 'John Doe', avatar: undefined },
-      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-      data: { fileName: 'design-mockup.pdf', fileSize: '2.4 MB', fileType: 'application/pdf' }
-    }
-  ], [selectedNode]);
-
   // Handle activity actions
-  const handleCommentAdd = useCallback((text: string, mentions?: string[]) => {
-    console.log('Adding comment:', text, 'Mentions:', mentions);
-    // TODO: Add API call to create comment
+  const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
+    console.log('Adding log:', content, 'Type:', logType, 'Tags:', tags);
+    // The hook will handle the API call
   }, []);
 
   const handleFileUpload = useCallback((files: File[]) => {
@@ -777,14 +749,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
               <aside className="w-[640px] xl:w-[720px] shadow-md overflow-hidden border-l border-gray-200 dark:border-gray-700 flex">
                 <UnifiedNodeDetails
                   node={selectedNode}
-                  activities={mockActivities}
                   currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
                   activeUsers={[
                     { id: '2', name: 'Sarah Smith', email: 'sarah@example.com', role: 'user' },
                     { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'user' }
                   ]}
                   onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
-                  onCommentAdd={handleCommentAdd}
+                  onLogAdd={handleLogAdd}
                   onFileUpload={handleFileUpload}
                   onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
                   onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}

@@ -30,20 +30,25 @@ import {
   ArrowRight,
   Pin,
   ThumbsUp,
-  Smile
+  Smile,
+  Activity,
+  Brain,
+  AlertTriangle,
+  Target
 } from 'lucide-react';
-import { PlanNode, NodeStatus, User as UserType } from '../../types';
+import { PlanNode, NodeStatus, User as UserType, Log, Artifact } from '../../types';
 import { formatDate } from '../../utils/planUtils';
+import { useNodeLogs } from '../../hooks/useNodeLogs';
+import { useNodeArtifacts } from '../../hooks/useNodeArtifacts';
 
 // Types
 interface UnifiedNodeDetailsProps {
   node: PlanNode;
-  activities: UnifiedActivity[];
   currentUser: UserType;
   activeUsers?: UserType[];
   typingUsers?: UserType[];
   onStatusChange: (status: NodeStatus) => void;
-  onCommentAdd: (text: string, mentions?: string[]) => void;
+  onLogAdd: (content: string, logType: string, tags?: string[]) => void;
   onFileUpload: (files: File[]) => void;
   onActivityReact?: (activityId: string, emoji: string) => void;
   onActivityReply?: (activityId: string, text: string) => void;
@@ -51,13 +56,15 @@ interface UnifiedNodeDetailsProps {
 }
 
 type ActivityType = 
-  | 'comment' 
+  | 'log' 
   | 'status_change' 
   | 'assignment'
   | 'file_upload'
   | 'edit'
   | 'dependency_added'
   | 'dependency_removed';
+
+type LogType = 'progress' | 'reasoning' | 'challenge' | 'decision';
 
 interface UnifiedActivity {
   id: string;
@@ -79,9 +86,10 @@ interface UnifiedActivity {
 }
 
 // Utility: Time formatting
-const formatTimeAgo = (date: Date): string => {
+const formatTimeAgo = (date: Date | string): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  const diff = now.getTime() - date.getTime();
+  const diff = now.getTime() - dateObj.getTime();
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -91,6 +99,19 @@ const formatTimeAgo = (date: Date): string => {
   if (hours > 0) return `${hours}h ago`;
   if (minutes > 0) return `${minutes}m ago`;
   return 'just now';
+};
+
+// Component: Log Type Icon
+const LogTypeIcon: React.FC<{ logType: LogType }> = ({ logType }) => {
+  const config = {
+    progress: { icon: Activity, color: 'text-blue-500' },
+    reasoning: { icon: Brain, color: 'text-purple-500' },
+    challenge: { icon: AlertTriangle, color: 'text-yellow-500' },
+    decision: { icon: Target, color: 'text-green-500' }
+  };
+
+  const Icon = config[logType].icon;
+  return <Icon className={`w-3.5 h-3.5 ${config[logType].color}`} />;
 };
 
 // Component: Status Badge
@@ -186,19 +207,32 @@ const ActivityItem: React.FC<{
 
   const renderContent = () => {
     switch (activity.type) {
-      case 'comment':
+      case 'log':
         return (
           <div className="flex gap-3">
             <Avatar user={activity.actor} />
             <div className="flex-1">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm">{activity.actor.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{activity.actor.name}</span>
+                    <LogTypeIcon logType={activity.data.logType as LogType} />
+                    <span className="text-xs text-gray-500 capitalize">{activity.data.logType}</span>
+                  </div>
                   <span className="text-xs text-gray-500">{formatTimeAgo(activity.timestamp)}</span>
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {activity.data.text}
+                  {activity.data.content}
                 </p>
+                {activity.data.tags && activity.data.tags.length > 0 && (
+                  <div className="flex gap-1 mt-2">
+                    {activity.data.tags.map((tag: string, i: number) => (
+                      <span key={i} className="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-400">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-1 ml-1">
                 <button className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1">
@@ -329,21 +363,24 @@ const ActivityItem: React.FC<{
   );
 };
 
-// Component: Activity Composer
-const ActivityComposer: React.FC<{
-  onComment: (text: string, mentions?: string[]) => void;
+// Component: Log Composer
+const LogComposer: React.FC<{
+  onLogAdd: (content: string, logType: string, tags?: string[]) => void;
   onFileUpload: (files: File[]) => void;
-}> = ({ onComment, onFileUpload }) => {
-  const [mode, setMode] = useState<'comment' | 'file'>('comment');
-  const [commentText, setCommentText] = useState('');
+}> = ({ onLogAdd, onFileUpload }) => {
+  const [mode, setMode] = useState<'log' | 'file'>('log');
+  const [logContent, setLogContent] = useState('');
+  const [logType, setLogType] = useState<LogType>('progress');
+  const [tags, setTags] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
-    if (commentText.trim()) {
-      // Extract mentions
-      const mentions = commentText.match(/@\w+/g)?.map(m => m.slice(1)) || [];
-      onComment(commentText, mentions);
-      setCommentText('');
+    if (logContent.trim()) {
+      // Parse tags
+      const tagList = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      onLogAdd(logContent, logType, tagList);
+      setLogContent('');
+      setTags('');
     }
   };
 
@@ -351,15 +388,15 @@ const ActivityComposer: React.FC<{
     <div className="border-t border-gray-200 dark:border-gray-700 p-3">
       <div className="flex gap-2 mb-2">
         <button
-          onClick={() => setMode('comment')}
+          onClick={() => setMode('log')}
           className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-            mode === 'comment' 
+            mode === 'log' 
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
               : 'hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
-          <MessageSquare className="w-3.5 h-3.5 inline mr-1" />
-          Comment
+          <Edit3 className="w-3.5 h-3.5 inline mr-1" />
+          Add Log
         </button>
         <button
           onClick={() => setMode('file')}
@@ -374,28 +411,49 @@ const ActivityComposer: React.FC<{
         </button>
       </div>
 
-      {mode === 'comment' ? (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Write a comment... Use @ to mention"
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!commentText.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+      {mode === 'log' ? (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <select
+              value={logType}
+              onChange={(e) => setLogType(e.target.value as LogType)}
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+            >
+              <option value="progress">Progress</option>
+              <option value="reasoning">Reasoning</option>
+              <option value="challenge">Challenge</option>
+              <option value="decision">Decision</option>
+            </select>
+            <input
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="Tags (comma separated)"
+              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+            />
+          </div>
+          <div className="flex gap-2">
+            <textarea
+              value={logContent}
+              onChange={(e) => setLogContent(e.target.value)}
+              placeholder="Write a log entry..."
+              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 resize-none"
+              rows={3}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={!logContent.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       ) : (
         <div>
@@ -519,31 +577,87 @@ const DetailsSection: React.FC<{ node: PlanNode }> = ({ node }) => {
 // Main Component
 const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   node,
-  activities,
   currentUser,
   activeUsers = [],
   typingUsers = [],
   onStatusChange,
-  onCommentAdd,
+  onLogAdd,
   onFileUpload,
   onActivityReact,
   onActivityReply,
   onAssignUser
 }) => {
-  const [filter, setFilter] = useState<'all' | 'comments' | 'changes' | 'files'>('all');
+  const [filter, setFilter] = useState<'all' | 'logs' | 'changes' | 'files'>('all');
+  
+  // Fetch logs and artifacts from API
+  const { logs, isLoading: logsLoading, addLogEntry } = useNodeLogs(node.plan_id, node.id);
+  const { artifacts, isLoading: artifactsLoading } = useNodeArtifacts(node.plan_id, node.id);
   
   // Calculate progress
   const progress = node.status === 'completed' ? 100 : 
                    node.status === 'in_progress' ? 50 : 0;
   
+  // Convert logs and artifacts to unified activities
+  const activities: UnifiedActivity[] = React.useMemo(() => {
+    const logActivities: UnifiedActivity[] = logs.map(log => ({
+      id: log.id,
+      nodeId: node.id,
+      type: 'log' as const,
+      actor: {
+        id: log.user?.id || log.user_id,
+        name: log.user?.name || 'Unknown User',
+        avatar: undefined
+      },
+      timestamp: new Date(log.created_at),
+      data: {
+        content: log.content,
+        logType: log.log_type,
+        tags: log.tags
+      }
+    }));
+    
+    const artifactActivities: UnifiedActivity[] = artifacts.map(artifact => ({
+      id: artifact.id,
+      nodeId: node.id,
+      type: 'file_upload' as const,
+      actor: {
+        id: artifact.user?.id || artifact.created_by,
+        name: artifact.user?.name || 'Unknown User',
+        avatar: undefined
+      },
+      timestamp: new Date(artifact.created_at),
+      data: {
+        fileName: artifact.name,
+        fileSize: 'Unknown size', // Would need to add size to artifact data
+        fileType: artifact.content_type,
+        url: artifact.url
+      }
+    }));
+    
+    // Combine and sort by timestamp
+    return [...logActivities, ...artifactActivities].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
+  }, [logs, artifacts, node.id]);
+  
   // Filter activities
   const filteredActivities = activities.filter(activity => {
     if (filter === 'all') return true;
-    if (filter === 'comments') return activity.type === 'comment';
+    if (filter === 'logs') return activity.type === 'log';
     if (filter === 'changes') return ['status_change', 'assignment', 'edit'].includes(activity.type);
     if (filter === 'files') return activity.type === 'file_upload';
     return true;
   });
+
+  // Handle log addition
+  const handleLogAdd = (content: string, logType: string, tags?: string[]) => {
+    addLogEntry({
+      content,
+      log_type: logType,
+      tags,
+      metadata: {}
+    });
+  };
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
@@ -598,7 +712,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           {/* Activity Filters */}
           <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="flex gap-1">
-              {(['all', 'comments', 'changes', 'files'] as const).map(f => (
+              {(['all', 'logs', 'changes', 'files'] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -632,7 +746,12 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
           {/* Activity List */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            {filteredActivities.length > 0 ? (
+            {logsLoading || artifactsLoading ? (
+              <div className="text-center py-8">
+                <div className="spinner w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-gray-500 text-sm mt-2">Loading activity...</p>
+              </div>
+            ) : filteredActivities.length > 0 ? (
               filteredActivities.map(activity => (
                 <ActivityItem
                   key={activity.id}
@@ -643,14 +762,14 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               ))
             ) : (
               <div className="text-center py-8 text-gray-500 text-sm">
-                No activity yet. Start the conversation!
+                No activity yet. Add your first log entry!
               </div>
             )}
           </div>
 
-          {/* Activity Composer */}
-          <ActivityComposer
-            onComment={onCommentAdd}
+          {/* Log Composer */}
+          <LogComposer
+            onLogAdd={handleLogAdd}
             onFileUpload={onFileUpload}
           />
         </div>
