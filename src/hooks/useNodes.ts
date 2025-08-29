@@ -119,13 +119,12 @@ export const useNodes = (planId: string) => {
     ({ nodeId, status }: { nodeId: string; status: string }) => 
       nodeService.updateNodeStatus(planId, nodeId, status),
     {
-      onSuccess: (data) => {
+      onSuccess: (data, variables) => {
         // Directly refetch instead of using setTimeout
         refetch();
-        // Also update the node details if it's currently selected
-        if (data.data?.id) {
-          queryClient.invalidateQueries(['node', userId, planId, data.data.id]);
-        }
+        // Also invalidate the specific node query using the nodeId from variables
+        queryClient.invalidateQueries(['node', userId, planId, variables.nodeId]);
+        console.log('Invalidated node query for:', variables.nodeId);
       },
     }
   );
@@ -193,10 +192,12 @@ export const useNode = (planId: string, nodeId: string) => {
     },
     {
       enabled: !!planId && !!nodeId,
-      staleTime: 30 * 1000, // 30 seconds
+      staleTime: 0, // Always fetch fresh data when switching nodes
+      cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
       retry: 2, // Retry twice if the request fails
       retryDelay: 1000, // Wait 1 second between retries
       refetchOnWindowFocus: false,
+      refetchOnMount: 'always', // Always refetch when component mounts
       onSuccess: (data) => {
         console.log('Node details fetched successfully:', data?.data?.id);
       },

@@ -374,26 +374,17 @@ export const planService = {
   
   // Collaboration endpoints
   getCollaborators: async (planId: string) => {
-    try {
-      const response = await request<any>({
-        method: 'GET',
-        url: `/plans/${planId}/collaborators`,
-      });
-      return response;
-    } catch (error) {
-      console.log('Collaborators endpoint not available, returning mock data');
-      // Return mock data if the endpoint doesn't exist yet
-      // This allows the UI to work while the backend is being implemented
-      return [
-        {
-          id: 'owner-id',
-          email: 'owner@example.com',
-          name: 'Plan Owner',
-          role: 'owner',
-          created_at: new Date().toISOString()
-        }
-      ];
-    }
+    const response = await request<any>({
+      method: 'GET',
+      url: `/plans/${planId}/collaborators`,
+    });
+    
+    // Handle different response formats from the API
+    if (Array.isArray(response)) return response;
+    if (response.data && Array.isArray(response.data)) return response.data;
+    if (response.collaborators && Array.isArray(response.collaborators)) return response.collaborators;
+    
+    return [];
   },
   
   addCollaborator: async (planId: string, data: { email: string; role: 'viewer' | 'editor' | 'admin' }) => {
@@ -416,6 +407,36 @@ export const planService = {
       method: 'PUT',
       url: `/plans/${planId}/collaborators/${userId}`,
       data: { role },
+    });
+  },
+
+  // Plan progress endpoint
+  getPlanProgress: async (planId: string) => {
+    return request<{
+      total_nodes: number;
+      completed_nodes: number;
+      in_progress_nodes: number;
+      blocked_nodes: number;
+      completion_percentage: number;
+    }>({
+      method: 'GET',
+      url: `/plans/${planId}/progress`,
+    });
+  },
+
+  // Plan context for AI agents
+  getPlanContext: async (planId: string) => {
+    return request<any>({
+      method: 'GET',
+      url: `/plans/${planId}/context`,
+    });
+  },
+
+  // Available users for assignments
+  getAvailableUsers: async (planId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/plans/${planId}/available-users`,
     });
   },
 };
@@ -561,6 +582,61 @@ export const nodeService = {
       url: `/plans/${planId}/nodes/${nodeId}`,
     });
   },
+
+  // Advanced node operations
+  getNodeContext: async (planId: string, nodeId: string) => {
+    return request<any>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/context`,
+    });
+  },
+
+  getNodeAncestry: async (planId: string, nodeId: string) => {
+    return request<any>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/ancestry`,
+    });
+  },
+
+  moveNode: async (planId: string, nodeId: string, data: { parent_id?: string; order_index: number }) => {
+    return request<ApiResponse<PlanNode>>({
+      method: 'POST',
+      url: `/plans/${planId}/nodes/${nodeId}/move`,
+      data,
+    });
+  },
+
+  // Node assignments
+  getNodeAssignments: async (planId: string, nodeId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/assignments`,
+    });
+  },
+
+  assignUserToNode: async (planId: string, nodeId: string, userId: string) => {
+    return request<any>({
+      method: 'POST',
+      url: `/plans/${planId}/nodes/${nodeId}/assign`,
+      data: { user_id: userId },
+    });
+  },
+
+  unassignUserFromNode: async (planId: string, nodeId: string, userId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/plans/${planId}/nodes/${nodeId}/unassign`,
+      data: { user_id: userId },
+    });
+  },
+
+  // Get all activities for a node (logs, artifacts, status changes)
+  getNodeActivities: async (planId: string, nodeId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/activities`,
+    });
+  },
 };
 
 // Comments endpoints
@@ -596,6 +672,36 @@ export const activityService = {
       method: 'GET',
       url: `/activity/plans/${planId}/activity`,
       params: { page, limit },
+    });
+  },
+
+  // Timeline view of plan activity
+  getPlanTimeline: async (planId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/activity/plans/${planId}/timeline`,
+    });
+  },
+
+  // Activity for a specific node
+  getNodeActivity: async (planId: string, nodeId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/activity/plans/${planId}/nodes/${nodeId}/activity`,
+    });
+  },
+
+  // Add detailed activity log with metadata
+  addDetailedLog: async (planId: string, nodeId: string, logData: {
+    content: string;
+    log_type: string;
+    metadata?: Record<string, any>;
+    tags?: string[];
+  }) => {
+    return request<any>({
+      method: 'POST',
+      url: `/activity/plans/${planId}/nodes/${nodeId}/detailed-log`,
+      data: logData,
     });
   },
 };
@@ -636,6 +742,15 @@ export const searchService = {
       method: 'GET',
       url: `/search/plan/${planId}`,
       params: { query },
+    });
+  },
+
+  // Search for artifacts across plans
+  searchArtifacts: async (query: string) => {
+    return request<ApiResponse<any>>({
+      method: 'GET',
+      url: '/artifacts/search',
+      params: { q: query },
     });
   },
 };
@@ -742,6 +857,81 @@ export const debugService = {
   },
 };
 
+// Upload service for file uploads
+export const uploadService = {
+  uploadAvatar: async (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await api.post<{ message: string; avatar_url: string }>(
+      '/upload/avatar',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    
+    return response.data;
+  },
+
+  deleteAvatar: async () => {
+    return request<{ message: string }>({
+      method: 'DELETE',
+      url: '/upload/avatar'
+    });
+  },
+};
+
+// User management service
+export const userService = {
+  // List all users (when backend implements)
+  getAllUsers: async () => {
+    return request<any[]>({
+      method: 'GET',
+      url: '/users',
+    });
+  },
+
+  // Search users by name or email (when backend implements)
+  searchUsers: async (query: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: '/users/search',
+      params: { q: query },
+    });
+  },
+};
+
+// Collaboration service for real-time features
+export const collaborationService = {
+  // Get active users on a plan
+  getActiveUsers: async (planId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/plans/${planId}/active-users`,
+    });
+  },
+
+  // Update user presence
+  updatePresence: async (planId: string, data: { status: 'active' | 'away'; last_seen?: string }) => {
+    return request<any>({
+      method: 'POST',
+      url: `/plans/${planId}/presence`,
+      data,
+    });
+  },
+
+  // Get active users for a specific node
+  getNodeActiveUsers: async (planId: string, nodeId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/active-users`,
+    });
+  },
+};
+
 // API Tokens endpoints
 export const tokenService = {
   getTokens: async () => {
@@ -749,7 +939,7 @@ export const tokenService = {
     try {
       const result = await request<ApiToken[] | ApiResponse<ApiToken[]>>({ 
         method: 'GET',
-        url: '/tokens',
+        url: '/auth/token',
       });
       console.log('Raw API response for getTokens:', result);
       return result;
@@ -764,7 +954,7 @@ export const tokenService = {
     try {
       const result = await request<ApiToken | ApiResponse<ApiToken>>({ 
         method: 'POST',
-        url: '/tokens',
+        url: '/auth/token',
         data: { name, permissions },
       });
       console.log('Raw API response for createToken:', result);
@@ -780,7 +970,7 @@ export const tokenService = {
     try {
       const result = await request<any>({  
         method: 'DELETE',
-        url: `/tokens/${tokenId}`,
+        url: `/auth/token/${tokenId}`,
       });
       console.log('Raw API response for revokeToken:', result);
       return result;
@@ -800,6 +990,9 @@ export default {
   search: searchService,
   logs: logService,
   artifacts: artifactService,
+  upload: uploadService,
+  users: userService,
+  collaboration: collaborationService,
   tokens: tokenService,
   debug: debugService,
 };

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useQueryClient } from 'react-query';
 import { useParams, Link } from 'react-router-dom';
 import ReactFlow, {
   addEdge,
@@ -39,6 +40,10 @@ import CompactSidebar from '../components/visualization/CompactSidebar';
 import OnboardingTour from '../components/visualization/OnboardingTour';
 import ImprovedTreeNavigation from '../components/visualization/ImprovedTreeNavigation';
 import ShareButton from '../components/sharing/ShareButton';
+import PlanProgress from '../components/plans/PlanProgress';
+import ActivityTimeline from '../components/activity/ActivityTimeline';
+import NodeContext from '../components/nodes/NodeContext';
+import NodeAncestry from '../components/nodes/NodeAncestry';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -152,6 +157,7 @@ const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void; layoutMode: La
 const PlanVisualizationEnhanced: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const { state: uiState, toggleSidebar, openNodeDetails, closeNodeDetails } = useUI();
+  const queryClient = useQueryClient();
   
   // Data fetching
   const { plan, isLoading: isPlanLoading } = usePlan(planId || '');
@@ -163,11 +169,19 @@ const PlanVisualizationEnhanced: React.FC = () => {
     createNode,
     updateNodeStatus,
     deleteNode,
+    refetch: refetchNodes,
   } = useNodes(planId || '');
-  const { node: selectedNode, isLoading: isSelectedNodeLoading } = useNode(
+  const { node: selectedNodeFromAPI, isLoading: isSelectedNodeLoading, refetch: refetchSelectedNode } = useNode(
     planId || '',
     uiState.nodeDetails.selectedNodeId || ''
   );
+  
+  // Get the selected node from planNodes which should be more up-to-date
+  const selectedNode = useMemo(() => {
+    if (!uiState.nodeDetails.selectedNodeId) return null;
+    const nodeFromList = planNodes.find(n => n.id === uiState.nodeDetails.selectedNodeId);
+    return nodeFromList || selectedNodeFromAPI;
+  }, [planNodes, selectedNodeFromAPI, uiState.nodeDetails.selectedNodeId]);
   const { activities: recentActivities, isLoading: isActivityLoading } = usePlanActivity(planId || '', 1, 5);
 
   // React Flow state
@@ -441,10 +455,53 @@ const PlanVisualizationEnhanced: React.FC = () => {
   };
 
   // Handle status change
-  const handleStatusChange = (nodeId: string, newStatus: NodeStatus) => {
+  const handleStatusChange = useCallback((nodeId: string, newStatus: NodeStatus) => {
     if (!planId) return;
-    updateNodeStatus.mutate({ nodeId, status: newStatus });
-  };
+    
+    // Update the node in the local state immediately for better UX
+    setNodes(prevNodes => 
+      prevNodes.map(node => 
+        node.id === nodeId 
+          ? { ...node, data: { ...node.data, status: newStatus } }
+          : node
+      )
+    );
+    
+    // Then update via API
+    updateNodeStatus.mutate(
+      { nodeId, status: newStatus },
+      {
+        onSuccess: () => {
+          // Refetch to ensure all data is in sync
+          refetchNodes();
+          if (nodeId === uiState.nodeDetails.selectedNodeId) {
+            refetchSelectedNode();
+          }
+          
+          // Invalidate and refetch activity-related queries for the updated node
+          queryClient.invalidateQueries(['nodeLogs', planId, nodeId]);
+          queryClient.invalidateQueries(['nodeArtifacts', planId, nodeId]);
+          queryClient.invalidateQueries(['nodeComments', planId, nodeId]);
+          queryClient.invalidateQueries(['nodeAssignments', planId, nodeId]);
+          queryClient.invalidateQueries(['planActivity', planId]);
+          
+          // If this node is currently selected, also invalidate its specific queries
+          if (nodeId === uiState.nodeDetails.selectedNodeId) {
+            // Force immediate refetch for better UX
+            queryClient.refetchQueries(['nodeLogs', planId, nodeId]);
+            queryClient.refetchQueries(['nodeArtifacts', planId, nodeId]);
+          }
+          
+          console.log(`Status updated successfully for node ${nodeId}, refreshing activity view`);
+        },
+        onError: (error) => {
+          console.error('Failed to update status:', error);
+          // Revert the optimistic update on error
+          refetchNodes();
+        }
+      }
+    );
+  }, [planId, updateNodeStatus, setNodes, refetchNodes, refetchSelectedNode, uiState.nodeDetails.selectedNodeId, queryClient]);
 
   // Handle node deletion
   const handleNodeDelete = (nodeId: string) => {
@@ -749,11 +806,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
               <aside className="w-[640px] xl:w-[720px] shadow-md overflow-hidden border-l border-gray-200 dark:border-gray-700 flex">
                 <UnifiedNodeDetails
                   node={selectedNode}
+                  planId={planId || ''}
                   currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
-                  activeUsers={[
-                    { id: '2', name: 'Sarah Smith', email: 'sarah@example.com', role: 'user' },
-                    { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'user' }
-                  ]}
+                  activeUsers={[]}  // Empty array - feature not implemented
                   onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
                   onLogAdd={handleLogAdd}
                   onFileUpload={handleFileUpload}

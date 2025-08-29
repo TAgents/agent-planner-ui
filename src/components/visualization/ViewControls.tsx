@@ -45,8 +45,8 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 
   return (
     <div className="flex items-center gap-3">
-      {/* Simplified View Selector - Dropdown instead of tabs */}
-      <div className="relative">
+      {/* View Selector Dropdown - Hidden as functionality is not fully implemented */}
+      {/* <div className="relative">
         <button
           onClick={() => setShowViewOptions(!showViewOptions)}
           className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
@@ -91,7 +91,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
             ))}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* View Options - Grouped in a single button */}
       <div className="relative">

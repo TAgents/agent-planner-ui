@@ -10,7 +10,7 @@ import MainLayout from './components/layout/MainLayout';
 // Pages
 import PlansList from './pages/PlansListSimplified'; // Using simplified version
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
-import SharedPlans from './pages/SharedPlans';
+// import SharedPlans from './pages/SharedPlans'; // Hidden - functionality not fully implemented
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -53,7 +53,7 @@ const App: React.FC = () => {
                 <Route path="plans/new" element={<CreatePlan />} />
                 <Route path="plans/ai-create" element={<AICreatePlan />} />
                 <Route path="plans/:planId" element={<PlanVisualization />} />
-                <Route path="shared" element={<SharedPlans />} />
+                {/* <Route path="shared" element={<SharedPlans />} /> */}
                 <Route path="settings" element={<Settings />} />
                 <Route path="profile" element={<UserProfile />} />
               </Route>

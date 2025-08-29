@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Share2, Users } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import ShareModal from './ShareModal';
 
 interface ShareButtonProps {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, LogOut, Settings as SettingsIcon, Home, User, Users } from 'lucide-react';
+import { Moon, Sun, LogOut, Settings as SettingsIcon, Home, User/*, Users */ } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import { useUI } from '../../contexts/UIContext';
 import api from '../../services/api';
@@ -63,6 +63,7 @@ const MainLayout: React.FC = () => {
                 <Home className="h-5 w-5" />
                 <span className="ml-1 hidden sm:inline">My Plans</span>
               </Link>
+              {/* Shared tab hidden - functionality not fully implemented
               <Link
                 to="/shared"
                 className={`flex items-center p-2 rounded-lg transition duration-200 border ${
@@ -74,7 +75,7 @@ const MainLayout: React.FC = () => {
               >
                 <Users className="h-5 w-5" />
                 <span className="ml-1 hidden sm:inline">Shared</span>
-              </Link>
+              </Link> */}
               <Link
                 to="/profile"
                 className={`flex items-center p-2 rounded-lg transition duration-200 border ${
