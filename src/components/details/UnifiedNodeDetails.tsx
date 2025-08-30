@@ -35,7 +35,12 @@ import {
   AlertTriangle,
   Target,
   UserPlus,
-  UserCheck
+  UserCheck,
+  Code2,
+  Save,
+  Copy,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { PlanNode, NodeStatus, User as UserType, Log, Artifact } from '../../types';
 import { formatDate } from '../../utils/planUtils';
@@ -43,6 +48,7 @@ import { useNodeLogs } from '../../hooks/useNodeLogs';
 import { useNodeArtifacts } from '../../hooks/useNodeArtifacts';
 import { useCollaborators } from '../../hooks/useCollaborators';
 import { useNodeAssignments } from '../../hooks/useNodeAssignments';
+import { useNodeInstructions } from '../../hooks/useNodeInstructions';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -623,6 +629,228 @@ const LogComposer: React.FC<{
   );
 };
 
+// Component: Agent Instructions Editor
+const AgentInstructionsTab: React.FC<{ 
+  node: PlanNode;
+  onUpdate?: (instructions: string) => Promise<void>;
+  readOnly?: boolean;
+}> = ({ node, onUpdate, readOnly = false }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [instructions, setInstructions] = useState(node.agent_instructions || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Reset when node changes
+  useEffect(() => {
+    setInstructions(node.agent_instructions || '');
+    setIsEditing(false);
+  }, [node.id, node.agent_instructions]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current && isEditing) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [instructions, isEditing]);
+
+  const handleSave = async () => {
+    if (!onUpdate) {
+      console.error('No update handler provided');
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      // Call the update function and wait for it to complete
+      await onUpdate(instructions);
+      
+      // Only close the editor if the save was successful
+      setIsEditing(false);
+      
+      console.log('Agent instructions saved successfully');
+    } catch (error) {
+      console.error('Failed to save agent instructions:', error);
+      // Keep the editor open so the user doesn't lose their changes
+      alert('Failed to save agent instructions. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setInstructions(node.agent_instructions || '');
+    setIsEditing(false);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(instructions);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const renderContent = () => {
+    if (!instructions && !isEditing) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+          <Code2 className="w-12 h-12 mb-3" />
+          <p className="text-sm mb-4">No agent instructions defined</p>
+          {!readOnly && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+            >
+              Add Instructions
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    if (isEditing) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Code2 className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium">Editing Agent Instructions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPreview(!showPreview)}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                title={showPreview ? "Hide preview" : "Show preview"}
+              >
+                {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          
+          <div className={showPreview ? "grid grid-cols-2 gap-4" : ""}>
+            <div>
+              <textarea
+                ref={textareaRef}
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="Enter detailed instructions for AI agents working on this task...\n\nYou can include:\n• Task objectives and goals\n• Step-by-step procedures\n• Code examples and templates (use markdown)\n• Important constraints or requirements\n• Expected outputs and formats\n\nSupports markdown formatting:
+**bold**, *italic*, `code`, ```code blocks```"
+                className="w-full px-4 py-3 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 resize-none"
+                style={{ minHeight: '400px' }}
+              />
+            </div>
+            
+            {showPreview && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 overflow-auto">
+                <div className="text-xs text-gray-500 mb-2">Preview</div>
+                <pre className="text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
+                  {instructions || 'Instructions will appear here...'}
+                </pre>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm"
+              disabled={isSaving}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || instructions === node.agent_instructions}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Read-only view
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Code2 className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium">Agent Instructions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded relative"
+              title="Copy to clipboard"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    Copied!
+                  </span>
+                </>
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+            {!readOnly && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                title="Edit instructions"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 max-h-[600px] overflow-y-auto">
+          <pre className="text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300 leading-relaxed">
+            {instructions}
+          </pre>
+        </div>
+        
+        {/* Metadata about instructions */}
+        {node.agent_instructions && (
+          <div className="text-xs text-gray-500 flex items-center gap-4">
+            <span>
+              {instructions.length} characters
+            </span>
+            <span>
+              {instructions.split('\n').length} lines
+            </span>
+            {node.updated_at && (
+              <span>
+                Last updated: {formatTimeAgo(node.updated_at)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full overflow-y-auto p-4">
+      {renderContent()}
+    </div>
+  );
+};
+
 // Component: Collapsible Details Section
 const DetailsSection: React.FC<{ node: PlanNode }> = ({ node }) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
@@ -755,12 +983,14 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onAssignUser,
   onUnassignUser
 }) => {
+  const [activeTab, setActiveTab] = useState<'activity' | 'logs' | 'files' | 'instructions'>('activity');
   const [filter, setFilter] = useState<'all' | 'logs' | 'files'>('all');
   const [assignedUser, setAssignedUser] = useState<any>(null);
   
-  // Reset filter when node changes
+  // Reset filter and tab when node changes
   React.useEffect(() => {
     setFilter('all');
+    setActiveTab('activity');
   }, [node.id]);
   
   // Fetch logs and artifacts from API
@@ -777,6 +1007,9 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   
   // Fetch collaborators for assignment
   const { collaborators } = useCollaborators(planId);
+  
+  // Handle agent instructions updates
+  const { updateInstructions } = useNodeInstructions(planId, node.id);
   
   // Fetch and manage node assignments
   const { 
@@ -980,36 +1213,91 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           <DetailsSection node={node} />
         </div>
 
-        {/* Right: Activity Feed (Flexible width) */}
+        {/* Right: Tabbed Content (Flexible width) */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Activity Filters */}
+          {/* Tab Navigation */}
           <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="flex gap-1">
-              {(['all', 'logs', 'files'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-3 py-1 text-xs rounded-lg capitalize transition-colors ${
-                    filter === f 
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  {f === 'all' ? 'All Activity' : f}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === 'activity'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                All Activity
+              </button>
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === 'logs'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                Logs
+              </button>
+              <button
+                onClick={() => setActiveTab('files')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === 'files'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                Files
+              </button>
+              <button
+                onClick={() => setActiveTab('instructions')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 relative ${
+                  activeTab === 'instructions'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                Agent Instructions
+                {node.agent_instructions && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                )}
+              </button>
             </div>
-            
-            {/* Typing indicator - Hidden as feature not implemented */}
-            {/* {typingUsers.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-gray-500 italic">
-                {typingUsers[0].name} is typing...
-              </div>
-            )} */}
           </div>
 
-          {/* Activity List */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Tab Content */}
+          {activeTab === 'instructions' ? (
+            <AgentInstructionsTab 
+              node={node} 
+              onUpdate={updateInstructions}
+            />
+          ) : (
+            <>
+              {/* Activity Feed Content */}
+              <div className="flex-1 flex flex-col min-w-0">
+                {/* Sub-filters for Activity tab */}
+                {activeTab === 'activity' && (
+                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div className="flex gap-1">
+                      {(['all', 'logs', 'files'] as const).map(f => (
+                        <button
+                          key={f}
+                          onClick={() => setFilter(f)}
+                          className={`px-3 py-1 text-xs rounded-lg capitalize transition-colors ${
+                            filter === f 
+                              ? 'bg-gray-200 dark:bg-gray-700' 
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          {f === 'all' ? 'All' : f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Activity List */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {logsLoading || artifactsLoading ? (
               <div className="text-center py-8">
                 <div className="spinner w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -1029,13 +1317,16 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                 No activity yet. Add your first log entry!
               </div>
             )}
-          </div>
+                </div>
 
-          {/* Log Composer */}
-          <LogComposer
-            onLogAdd={handleLogAdd}
-            onFileUpload={onFileUpload}
-          />
+                {/* Log Composer */}
+                <LogComposer
+                  onLogAdd={handleLogAdd}
+                  onFileUpload={onFileUpload}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
