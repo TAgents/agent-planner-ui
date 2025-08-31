@@ -984,12 +984,10 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onUnassignUser
 }) => {
   const [activeTab, setActiveTab] = useState<'activity' | 'logs' | 'files' | 'instructions'>('activity');
-  const [filter, setFilter] = useState<'all' | 'logs' | 'files'>('all');
   const [assignedUser, setAssignedUser] = useState<any>(null);
   
-  // Reset filter and tab when node changes
+  // Reset tab when node changes
   React.useEffect(() => {
-    setFilter('all');
     setActiveTab('activity');
   }, [node.id]);
   
@@ -1096,13 +1094,57 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
     );
   }, [logs, artifacts, node.id]);
   
-  // Filter activities
-  const filteredActivities = activities.filter(activity => {
-    if (filter === 'all') return true;
-    if (filter === 'logs') return activity.type === 'log';
-    if (filter === 'files') return activity.type === 'file_upload';
-    return true;
-  });
+  // Get content based on active tab
+  const getTabContent = () => {
+    switch(activeTab) {
+      case 'activity':
+        // Show all activities (logs, files, status changes, assignments, etc.)
+        return activities;
+      case 'logs':
+        // Show only log entries
+        return logs.map(log => ({
+          id: log.id,
+          nodeId: node.id,
+          type: 'log' as const,
+          actor: {
+            id: log.user?.id || log.user_id,
+            name: log.user?.name || 'Unknown User',
+            email: log.user?.email,
+            avatar: undefined
+          },
+          timestamp: new Date(log.created_at),
+          data: {
+            content: log.content,
+            logType: log.log_type,
+            tags: log.tags
+          }
+        }));
+      case 'files':
+        // Show only artifacts/files
+        return artifacts.map(artifact => ({
+          id: artifact.id,
+          nodeId: node.id,
+          type: 'file_upload' as const,
+          actor: {
+            id: artifact.user?.id || artifact.created_by,
+            name: artifact.user?.name || 'Unknown User',
+            email: artifact.user?.email,
+            avatar: undefined
+          },
+          timestamp: new Date(artifact.created_at),
+          data: {
+            fileName: artifact.name,
+            fileSize: 'Unknown size',
+            fileType: artifact.content_type,
+            url: artifact.url
+          }
+        }));
+      default:
+        return [];
+    }
+  };
+
+  const tabContent = React.useMemo(() => getTabContent(), [activeTab, activities, logs, artifacts, node.id]);
 
   // Handle log addition
   const handleLogAdd = (content: string, logType: string, tags?: string[]) => {
@@ -1220,33 +1262,46 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             <div className="flex gap-1">
               <button
                 onClick={() => setActiveTab('activity')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
                   activeTab === 'activity'
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                All Activity
+                <Activity className="w-3.5 h-3.5" />
+                Activity
               </button>
               <button
                 onClick={() => setActiveTab('logs')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
                   activeTab === 'logs'
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
+                <MessageSquare className="w-3.5 h-3.5" />
                 Logs
+                {logs.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                    {logs.length}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('files')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
                   activeTab === 'files'
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
+                <Paperclip className="w-3.5 h-3.5" />
                 Files
+                {artifacts.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                    {artifacts.length}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('instructions')}
@@ -1275,55 +1330,38 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             <>
               {/* Activity Feed Content */}
               <div className="flex-1 flex flex-col min-w-0">
-                {/* Sub-filters for Activity tab */}
-                {activeTab === 'activity' && (
-                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {(['all', 'logs', 'files'] as const).map(f => (
-                        <button
-                          key={f}
-                          onClick={() => setFilter(f)}
-                          className={`px-3 py-1 text-xs rounded-lg capitalize transition-colors ${
-                            filter === f 
-                              ? 'bg-gray-200 dark:bg-gray-700' 
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          {f === 'all' ? 'All' : f}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Activity List */}
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            {logsLoading || artifactsLoading ? (
-              <div className="text-center py-8">
-                <div className="spinner w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-gray-500 text-sm mt-2">Loading activity...</p>
-              </div>
-            ) : filteredActivities.length > 0 ? (
-              filteredActivities.map(activity => (
-                <ActivityItem
-                  key={activity.id}
-                  activity={activity}
-                  onReact={(emoji) => onActivityReact?.(activity.id, emoji)}
-                  onReply={(text) => onActivityReply?.(activity.id, text)}
-                />
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500 text-sm">
-                No activity yet. Add your first log entry!
-              </div>
-            )}
+                  {logsLoading || artifactsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="spinner w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      <p className="text-gray-500 text-sm mt-2">Loading {activeTab}...</p>
+                    </div>
+                  ) : tabContent.length > 0 ? (
+                    tabContent.map(activity => (
+                      <ActivityItem
+                        key={activity.id}
+                        activity={activity}
+                        onReact={(emoji) => onActivityReact?.(activity.id, emoji)}
+                        onReply={(text) => onActivityReply?.(activity.id, text)}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 text-sm">
+                      {activeTab === 'logs' ? 'No logs yet. Add your first log entry!' :
+                       activeTab === 'files' ? 'No files uploaded yet.' :
+                       'No activity yet. Start by adding a log entry or uploading a file.'}
+                    </div>
+                  )}
                 </div>
 
-                {/* Log Composer */}
-                <LogComposer
-                  onLogAdd={handleLogAdd}
-                  onFileUpload={onFileUpload}
-                />
+                {/* Log Composer - show for activity and logs tabs */}
+                {(activeTab === 'activity' || activeTab === 'logs') && (
+                  <LogComposer
+                    onLogAdd={handleLogAdd}
+                    onFileUpload={onFileUpload}
+                  />
+                )}
               </div>
             </>
           )}
