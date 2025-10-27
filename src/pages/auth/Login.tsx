@@ -57,10 +57,10 @@ const Login: React.FC = () => {
       // Trigger a custom event to notify ProtectedRoute
       window.dispatchEvent(new Event('auth-change'));
       
-      // Navigate to the page they were trying to access, or default to /plans
+      // Navigate to the page they were trying to access, or default to /app/plans
       const state = location.state as LocationState;
-      const from = state?.from?.pathname || '/plans';
-      
+      const from = state?.from?.pathname || '/app/plans';
+
       console.log('Navigating to:', from);
       navigate(from, { replace: true });
     } catch (err: any) {
@@ -85,8 +85,8 @@ const Login: React.FC = () => {
       
       // Trigger a custom event to notify ProtectedRoute
       window.dispatchEvent(new Event('auth-change'));
-      
-      navigate('/plans');
+
+      navigate('/app/plans');
     } catch (err: any) {
       console.error('Demo login error:', err);
       setError(err.message || 'Failed to login with demo account. Please try again later.');
@@ -218,27 +218,6 @@ const Login: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or continue with</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Demo Account Button */}
-          <button
-            onClick={handleDemoLogin}
-            disabled={loading}
-            className="mt-4 w-full flex justify-center items-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            {loading ? 'Loading...' : 'Try Demo Account'}
-          </button>
         </div>
 
         {/* Sign Up Link */}

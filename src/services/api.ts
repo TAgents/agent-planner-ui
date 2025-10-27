@@ -365,10 +365,10 @@ export const planService = {
     });
   },
   
-  deletePlan: async (planId: string) => {
+  deletePlan: async (planId: string, archive: boolean = true) => {
     return request<ApiResponse<null>>({
       method: 'DELETE',
-      url: `/plans/${planId}`,
+      url: `/plans/${planId}${archive ? '?archive=true' : ''}`,
     });
   },
   

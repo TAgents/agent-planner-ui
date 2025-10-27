@@ -145,7 +145,7 @@ const Register: React.FC = () => {
       // Auto-login after successful registration
       setTimeout(() => {
         window.dispatchEvent(new Event('auth-change'));
-        navigate('/plans');
+        navigate('/app/plans');
       }, 2000);
       
     } catch (error: any) {
@@ -367,29 +367,23 @@ const Register: React.FC = () => {
               />
               <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
                 I agree to the{' '}
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // TODO: Navigate to terms page or show modal
-                    console.log('Show terms and conditions');
-                  }}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400 underline"
                 >
                   Terms and Conditions
-                </button>{' '}
+                </Link>{' '}
                 and{' '}
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // TODO: Navigate to privacy page or show modal
-                    console.log('Show privacy policy');
-                  }}
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400 underline"
                 >
                   Privacy Policy
-                </button>
+                </Link>
               </label>
             </div>
             {errors.acceptTerms && (

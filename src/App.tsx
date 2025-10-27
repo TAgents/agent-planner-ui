@@ -8,6 +8,7 @@ import { UIProvider } from './contexts/UIContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
+import Landing from './pages/Landing';
 import PlansList from './pages/PlansListSimplified'; // Using simplified version
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
 // import SharedPlans from './pages/SharedPlans'; // Hidden - functionality not fully implemented
@@ -19,6 +20,8 @@ import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
 import Settings from './pages/Settings';
 import UserProfile from './pages/profile/UserProfile';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -39,16 +42,23 @@ const App: React.FC = () => {
       <UIProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public Landing Page */}
+            <Route path="/" element={<Landing />} />
+
+            {/* Legal Pages */}
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+
             {/* Authentication Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            
+
             {/* Protected Main Application Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<MainLayout />}>
-                <Route index element={<Navigate to="/plans" replace />} />
+              <Route path="/app" element={<MainLayout />}>
+                <Route index element={<Navigate to="/app/plans" replace />} />
                 <Route path="plans" element={<PlansList />} />
                 <Route path="plans/new" element={<CreatePlan />} />
                 <Route path="plans/ai-create" element={<AICreatePlan />} />
@@ -61,7 +71,6 @@ const App: React.FC = () => {
           </Routes>
         </BrowserRouter>
       </UIProvider>
-      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
     </QueryClientProvider>
   );
 };

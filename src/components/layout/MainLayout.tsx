@@ -38,8 +38,8 @@ const MainLayout: React.FC = () => {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <Link 
-              to="/plans" 
+            <Link
+              to="/app/plans"
               className="flex items-center hover:opacity-80 transition-opacity duration-200"
               title="Back to Plans"
             >
@@ -48,13 +48,18 @@ const MainLayout: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">Agent Planner</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Agent Planner</span>
+                <span className="text-xs font-semibold px-2 py-0.5 bg-amber-500 text-white rounded uppercase">
+                  Alpha
+                </span>
+              </div>
             </Link>
             <div className="flex items-center space-x-2">
               <Link
-                to="/plans"
+                to="/app/plans"
                 className={`flex items-center p-2 rounded-lg transition duration-200 border ${
-                  location.pathname === '/plans' 
+                  location.pathname === '/app/plans' 
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 border-transparent hover:border-gray-200 dark:hover:border-gray-600'
                 }`}
@@ -65,9 +70,9 @@ const MainLayout: React.FC = () => {
               </Link>
               {/* Shared tab hidden - functionality not fully implemented
               <Link
-                to="/shared"
+                to="/app/shared"
                 className={`flex items-center p-2 rounded-lg transition duration-200 border ${
-                  location.pathname === '/shared' 
+                  location.pathname === '/app/shared' 
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 border-transparent hover:border-gray-200 dark:hover:border-gray-600'
                 }`}
@@ -77,9 +82,9 @@ const MainLayout: React.FC = () => {
                 <span className="ml-1 hidden sm:inline">Shared</span>
               </Link> */}
               <Link
-                to="/profile"
+                to="/app/profile"
                 className={`flex items-center p-2 rounded-lg transition duration-200 border ${
-                  location.pathname === '/profile'
+                  location.pathname === '/app/profile'
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 border-transparent hover:border-gray-200 dark:hover:border-gray-600'
                 }`}
@@ -89,9 +94,9 @@ const MainLayout: React.FC = () => {
                 <span className="ml-1 hidden sm:inline">Profile</span>
               </Link>
               <Link
-                to="/settings"
+                to="/app/settings"
                 className={`flex items-center p-2 rounded-lg transition duration-200 border ${
-                  location.pathname === '/settings'
+                  location.pathname === '/app/settings'
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 border-transparent hover:border-gray-200 dark:hover:border-gray-600'
                 }`}

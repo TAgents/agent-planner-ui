@@ -39,8 +39,8 @@ const AICreatePlan: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <>
           <div>
-            <button 
-              onClick={() => navigate('/plans')}
+            <button
+              onClick={() => navigate('/app/plans')}
               className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />

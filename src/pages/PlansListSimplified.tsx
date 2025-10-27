@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Plus, 
-  Search, 
-  Filter as FilterIcon, 
-  LayoutGrid, 
+import {
+  Plus,
+  Search,
+  Filter as FilterIcon,
+  LayoutGrid,
   List,
   Sparkles,
   Target,
@@ -13,7 +13,9 @@ import {
   TrendingUp,
   ChevronRight,
   Folder,
-  FolderOpen
+  FolderOpen,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
@@ -37,34 +39,17 @@ const EmptyPlansGuide: React.FC = () => {
       </p>
 
       {/* Quick Start Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mb-8">
-        <Link 
-          to="/plans/ai-create"
-          className="group p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all hover:scale-105"
+      <div className="flex justify-center mb-8">
+        <Link
+          to="/app/plans/new"
+          className="group p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all hover:scale-105 max-w-md"
         >
           <div className="flex items-start gap-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
-              <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">AI-Powered Creation</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Describe your project and let AI create a comprehensive plan structure
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <Link 
-          to="/plans/new"
-          className="group p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all hover:scale-105"
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-gray-200 dark:bg-gray-700 rounded-lg group-hover:bg-gray-300 dark:group-hover:bg-gray-600 transition-colors">
-              <Plus className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Manual Creation</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Create Your First Plan</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Build your plan from scratch with full control over every detail
               </p>
@@ -100,12 +85,66 @@ const EmptyPlansGuide: React.FC = () => {
 // Enhanced Plan card component that fetches its own node data
 const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, viewMode }) => {
   const { nodes, isLoading } = useNodes(plan.id);
-  
+  const { deletePlan, updatePlan } = usePlans();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+
+  const isArchived = plan.status === 'archived';
+
   // Calculate progress from actual nodes
   const nodeCount = nodes?.length || 0;
   const completedNodes = nodes?.filter(n => n.status === 'completed').length || 0;
   const inProgressNodes = nodes?.filter(n => n.status === 'in_progress').length || 0;
   const progress = nodeCount > 0 ? Math.round((completedNodes / nodeCount) * 100) : 0;
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleRestore = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowRestoreConfirm(true);
+  };
+
+  const confirmDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await deletePlan.mutateAsync(plan.id);
+    } catch (error) {
+      console.error('Failed to archive plan:', error);
+    }
+    setShowDeleteConfirm(false);
+  };
+
+  const confirmRestore = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await updatePlan.mutateAsync({
+        planId: plan.id,
+        data: { status: 'active' }
+      });
+    } catch (error) {
+      console.error('Failed to restore plan:', error);
+    }
+    setShowRestoreConfirm(false);
+  };
+
+  const cancelDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
+  };
+
+  const cancelRestore = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowRestoreConfirm(false);
+  };
 
   // Determine status color classes
   const getStatusClasses = (status: string) => {
@@ -125,157 +164,315 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
 
   if (viewMode === 'list') {
     return (
-      <Link 
-        to={`/plans/${plan.id}`}
-        className="block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700 overflow-hidden"
-      >
-        <div className="p-4">
-          <div className="flex items-center gap-4">
-            {/* Icon */}
-            <div className="flex-shrink-0">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      <div className="relative group">
+        <Link
+          to={`/app/plans/${plan.id}`}
+          className="block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700 overflow-hidden"
+        >
+          <div className="p-4">
+            <div className="flex items-center gap-4">
+              {/* Icon */}
+              <div className="flex-shrink-0">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
               </div>
-            </div>
-            
-            {/* Title and Description */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900 dark:text-white truncate">
-                {plan.title}
-              </h3>
-              {plan.description && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">
-                  {plan.description}
-                </p>
-              )}
-            </div>
-            
-            {/* Stats Section */}
-            <div className="flex items-center gap-4 flex-shrink-0">
-              {/* Node Count */}
-              <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[60px] text-right">
-                {isLoading ? (
-                  <span className="inline-block w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                ) : (
-                  `${nodeCount} nodes`
+
+              {/* Title and Description */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                  {plan.title}
+                </h3>
+                {plan.description && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">
+                    {plan.description}
+                  </p>
                 )}
               </div>
-              
-              {/* Progress Bar */}
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
+
+              {/* Stats Section */}
+              <div className="flex items-center gap-4 flex-shrink-0">
+                {/* Node Count */}
+                <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[60px] text-right">
+                  {isLoading ? (
+                    <span className="inline-block w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  ) : (
+                    `${nodeCount} nodes`
+                  )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-10 text-right">
-                  {isLoading ? '-' : `${progress}%`}
+
+                {/* Progress Bar */}
+                <div className="flex items-center gap-2">
+                  <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-10 text-right">
+                    {isLoading ? '-' : `${progress}%`}
+                  </span>
+                </div>
+
+                {/* Status Badge */}
+                <span className={`px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusClasses(plan.status)}`}>
+                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
                 </span>
+
+                {/* Delete/Restore Button */}
+                {isArchived ? (
+                  <button
+                    onClick={handleRestore}
+                    className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title="Restore plan"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDelete}
+                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title="Archive plan"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Chevron */}
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </div>
-              
-              {/* Status Badge */}
-              <span className={`px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusClasses(plan.status)}`}>
-                {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-              </span>
-              
-              {/* Chevron */}
-              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelDelete}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Archive Plan?</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                This will archive "{plan.title}". You can restore it later from archived plans.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  disabled={deletePlan.isLoading}
+                >
+                  {deletePlan.isLoading ? 'Archiving...' : 'Archive'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Restore Confirmation Modal */}
+        {showRestoreConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelRestore}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Restore Plan?</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                This will restore "{plan.title}" and set its status to Active.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={cancelRestore}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmRestore}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  disabled={updatePlan.isLoading}
+                >
+                  {updatePlan.isLoading ? 'Restoring...' : 'Restore'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
   return (
-    <Link 
-      to={`/plans/${plan.id}`}
-      className="block p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.02]"
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-          <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+    <div className="relative group">
+      <Link
+        to={`/app/plans/${plan.id}`}
+        className="block p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.02]"
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+            <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusClasses(plan.status)}`}>
+              {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+            </span>
+            {isArchived ? (
+              <button
+                onClick={handleRestore}
+                className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                title="Restore plan"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleDelete}
+                className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                title="Archive plan"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusClasses(plan.status)}`}>
-          {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-        </span>
-      </div>
-      
-      <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-        {plan.title}
-      </h3>
-      
-      {plan.description && (
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-          {plan.description}
-        </p>
+
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+          {plan.title}
+        </h3>
+
+        {plan.description && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+            {plan.description}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          <div>
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Progress</span>
+              <span>{isLoading ? '...' : `${progress}%`}</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              {isLoading ? (
+                <div className="h-2 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse" />
+              ) : (
+                <div
+                  className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-between text-xs">
+            <div className="text-gray-500 dark:text-gray-400">
+              {isLoading ? (
+                <span className="inline-block w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              ) : (
+                <span>
+                  {nodeCount > 0 ? (
+                    <>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{nodeCount}</span> nodes
+                      {completedNodes > 0 && (
+                        <span className="text-green-600 dark:text-green-400 ml-2">
+                          • {completedNodes} done
+                        </span>
+                      )}
+                      {inProgressNodes > 0 && (
+                        <span className="text-blue-600 dark:text-blue-400 ml-2">
+                          • {inProgressNodes} active
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    'No nodes yet'
+                  )}
+                </span>
+              )}
+            </div>
+            <span className="text-gray-500 dark:text-gray-400">
+              {formatDate(plan.updated_at)}
+            </span>
+          </div>
+        </div>
+      </Link>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelDelete}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Archive Plan?</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              This will archive "{plan.title}". You can restore it later from archived plans.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                disabled={deletePlan.isLoading}
+              >
+                {deletePlan.isLoading ? 'Archiving...' : 'Archive'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      
-      <div className="space-y-3">
-        <div>
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-            <span>Progress</span>
-            <span>{isLoading ? '...' : `${progress}%`}</span>
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            {isLoading ? (
-              <div className="h-2 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse" />
-            ) : (
-              <div 
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            )}
+
+      {/* Restore Confirmation Modal */}
+      {showRestoreConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelRestore}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Restore Plan?</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              This will restore "{plan.title}" and set its status to Active.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelRestore}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRestore}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                disabled={updatePlan.isLoading}
+              >
+                {updatePlan.isLoading ? 'Restoring...' : 'Restore'}
+              </button>
+            </div>
           </div>
         </div>
-        
-        <div className="flex justify-between text-xs">
-          <div className="text-gray-500 dark:text-gray-400">
-            {isLoading ? (
-              <span className="inline-block w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            ) : (
-              <span>
-                {nodeCount > 0 ? (
-                  <>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">{nodeCount}</span> nodes
-                    {completedNodes > 0 && (
-                      <span className="text-green-600 dark:text-green-400 ml-2">
-                        • {completedNodes} done
-                      </span>
-                    )}
-                    {inProgressNodes > 0 && (
-                      <span className="text-blue-600 dark:text-blue-400 ml-2">
-                        • {inProgressNodes} active
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  'No nodes yet'
-                )}
-              </span>
-            )}
-          </div>
-          <span className="text-gray-500 dark:text-gray-400">
-            {formatDate(plan.updated_at)}
-          </span>
-        </div>
-      </div>
-    </Link>
+      )}
+    </div>
   );
 };
 
 const PlansListSimplified: React.FC = () => {
-  const { plans, isLoading } = usePlans(1, 100);
+  const { plans, isLoading, updatePlan } = usePlans(1, 100);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'completed' | 'archived'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Default to list view
 
   // Filter plans
   const filteredPlans = plans.filter((plan: Plan) => {
     const matchesSearch = plan.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          plan.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || plan.status === filterStatus;
+
+    // "all" excludes archived plans by default
+    let matchesStatus = false;
+    if (filterStatus === 'all') {
+      matchesStatus = plan.status !== 'archived';
+    } else {
+      matchesStatus = plan.status === filterStatus;
+    }
+
     return matchesSearch && matchesStatus;
   });
 
@@ -307,19 +504,12 @@ const PlansListSimplified: React.FC = () => {
           
           {plans.length > 0 && (
             <div className="flex items-center gap-3">
-              <Link 
-                to="/plans/ai-create"
+              <Link
+                to="/app/plans/new"
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
               >
-                <Sparkles className="w-4 h-4" />
-                Create with AI
-              </Link>
-              <Link 
-                to="/plans/new"
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
                 <Plus className="w-4 h-4" />
-                Create Manually
+                Create Plan
               </Link>
             </div>
           )}
@@ -342,19 +532,29 @@ const PlansListSimplified: React.FC = () => {
             <div className="flex items-center gap-2">
               {/* Status Filter */}
               <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                {(['all', 'active', 'completed'] as const).map(status => (
-                  <button
-                    key={status}
-                    onClick={() => setFilterStatus(status)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-                      filterStatus === status
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-                  </button>
-                ))}
+                {(['all', 'active', 'draft', 'completed', 'archived'] as const).map(status => {
+                  // Count plans for each status
+                  const count = status === 'all'
+                    ? plans.filter((p: Plan) => p.status !== 'archived').length
+                    : plans.filter((p: Plan) => p.status === status).length;
+
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => setFilterStatus(status)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
+                        filterStatus === status
+                          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                      }`}
+                    >
+                      {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                      {count > 0 && (
+                        <span className="ml-1.5 text-xs opacity-60">({count})</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* View Mode Toggle */}

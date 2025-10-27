@@ -51,9 +51,9 @@ const CreatePlan: React.FC = () => {
       
       // Navigate to the new plan if we have an ID, otherwise go to plans list
       if (planId) {
-        navigate(`/plans/${planId}`);
+        navigate(`/app/plans/${planId}`);
       } else {
-        navigate('/plans');
+        navigate('/app/plans');
       }
     } catch (error: any) {
       console.error('Error creating plan:', error);
@@ -66,7 +66,7 @@ const CreatePlan: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <button
-            onClick={() => navigate('/plans')}
+            onClick={() => navigate('/app/plans')}
             className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -144,7 +144,7 @@ const CreatePlan: React.FC = () => {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => navigate('/plans')}
+                onClick={() => navigate('/app/plans')}
                 className="mr-4 px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
               >
                 Cancel

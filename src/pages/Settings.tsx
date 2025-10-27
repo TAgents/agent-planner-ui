@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTokens } from '../hooks/useTokens';
 import { TokenPermission } from '../types';
-import { Key, Copy, Eye, EyeOff, Trash2, AlertCircle, Check, X, Bug } from 'lucide-react';
+import { Key, Copy, Eye, EyeOff, Trash2, AlertCircle, Check, X, Bug, Zap, ExternalLink, Terminal } from 'lucide-react';
 import api from '../services/api';
 
 const Settings: React.FC = () => {
@@ -35,6 +35,7 @@ const Settings: React.FC = () => {
   const [selectedPermissions, setSelectedPermissions] = useState<TokenPermission[]>(['read']);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [tokenCopied, setTokenCopied] = useState(false);
+  const [mcpConfigCopied, setMcpConfigCopied] = useState(false);
 
   // Available permissions
   const availablePermissions: TokenPermission[] = ['read', 'write', 'admin'];
@@ -132,10 +133,156 @@ const Settings: React.FC = () => {
     }
   };
 
+  // Copy MCP config to clipboard
+  const copyMcpConfig = (token?: string) => {
+    // Detect API URL - handle localhost, agentplanner.io, and Cloud Run
+    let apiUrl;
+    const hostname = window.location.hostname;
+
+    if (hostname === 'localhost') {
+      apiUrl = window.location.origin.replace('3001', '3000');
+    } else if (hostname.includes('agentplanner.io')) {
+      // For agentplanner.io domain
+      apiUrl = 'https://api.agentplanner.io';
+    } else {
+      // For Cloud Run or other deployments, replace 'ui' with 'api' in the hostname
+      apiUrl = window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
+    }
+
+    // Use npx for published package - works everywhere!
+    const mcpConfig = {
+      "mcpServers": {
+        "planning-system": {
+          "command": "npx",
+          "args": ["-y", "agent-planner-mcp"],
+          "env": {
+            "API_URL": apiUrl,
+            "USER_API_TOKEN": token || "YOUR_TOKEN_HERE"
+          }
+        }
+      }
+    };
+
+    navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2))
+      .then(() => {
+        setMcpConfigCopied(true);
+        showNotification('MCP config copied to clipboard', 'success');
+        setTimeout(() => setMcpConfigCopied(false), 3000);
+      })
+      .catch(() => {
+        showNotification('Failed to copy MCP config', 'error');
+      });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
+
+        {/* MCP Integration Section */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-800 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Claude Desktop Integration (MCP)
+              </h3>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Connect your plans with Claude Desktop using the Model Context Protocol (MCP).
+                This enables AI-powered planning directly from Claude Desktop.
+              </p>
+
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-blue-200 dark:border-blue-700">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                  <Terminal className="w-4 h-4" />
+                  Quick Setup Guide (3 Steps)
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                  <li>Create an API token using the button below</li>
+                  <li>Click "Copy MCP Config" to copy the npx-based configuration</li>
+                  <li>
+                    Open Claude Desktop config and paste:
+                    <code className="block mt-1 ml-5 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded text-xs">
+                      ~/Library/Application Support/Claude/claude_desktop_config.json
+                    </code>
+                  </li>
+                  <li>Save and restart Claude Desktop - done! ✨</li>
+                </ol>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
+                  💡 npx automatically downloads and runs the latest version - no installation needed!
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Example MCP Configuration (npx)</h5>
+                  <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded flex items-center gap-1">
+                    <span>✓</span> Available on npm
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  Simple setup - no installation required! Uses <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">npx -y agent-planner-mcp</code>
+                </p>
+                <pre className="bg-white dark:bg-gray-800 p-3 rounded-md text-xs font-mono overflow-x-auto border border-gray-200 dark:border-gray-700">
+{`{
+  "mcpServers": {
+    "planning-system": {
+      "command": "npx",
+      "args": ["-y", "agent-planner-mcp"],
+      "env": {
+        "API_URL": "${(() => {
+          const hostname = window.location.hostname;
+          if (hostname === 'localhost') return 'http://localhost:3000';
+          if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+          return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
+        })()}",
+        "USER_API_TOKEN": "your_token_here"
+      }
+    }
+  }
+}`}
+                </pre>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  💡 npx automatically downloads and runs the latest version - no manual installation needed!
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setOpenCreateDialog(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Key className="w-4 h-4" />
+                  Create API Token
+                </button>
+
+                <button
+                  onClick={() => copyMcpConfig()}
+                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {mcpConfigCopied ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  Copy MCP Config
+                </button>
+
+                <a
+                  href="https://github.com/talkingagents/agent-planner-mcp/blob/main/README.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+                >
+                  View Full Documentation
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* API Tokens Section */}
         <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
@@ -150,25 +297,6 @@ const Settings: React.FC = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Refresh List
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    await api.debug.debugTokens();
-                    showNotification('Debug tokens API called, check console logs', 'success');
-                  } catch (err) {
-                    showNotification('Debug API call failed', 'error');
-                  }
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
-              >
-                <Bug className="h-4 w-4 mr-1" /> Debug
-              </button>
-              <button
-                onClick={() => setOpenCreateDialog(true)}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Create New Token
               </button>
             </div>
           </div>
@@ -397,28 +525,89 @@ const Settings: React.FC = () => {
                 </button>
               </div>
 
-              <h4 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">How to use this token</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Configure your MCP server with this token:
-              </p>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800 mb-4">
+                <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-3 flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  Next Steps for MCP Setup
+                </h4>
+                <ol className="text-sm space-y-2 list-decimal list-inside text-gray-700 dark:text-gray-300">
+                  <li>Click the button below to copy the complete MCP configuration</li>
+                  <li>
+                    Open your Claude Desktop config file:
+                    <code className="block mt-1 ml-5 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs">
+                      ~/Library/Application Support/Claude/claude_desktop_config.json (macOS)
+                    </code>
+                    <code className="block mt-1 ml-5 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs">
+                      %APPDATA%\Claude\claude_desktop_config.json (Windows)
+                    </code>
+                  </li>
+                  <li>Paste the configuration into the file (merge with existing mcpServers if you have any)</li>
+                  <li>Save the file and restart Claude Desktop</li>
+                </ol>
 
-              <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-4 mb-1">In your .env file:</h5>
-              <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded-md text-sm font-mono mb-4 overflow-x-auto">
-                {`USER_API_TOKEN=${tokenCopied ? '••••••••••••••••••••' : newToken.token?.substring(0, 25) + '...'}`}
-              </pre>
+                <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700">
+                  <button
+                    onClick={() => copyMcpConfig(newToken.token)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {mcpConfigCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-green-600" />
+                        MCP Config Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy Complete MCP Configuration
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    💡 Uses npx - no installation needed, always up-to-date!
+                  </p>
+                </div>
+              </div>
 
-              <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-4 mb-1">In your claude_desktop_config.json:</h5>
-              <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded-md text-sm font-mono overflow-x-auto">
+              <details className="mt-4">
+                <summary className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:text-gray-900 dark:hover:text-white">
+                  Alternative: Local Development Setup
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    For local development or customization, you can clone and run the MCP server directly:
+                  </p>
+
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">1. Clone the repository:</h5>
+                    <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded-md text-sm font-mono overflow-x-auto">
+{`git clone https://github.com/talkingagents/agent-planner-mcp.git
+cd agent-planner-mcp
+npm install`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">2. Update claude_desktop_config.json:</h5>
+                    <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded-md text-sm font-mono overflow-x-auto">
 {`"mcpServers": {
-  "planning-system-mcp": {
+  "planning-system": {
     "command": "node",
-    "args": ["/path/to/agent-planner-mcp/src/index.js"],
+    "args": ["/absolute/path/to/agent-planner-mcp/src/index.js"],
     "env": {
+      "API_URL": "${(() => {
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost') return window.location.origin.replace('3001', '3000');
+        if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+        return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
+      })()}",
       "USER_API_TOKEN": "${tokenCopied ? '•••••••••••••••••••••••' : newToken.token?.substring(0, 25) + '...'}"
     }
   }
 }`}
-              </pre>
+                    </pre>
+                  </div>
+                </div>
+              </details>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
               <button

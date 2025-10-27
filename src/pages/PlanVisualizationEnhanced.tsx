@@ -219,6 +219,11 @@ const PlanVisualizationEnhanced: React.FC = () => {
     // TODO: Add API call to upload files
   }, []);
 
+  // Scroll to top when plan loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [planId]);
+
   // Load saved layout preference
   useEffect(() => {
     const savedLayout = localStorage.getItem(`planLayout_mode_${planId}`);
@@ -530,7 +535,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
         <div className="text-center">
           <h2 className="text-xl font-bold text-red-600 dark:text-red-400">Plan not found</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">The requested plan doesn't exist or you don't have access.</p>
-          <Link to="/plans" className="mt-4 inline-block text-blue-600 hover:text-blue-800 dark:text-blue-400">
+          <Link to="/app/plans" className="mt-4 inline-block text-blue-600 hover:text-blue-800 dark:text-blue-400">
             Back to plans
           </Link>
         </div>
@@ -545,7 +550,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
         <div className="px-4 h-14 flex items-center justify-between">
           {/* Left section */}
           <div className="flex items-center gap-3">
-            <Link to="/plans" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <Link to="/app/plans" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </Link>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-xs">
