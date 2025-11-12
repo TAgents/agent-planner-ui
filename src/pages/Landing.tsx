@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import HeroSection from '../components/landing/HeroSection';
+import SocialProofSection from '../components/landing/SocialProofSection';
 import FeaturesSection from '../components/landing/FeaturesSection';
-import MCPSetupSection from '../components/landing/MCPSetupSection';
+import GettingStartedSection from '../components/landing/GettingStartedSection';
 import Footer from '../components/landing/Footer';
 
 const Landing: React.FC = () => {
+  // Enable smooth scrolling for the entire page
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    };
+  }, []);
+
   return (
     <>
       <Helmet>
@@ -33,10 +42,11 @@ const Landing: React.FC = () => {
         <link rel="canonical" href="https://agentplanner.io/" />
       </Helmet>
 
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white overflow-x-hidden">
         <HeroSection />
+        <SocialProofSection />
         <FeaturesSection />
-        <MCPSetupSection />
+        <GettingStartedSection />
         <Footer />
       </div>
     </>

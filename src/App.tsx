@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ReactQueryDevtools } from 'react-query/devtools';
 import { UIProvider } from './contexts/UIContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -39,38 +40,40 @@ const queryClient = new QueryClient({
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <UIProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Landing Page */}
-            <Route path="/" element={<Landing />} />
+      <WebSocketProvider>
+        <UIProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Landing Page */}
+              <Route path="/" element={<Landing />} />
 
-            {/* Legal Pages */}
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
+              {/* Legal Pages */}
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
 
-            {/* Authentication Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+              {/* Authentication Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected Main Application Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/app" element={<MainLayout />}>
-                <Route index element={<Navigate to="/app/plans" replace />} />
-                <Route path="plans" element={<PlansList />} />
-                <Route path="plans/new" element={<CreatePlan />} />
-                <Route path="plans/ai-create" element={<AICreatePlan />} />
-                <Route path="plans/:planId" element={<PlanVisualization />} />
-                {/* <Route path="shared" element={<SharedPlans />} /> */}
-                <Route path="settings" element={<Settings />} />
-                <Route path="profile" element={<UserProfile />} />
+              {/* Protected Main Application Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/app" element={<MainLayout />}>
+                  <Route index element={<Navigate to="/app/plans" replace />} />
+                  <Route path="plans" element={<PlansList />} />
+                  <Route path="plans/new" element={<CreatePlan />} />
+                  <Route path="plans/ai-create" element={<AICreatePlan />} />
+                  <Route path="plans/:planId" element={<PlanVisualization />} />
+                  {/* <Route path="shared" element={<SharedPlans />} /> */}
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="profile" element={<UserProfile />} />
+                </Route>
               </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </UIProvider>
+            </Routes>
+          </BrowserRouter>
+        </UIProvider>
+      </WebSocketProvider>
     </QueryClientProvider>
   );
 };

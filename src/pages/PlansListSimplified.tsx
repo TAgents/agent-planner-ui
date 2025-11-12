@@ -21,6 +21,8 @@ import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
 import { formatDate } from '../utils/planUtils';
 import { Plan, PlanNode } from '../types';
+import { useWebSocket } from '../contexts/WebSocketContext';
+import { PLAN_EVENTS } from '../types/websocket';
 
 // Empty state component for first-time users
 const EmptyPlansGuide: React.FC = () => {
@@ -455,10 +457,37 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
 };
 
 const PlansListSimplified: React.FC = () => {
-  const { plans, isLoading, updatePlan } = usePlans(1, 100);
+  const { plans, isLoading, updatePlan, refetch } = usePlans(1, 100);
+  const { subscribe } = useWebSocket();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'completed' | 'archived'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Default to list view
+
+  // Subscribe to WebSocket plan events for real-time updates
+  useEffect(() => {
+    console.log('[PlansListSimplified] Setting up WebSocket subscriptions');
+
+    // Subscribe to plan.created events
+    const unsubscribeCreated = subscribe(PLAN_EVENTS.CREATED, (message) => {
+      console.log('[PlansListSimplified] Received plan.created event:', message);
+      // Refetch plans list to include the new plan
+      refetch();
+    });
+
+    // Subscribe to plan.deleted events
+    const unsubscribeDeleted = subscribe(PLAN_EVENTS.DELETED, (message) => {
+      console.log('[PlansListSimplified] Received plan.deleted event:', message);
+      // Refetch plans list to remove the deleted plan
+      refetch();
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      console.log('[PlansListSimplified] Cleaning up WebSocket subscriptions');
+      unsubscribeCreated();
+      unsubscribeDeleted();
+    };
+  }, [subscribe, refetch]);
 
   // Filter plans
   const filteredPlans = plans.filter((plan: Plan) => {

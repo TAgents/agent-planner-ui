@@ -50,14 +50,15 @@ import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
 import { useNodes, useNode } from '../hooks/useNodes';
 import { usePlanActivity } from '../hooks/usePlanActivity';
+import { usePlanEvents } from '../hooks/useWebSocket';
 import { formatDate, getStatusColor, getStatusLabel, getNodeTypeLabel } from '../utils/planUtils';
 import { NodeType, NodeStatus, PlanNode } from '../types';
-import { 
-  getEnhancedTreeLayout, 
-  getOptimalViewport, 
+import {
+  getEnhancedTreeLayout,
+  getOptimalViewport,
   calculateNodeStats,
   getMiniMapConfig,
-  getNodePath 
+  getNodePath
 } from '../utils/enhancedLayoutUtils';
 
 // Import node components
@@ -70,6 +71,9 @@ import {
 
 // Import detail components
 import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
+
+// Import WebSocket status indicator
+import WebSocketStatus from '../components/websocket/WebSocketStatus';
 
 const nodeTypes = {
   root: SimplifiedRootNode as any,
@@ -175,7 +179,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     planId || '',
     uiState.nodeDetails.selectedNodeId || ''
   );
-  
+
   // Get the selected node from planNodes which should be more up-to-date
   const selectedNode = useMemo(() => {
     if (!uiState.nodeDetails.selectedNodeId) return null;
@@ -183,6 +187,78 @@ const PlanVisualizationEnhanced: React.FC = () => {
     return nodeFromList || selectedNodeFromAPI;
   }, [planNodes, selectedNodeFromAPI, uiState.nodeDetails.selectedNodeId]);
   const { activities: recentActivities, isLoading: isActivityLoading } = usePlanActivity(planId || '', 1, 5);
+
+  // Get user ID for query keys (matching useNodes implementation)
+  const getUserId = useCallback(() => {
+    const sessionStr = localStorage.getItem('auth_session');
+    if (!sessionStr) return 'anonymous';
+    try {
+      const session = JSON.parse(sessionStr);
+      return session.user?.id || session.user?.email || 'anonymous';
+    } catch (e) {
+      console.error('Error parsing session:', e);
+      return 'anonymous';
+    }
+  }, []);
+
+  // Subscribe to real-time WebSocket updates for this plan
+  usePlanEvents(planId || null, {
+    onNodeCreated: useCallback(() => {
+      const userId = getUserId();
+      queryClient.invalidateQueries(['nodes', userId, planId]);
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Node created - refreshing nodes');
+    }, [planId, queryClient, getUserId]),
+
+    onNodeUpdated: useCallback(() => {
+      const userId = getUserId();
+      queryClient.invalidateQueries(['nodes', userId, planId]);
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Node updated - refreshing nodes');
+    }, [planId, queryClient, getUserId]),
+
+    onNodeDeleted: useCallback(() => {
+      const userId = getUserId();
+      queryClient.invalidateQueries(['nodes', userId, planId]);
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Node deleted - refreshing nodes');
+    }, [planId, queryClient, getUserId]),
+
+    onNodeMoved: useCallback(() => {
+      const userId = getUserId();
+      queryClient.invalidateQueries(['nodes', userId, planId]);
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Node moved - refreshing nodes');
+    }, [planId, queryClient, getUserId]),
+
+    onNodeStatusChanged: useCallback(() => {
+      const userId = getUserId();
+      queryClient.invalidateQueries(['nodes', userId, planId]);
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Node status changed - refreshing nodes');
+    }, [planId, queryClient, getUserId]),
+
+    onPlanUpdated: useCallback(() => {
+      const userId = getUserId();
+      queryClient.invalidateQueries(['plan', userId, planId]);
+      console.log('[WebSocket] Plan updated - refreshing plan');
+    }, [planId, queryClient, getUserId]),
+
+    onCommentAdded: useCallback(() => {
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Comment added - refreshing activity');
+    }, [planId, queryClient]),
+
+    onLogAdded: useCallback(() => {
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Log added - refreshing activity');
+    }, [planId, queryClient]),
+
+    onArtifactAdded: useCallback(() => {
+      queryClient.invalidateQueries(['planActivity', planId]);
+      console.log('[WebSocket] Artifact added - refreshing activity');
+    }, [planId, queryClient]),
+  });
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -617,14 +693,19 @@ const PlanVisualizationEnhanced: React.FC = () => {
           {/* Right section */}
           <div className="flex items-center gap-2">
             <div data-tour="share-button">
-              <ShareButton 
+              <ShareButton
                 planId={planId || ''}
                 planTitle={plan.title}
                 variant="compact"
               />
             </div>
-            
-            <button 
+
+            {/* WebSocket connection status indicator */}
+            <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
+              <WebSocketStatus showDetails={false} />
+            </div>
+
+            <button
               onClick={toggleFullScreen}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Fullscreen"

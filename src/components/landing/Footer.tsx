@@ -7,8 +7,8 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="grid md:grid-cols-4 gap-8 md:gap-12 mb-8 md:mb-12">
           {/* Brand */}
           <div className="col-span-1">
             <div className="flex items-center space-x-2 mb-4">
@@ -176,18 +176,18 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm mb-4 md:mb-0">
+        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-400 text-sm">
             © {currentYear} Agent Planner IO. All rights reserved.
           </p>
-          <div className="flex space-x-6 text-sm">
-            <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">
+          <div className="flex flex-wrap justify-center gap-6 text-sm">
+            <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors duration-200">
               Privacy
             </Link>
-            <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/terms" className="text-gray-400 hover:text-white transition-colors duration-200">
               Terms
             </Link>
-            <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors duration-200">
               Cookies
             </Link>
           </div>
