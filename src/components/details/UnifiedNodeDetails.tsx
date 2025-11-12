@@ -64,6 +64,7 @@ interface UnifiedNodeDetailsProps {
   onActivityReply?: (activityId: string, text: string) => void;
   onAssignUser?: (userId: string) => void;
   onUnassignUser?: (userId: string) => void;
+  onClose?: () => void;
 }
 
 type ActivityType = 
@@ -981,7 +982,8 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onActivityReact,
   onActivityReply,
   onAssignUser,
-  onUnassignUser
+  onUnassignUser,
+  onClose
 }) => {
   const [activeTab, setActiveTab] = useState<'activity' | 'logs' | 'files' | 'instructions'>('activity');
   const [assignedUser, setAssignedUser] = useState<any>(null);
@@ -1208,10 +1210,21 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
       {/* Minimal Header */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate flex-1 pr-2">
             {node.title}
           </h2>
-          <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
+          <div className="flex items-center gap-2">
+            <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors md:hidden"
+                title="Close (ESC)"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            )}
+          </div>
         </div>
         
         {/* Progress Bar */}

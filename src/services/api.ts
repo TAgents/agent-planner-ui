@@ -598,7 +598,8 @@ export const nodeService = {
     });
   },
 
-  moveNode: async (planId: string, nodeId: string, data: { parent_id?: string; order_index: number }) => {
+  // Move node to a new parent and/or position
+  moveNode: async (planId: string, nodeId: string, data: { parent_id?: string | null; order_index?: number }) => {
     return request<ApiResponse<PlanNode>>({
       method: 'POST',
       url: `/plans/${planId}/nodes/${nodeId}/move`,

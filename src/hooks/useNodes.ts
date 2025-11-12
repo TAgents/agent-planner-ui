@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import { nodeService } from '../services/api';
 import { PlanNode, FlowNode, FlowEdge } from '../types';
 import { transformToFlowNodes, createFlowEdges } from '../utils/planUtils';
-import 'reactflow/dist/style.css';
 
 /**
  * Hook for fetching and managing plan nodes
@@ -140,6 +139,24 @@ export const useNodes = (planId: string) => {
     }
   );
 
+  // Mutation for moving a node (drag & drop)
+  const moveNode = useMutation(
+    ({ nodeId, parentId, orderIndex }: { nodeId: string; parentId?: string | null; orderIndex?: number }) =>
+      nodeService.moveNode(planId, nodeId, {
+        parent_id: parentId,
+        order_index: orderIndex
+      }),
+    {
+      onSuccess: () => {
+        // Refetch to get the updated node structure
+        refetch();
+      },
+      onError: (error) => {
+        console.error('Failed to move node:', error);
+      }
+    }
+  );
+
   return {
     nodes,
     flowNodes,
@@ -151,6 +168,7 @@ export const useNodes = (planId: string) => {
     updateNode,
     updateNodeStatus,
     deleteNode,
+    moveNode,
   };
 };
 

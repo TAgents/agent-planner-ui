@@ -1,29 +1,14 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from 'react-query';
 import { useParams, Link } from 'react-router-dom';
-import ReactFlow, {
-  addEdge,
-  Background,
-  Controls,
-  MiniMap,
-  Panel,
-  useNodesState,
-  useEdgesState,
-  Connection,
-  Edge,
-  Node,
-  NodeDragHandler,
-  BackgroundVariant,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
-import { 
-  ArrowLeft, 
-  Maximize, 
-  Minimize, 
-  Save, 
-  Plus, 
-  Filter, 
-  Sidebar as SidebarIcon, 
+import {
+  ArrowLeft,
+  Maximize,
+  Minimize,
+  Save,
+  Plus,
+  Filter,
+  Sidebar as SidebarIcon,
   HelpCircle,
   Settings2,
   X,
@@ -38,12 +23,10 @@ import ViewControls, { ViewMode } from '../components/visualization/ViewControls
 import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
 import CompactSidebar from '../components/visualization/CompactSidebar';
 import OnboardingTour from '../components/visualization/OnboardingTour';
-import ImprovedTreeNavigation from '../components/visualization/ImprovedTreeNavigation';
 import ShareButton from '../components/sharing/ShareButton';
 import PlanProgress from '../components/plans/PlanProgress';
 import ActivityTimeline from '../components/activity/ActivityTimeline';
-import NodeContext from '../components/nodes/NodeContext';
-import NodeAncestry from '../components/nodes/NodeAncestry';
+import { PlanTreeView } from '../components/tree/PlanTreeView';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -53,21 +36,6 @@ import { usePlanActivity } from '../hooks/usePlanActivity';
 import { usePlanEvents } from '../hooks/useWebSocket';
 import { formatDate, getStatusColor, getStatusLabel, getNodeTypeLabel } from '../utils/planUtils';
 import { NodeType, NodeStatus, PlanNode } from '../types';
-import {
-  getEnhancedTreeLayout,
-  getOptimalViewport,
-  calculateNodeStats,
-  getMiniMapConfig,
-  getNodePath
-} from '../utils/enhancedLayoutUtils';
-
-// Import node components
-import { 
-  SimplifiedPhaseNode, 
-  SimplifiedTaskNode, 
-  SimplifiedMilestoneNode,
-  SimplifiedRootNode 
-} from '../components/nodes/SimplifiedNodes';
 
 // Import detail components
 import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
@@ -75,19 +43,8 @@ import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
 
-const nodeTypes = {
-  root: SimplifiedRootNode as any,
-  phase: SimplifiedPhaseNode as any,
-  task: SimplifiedTaskNode as any,
-  milestone: SimplifiedMilestoneNode as any,
-  default: SimplifiedTaskNode as any,
-};
-
-// View Layout Types
-type LayoutMode = 'graph' | 'tree' | 'split';
-
 // Enhanced Help Modal Component
-const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void; layoutMode: LayoutMode }> = ({ isOpen, onClose, layoutMode }) => {
+const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
@@ -111,47 +68,22 @@ const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void; layoutMode: La
                 <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">S</kbd> Toggle Sidebar
               </div>
               <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">T</kbd> Tree View
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">G</kbd> Graph View
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
                 <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">?</kbd> Show Help
               </div>
             </div>
           </div>
-          
-          {layoutMode === 'graph' && (
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Graph View</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-600 dark:text-gray-400">
-                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">+</kbd> Zoom In
-                </div>
-                <div className="text-gray-600 dark:text-gray-400">
-                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">-</kbd> Zoom Out
-                </div>
-                <div className="text-gray-600 dark:text-gray-400">
-                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">0</kbd> Fit View
-                </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tree View</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">⌘F</kbd> Search
+              </div>
+              <div className="text-gray-600 dark:text-gray-400">
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd> Clear Search
               </div>
             </div>
-          )}
-          
-          {(layoutMode === 'tree' || layoutMode === 'split') && (
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tree View</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-600 dark:text-gray-400">
-                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">⌘F</kbd> Search
-                </div>
-                <div className="text-gray-600 dark:text-gray-400">
-                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd> Clear Search
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
@@ -165,14 +97,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
   
   // Data fetching
   const { plan, isLoading: isPlanLoading } = usePlan(planId || '');
-  const { 
-    nodes: planNodes, 
-    flowNodes: initialFlowNodes, 
-    flowEdges, 
+  const {
+    nodes: planNodes,
     isLoading: isNodesLoading,
     createNode,
     updateNodeStatus,
     deleteNode,
+    moveNode,
     refetch: refetchNodes,
   } = useNodes(planId || '');
   const { node: selectedNodeFromAPI, isLoading: isSelectedNodeLoading, refetch: refetchSelectedNode } = useNode(
@@ -260,29 +191,14 @@ const PlanVisualizationEnhanced: React.FC = () => {
     }, [planId, queryClient]),
   });
 
-  // React Flow state
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  
-  // Enhanced view state
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('graph');
-  const [activeView, setActiveView] = useState<ViewMode>('overview');
-  const [showLabels, setShowLabels] = useState(true);
-  const [showProgress, setShowProgress] = useState(true);
-  const [showDependencies, setShowDependencies] = useState(true);
+  // UI state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [treeViewMode, setTreeViewMode] = useState<'compact' | 'detailed'>('detailed');
-  
-  // UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
-  
-  const reactFlowInstance = useRef<any>(null);
-  const [currentZoom, setCurrentZoom] = useState(1);
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -300,21 +216,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
     window.scrollTo(0, 0);
   }, [planId]);
 
-  // Load saved layout preference
-  useEffect(() => {
-    const savedLayout = localStorage.getItem(`planLayout_mode_${planId}`);
-    if (savedLayout && ['graph', 'tree', 'split'].includes(savedLayout)) {
-      setLayoutMode(savedLayout as LayoutMode);
-    }
-  }, [planId]);
-
-  // Save layout preference
-  useEffect(() => {
-    if (planId) {
-      localStorage.setItem(`planLayout_mode_${planId}`, layoutMode);
-    }
-  }, [layoutMode, planId]);
-
   // Check if this is a new user
   useEffect(() => {
     const hasSeenTour = localStorage.getItem('agent_planner_tour_completed');
@@ -325,27 +226,32 @@ const PlanVisualizationEnhanced: React.FC = () => {
     }
   }, [planNodes]);
 
-  // Enhanced keyboard shortcuts
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // ESC to close node details
+      if (e.key === 'Escape') {
+        if (uiState.nodeDetails.isOpen) {
+          closeNodeDetails();
+          return;
+        }
+        if (showHelp) {
+          setShowHelp(false);
+          return;
+        }
+        if (isCreatingNode) {
+          setIsCreatingNode(false);
+          return;
+        }
+      }
+
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
+
       // Help
       if (e.key === '?') {
         setShowHelp(!showHelp);
       }
-      
-      // Layout switching
-      if (e.key === 't' || e.key === 'T') {
-        setLayoutMode('tree');
-      }
-      if (e.key === 'g' || e.key === 'G') {
-        setLayoutMode('graph');
-      }
-      if (e.key === 'd' || e.key === 'D') {
-        setLayoutMode('split');
-      }
-      
+
       // Quick actions
       if (e.key === 'n' || e.key === 'N') {
         setIsCreatingNode(true);
@@ -353,124 +259,12 @@ const PlanVisualizationEnhanced: React.FC = () => {
       if (e.key === 's' || e.key === 'S') {
         toggleSidebar();
       }
-      
-      // Zoom (only in graph mode)
-      if (layoutMode === 'graph' || layoutMode === 'split') {
-        if (e.key === '+' || e.key === '=') {
-          reactFlowInstance.current?.zoomIn();
-        }
-        if (e.key === '-') {
-          reactFlowInstance.current?.zoomOut();
-        }
-        if (e.key === '0') {
-          reactFlowInstance.current?.fitView({ padding: 0.2 });
-        }
-      }
     };
-    
+
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showHelp, toggleSidebar, layoutMode]);
+  }, [showHelp, toggleSidebar, uiState.nodeDetails.isOpen, closeNodeDetails, isCreatingNode]);
 
-  // Update nodes with view state
-  useEffect(() => {
-    if (!nodes || nodes.length === 0) return;
-    
-    const updatedNodes = nodes.map(node => {
-      const isSelected = uiState.nodeDetails.isOpen && uiState.nodeDetails.selectedNodeId === node.id;
-      
-      return {
-        ...node,
-        selected: isSelected,
-        data: {
-          ...node.data,
-          activeView,
-          currentZoom,
-          showLabels,
-          showProgress,
-          showDependencies,
-        }
-      };
-    });
-    
-    setNodes(updatedNodes);
-  }, [activeView, currentZoom, showLabels, showProgress, showDependencies, uiState.nodeDetails]);
-
-  // Layout and positioning
-  useEffect(() => {
-    if (initialFlowNodes && initialFlowNodes.length > 0 && planId) {
-      const storageKey = `planLayout_${planId}`;
-      let savedPositions: { [key: string]: { x: number; y: number } } = {};
-
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          savedPositions = JSON.parse(stored);
-        }
-      } catch (e) {
-        console.error("Failed to parse stored positions:", e);
-      }
-
-      const { nodes: layoutedNodes, edges: layoutedEdges } = getEnhancedTreeLayout(
-        JSON.parse(JSON.stringify(initialFlowNodes)),
-        flowEdges,
-        { direction: 'TB', nodeSpacing: 80, rankSpacing: 120 }
-      );
-
-      const finalNodes = layoutedNodes.map(node => {
-        const savedPos = savedPositions[node.id];
-        return savedPos ? { ...node, position: savedPos } : node;
-      });
-
-      setNodes(finalNodes);
-      
-      // Apply edge visibility based on showDependencies
-      const visibleEdges = layoutedEdges.map(edge => ({
-        ...edge,
-        hidden: !showDependencies && edge.type !== 'hierarchical',
-      }));
-      setEdges(visibleEdges);
-    } else {
-      setNodes([]);
-      setEdges([]);
-    }
-  }, [initialFlowNodes, flowEdges, setNodes, setEdges, planId, showDependencies]);
-
-  // Save position on drag
-  const handleNodeDragStop: NodeDragHandler = useCallback((event, node) => {
-    if (!planId || !node.position) return;
-    
-    const storageKey = `planLayout_${planId}`;
-    let savedPositions: { [key: string]: { x: number; y: number } } = {};
-
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        savedPositions = JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error("Failed to parse stored positions:", e);
-    }
-
-    savedPositions[node.id] = node.position;
-    localStorage.setItem(storageKey, JSON.stringify(savedPositions));
-  }, [planId]);
-
-  // Handle connections
-  const onConnect = useCallback(
-    (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
-
-  // Handle node click (from graph)
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    setActiveDetailTab('details');
-    setNodes((nodes) => nodes.map(n => ({ ...n, selected: n.id === node.id })));
-    if (!uiState.sidebar.isOpen) {
-      toggleSidebar();
-    }
-    openNodeDetails(node.id);
-  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, setNodes]);
 
   // Handle node selection (from tree)
   const handleNodeSelect = useCallback((nodeId: string) => {
@@ -479,21 +273,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
       toggleSidebar();
     }
     openNodeDetails(nodeId);
-    
-    // Also update ReactFlow selection if in split mode
-    if (layoutMode === 'split') {
-      setNodes((nodes) => nodes.map(n => ({ ...n, selected: n.id === nodeId })));
-      
-      // Focus the node in the graph view
-      const node = nodes.find(n => n.id === nodeId);
-      if (node && reactFlowInstance.current) {
-        reactFlowInstance.current.setCenter(node.position.x, node.position.y, {
-          zoom: 1.5,
-          duration: 800
-        });
-      }
-    }
-  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails, layoutMode, setNodes, nodes]);
+  }, [uiState.sidebar.isOpen, toggleSidebar, openNodeDetails]);
 
   // Fullscreen handling
   const toggleFullScreen = () => {
@@ -538,17 +318,8 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Handle status change
   const handleStatusChange = useCallback((nodeId: string, newStatus: NodeStatus) => {
     if (!planId) return;
-    
-    // Update the node in the local state immediately for better UX
-    setNodes(prevNodes => 
-      prevNodes.map(node => 
-        node.id === nodeId 
-          ? { ...node, data: { ...node.data, status: newStatus } }
-          : node
-      )
-    );
-    
-    // Then update via API
+
+    // Update via API
     updateNodeStatus.mutate(
       { nodeId, status: newStatus },
       {
@@ -558,31 +329,31 @@ const PlanVisualizationEnhanced: React.FC = () => {
           if (nodeId === uiState.nodeDetails.selectedNodeId) {
             refetchSelectedNode();
           }
-          
+
           // Invalidate and refetch activity-related queries for the updated node
           queryClient.invalidateQueries(['nodeLogs', planId, nodeId]);
           queryClient.invalidateQueries(['nodeArtifacts', planId, nodeId]);
           queryClient.invalidateQueries(['nodeComments', planId, nodeId]);
           queryClient.invalidateQueries(['nodeAssignments', planId, nodeId]);
           queryClient.invalidateQueries(['planActivity', planId]);
-          
+
           // If this node is currently selected, also invalidate its specific queries
           if (nodeId === uiState.nodeDetails.selectedNodeId) {
             // Force immediate refetch for better UX
             queryClient.refetchQueries(['nodeLogs', planId, nodeId]);
             queryClient.refetchQueries(['nodeArtifacts', planId, nodeId]);
           }
-          
+
           console.log(`Status updated successfully for node ${nodeId}, refreshing activity view`);
         },
         onError: (error) => {
           console.error('Failed to update status:', error);
-          // Revert the optimistic update on error
+          // Refetch on error
           refetchNodes();
         }
       }
     );
-  }, [planId, updateNodeStatus, setNodes, refetchNodes, refetchSelectedNode, uiState.nodeDetails.selectedNodeId, queryClient]);
+  }, [planId, updateNodeStatus, refetchNodes, refetchSelectedNode, uiState.nodeDetails.selectedNodeId, queryClient]);
 
   // Handle node deletion
   const handleNodeDelete = (nodeId: string) => {
@@ -591,6 +362,27 @@ const PlanVisualizationEnhanced: React.FC = () => {
       onSuccess: () => closeNodeDetails()
     });
   };
+
+  // Handle node move (drag & drop)
+  const handleNodeMove = useCallback((nodeId: string, newParentId: string | null, newOrderIndex?: number) => {
+    if (!planId) return;
+
+    console.log('handleNodeMove called:', { nodeId, newParentId, newOrderIndex });
+
+    moveNode.mutate(
+      { nodeId, parentId: newParentId, orderIndex: newOrderIndex },
+      {
+        onSuccess: () => {
+          console.log('Node moved successfully');
+          refetchNodes();
+        },
+        onError: (error) => {
+          console.error('Failed to move node:', error);
+          // Could add toast notification here
+        }
+      }
+    );
+  }, [planId, moveNode, refetchNodes]);
 
   // Loading state
   if (isPlanLoading || isNodesLoading) {
@@ -634,60 +426,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
             </h1>
           </div>
 
-          {/* Center section - Enhanced View Controls */}
-          <div className="flex items-center gap-4">
-            {/* Layout Mode Toggle */}
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-              <button
-                onClick={() => setLayoutMode('graph')}
-                className={`p-1.5 rounded transition-colors ${
-                  layoutMode === 'graph' 
-                    ? 'bg-white dark:bg-gray-600 shadow-sm' 
-                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-                title="Graph View (G)"
-              >
-                <GitBranch className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setLayoutMode('tree')}
-                className={`p-1.5 rounded transition-colors ${
-                  layoutMode === 'tree' 
-                    ? 'bg-white dark:bg-gray-600 shadow-sm' 
-                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-                title="Tree View (T)"
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setLayoutMode('split')}
-                className={`p-1.5 rounded transition-colors ${
-                  layoutMode === 'split' 
-                    ? 'bg-white dark:bg-gray-600 shadow-sm' 
-                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-                title="Split View (D)"
-              >
-                <Grid3x3 className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {/* Original View Controls (for graph mode) */}
-            {(layoutMode === 'graph' || layoutMode === 'split') && (
-              <div data-tour="view-controls">
-                <ViewControls
-                  activeView={activeView}
-                  onViewChange={setActiveView}
-                  showLabels={showLabels}
-                  showProgress={showProgress}
-                  showDependencies={showDependencies}
-                  onToggleLabels={() => setShowLabels(!showLabels)}
-                  onToggleProgress={() => setShowProgress(!showProgress)}
-                  onToggleDependencies={() => setShowDependencies(!showDependencies)}
-                />
-              </div>
-            )}
+          {/* Center section */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Tree View</span>
           </div>
 
           {/* Right section */}
@@ -738,181 +479,137 @@ const PlanVisualizationEnhanced: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Tree Navigation (for tree or split mode) */}
-        {(layoutMode === 'tree' || layoutMode === 'split') && (
-          <ImprovedTreeNavigation
-            nodes={planNodes}
-            selectedNodeId={uiState.nodeDetails.selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            onNodeStatusChange={handleStatusChange}
-            onNodeCreate={() => handleCreateNode()}
-            onNodeEdit={(nodeId) => console.log('Edit node:', nodeId)}
-            onNodeDelete={handleNodeDelete}
-            viewMode={treeViewMode}
-          />
-        )}
-        
-        {/* Graph View */}
-        {(layoutMode === 'graph' || layoutMode === 'split') && (
-          <div className="flex-1 relative">
-            {/* Show empty state if no nodes */}
-            {nodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
-              <EmptyStateGuide 
-                planTitle={plan.title}
-                onCreateFirstNode={handleCreateNode}
-              />
-            ) : (
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeClick={onNodeClick}
-                nodeTypes={nodeTypes}
-                onNodeDragStop={handleNodeDragStop}
-                onInit={(instance) => {
-                  reactFlowInstance.current = instance;
-                }}
-                onMove={(event, viewport) => {
-                  if (viewport.zoom !== currentZoom) {
-                    setCurrentZoom(viewport.zoom);
-                  }
-                }}
-                defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-                minZoom={0.1}
-                maxZoom={2}
-                fitView={true}
-                fitViewOptions={{ padding: 0.2 }}
-                style={{ background: '#f9fafb' }}
-                attributionPosition="bottom-right"
-              >
-                <Controls />
-                <MiniMap 
-                  nodeStrokeColor={(n) => {
-                    if (n.selected) return '#3b82f6';
-                    return '#e5e7eb';
-                  }}
-                  nodeColor={(n) => {
-                    if (n.selected) return '#dbeafe';
-                    return '#ffffff';
-                  }}
-                  pannable
-                  zoomable
-                />
-                <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-                
-                {/* Add Node Button */}
-                <Panel position="top-right" className="space-y-2">
-                  <button 
-                    onClick={handleCreateNode}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
-                    data-tour="add-node"
+        {/* Tree View */}
+        <div className="flex-1 border-r border-gray-200 dark:border-gray-700">
+          {planNodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
+            <EmptyStateGuide
+              planTitle={plan.title}
+              onCreateFirstNode={handleCreateNode}
+            />
+          ) : (
+            <PlanTreeView
+              nodes={planNodes}
+              selectedNodeId={uiState.nodeDetails.selectedNodeId}
+              onNodeSelect={handleNodeSelect}
+              onNodeStatusChange={handleStatusChange}
+              onNodeCreate={() => handleCreateNode()}
+              onNodeMove={handleNodeMove}
+              className="h-full"
+            />
+          )}
+        </div>
+
+        {/* Node creation modal */}
+        {isCreatingNode && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Node</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                  <select
+                    value={newNodeType}
+                    onChange={(e) => setNewNodeType(e.target.value as NodeType)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   >
-                    <Plus className="w-4 h-4" />
-                    Add Node
+                    <option value="phase">Phase</option>
+                    <option value="task">Task</option>
+                    <option value="milestone">Milestone</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent</label>
+                  <select
+                    value={newNodeParentId || ''}
+                    onChange={(e) => setNewNodeParentId(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">No Parent (Root)</option>
+                    {planNodes.map(node => (
+                      <option key={node.id} value={node.id}>{node.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter node title"
+                    id="new-node-title"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setIsCreatingNode(false)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    Cancel
                   </button>
-                </Panel>
-                
-                {/* Node creation form */}
-                {isCreatingNode && (
-                  <Panel position="top-center" className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-96">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Node</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-                        <select 
-                          value={newNodeType}
-                          onChange={(e) => setNewNodeType(e.target.value as NodeType)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        >
-                          <option value="phase">Phase</option>
-                          <option value="task">Task</option>
-                          <option value="milestone">Milestone</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent</label>
-                        <select 
-                          value={newNodeParentId || ''}
-                          onChange={(e) => setNewNodeParentId(e.target.value || null)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        >
-                          <option value="">No Parent (Root)</option>
-                          {planNodes.map(node => (
-                            <option key={node.id} value={node.id}>{node.title}</option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
-                        <input 
-                          type="text" 
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                          placeholder="Enter node title"
-                          id="new-node-title"
-                          autoFocus
-                        />
-                      </div>
-                      
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => setIsCreatingNode(false)}
-                          className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const titleInput = document.getElementById('new-node-title') as HTMLInputElement;
-                            if (titleInput.value) {
-                              submitNewNode(titleInput.value);
-                            }
-                          }}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                        >
-                          Create
-                        </button>
-                      </div>
-                    </div>
-                  </Panel>
-                )}
-              </ReactFlow>
-            )}
+                  <button
+                    onClick={() => {
+                      const titleInput = document.getElementById('new-node-title') as HTMLInputElement;
+                      if (titleInput.value) {
+                        submitNewNode(titleInput.value);
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    Create
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Sidebar */}
-        {uiState.sidebar.isOpen && (
-          <>
-            {uiState.nodeDetails.isOpen && selectedNode ? (
-              // Unified Node Details Panel - Increased width for better content visibility
-              <aside className="w-[640px] xl:w-[720px] shadow-md overflow-hidden border-l border-gray-200 dark:border-gray-700 flex">
-                <UnifiedNodeDetails
-                  node={selectedNode}
-                  planId={planId || ''}
-                  currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
-                  activeUsers={[]}  // Empty array - feature not implemented
-                  onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
-                  onLogAdd={handleLogAdd}
-                  onFileUpload={handleFileUpload}
-                  onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
-                  onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
-                />
-              </aside>
-            ) : layoutMode !== 'tree' && layoutMode !== 'split' ? (
-              // Compact Sidebar for Plan Overview (only when tree is not visible)
-              <CompactSidebar
-                plan={plan}
-                nodes={planNodes}
-                activities={recentActivities}
-                isActivityLoading={isActivityLoading}
-                onClose={toggleSidebar}
+        {/* Sidebar - Desktop & Tablet */}
+        {uiState.sidebar.isOpen && uiState.nodeDetails.isOpen && selectedNode && (
+          <aside className="hidden md:flex w-[640px] xl:w-[720px] shadow-md overflow-hidden border-l border-gray-200 dark:border-gray-700">
+            <UnifiedNodeDetails
+              node={selectedNode}
+              planId={planId || ''}
+              currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
+              activeUsers={[]}
+              onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
+              onLogAdd={handleLogAdd}
+              onFileUpload={handleFileUpload}
+              onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
+              onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
+              onClose={closeNodeDetails}
+            />
+          </aside>
+        )}
+
+        {/* Node Details Modal - Mobile Only */}
+        {uiState.nodeDetails.isOpen && selectedNode && (
+          <div className="md:hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={closeNodeDetails}
+            />
+
+            {/* Modal Content */}
+            <div className="relative w-full h-[90vh] sm:h-[85vh] sm:max-w-2xl sm:rounded-t-xl bg-white dark:bg-gray-900 shadow-2xl overflow-hidden animate-slide-up">
+              <UnifiedNodeDetails
+                node={selectedNode}
+                planId={planId || ''}
+                currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
+                activeUsers={[]}
+                onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
+                onLogAdd={handleLogAdd}
+                onFileUpload={handleFileUpload}
+                onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
+                onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
+                onClose={closeNodeDetails}
               />
-            ) : null}
-          </>
+            </div>
+          </div>
         )}
       </div>
 
@@ -923,10 +620,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
       />
 
       {/* Help Modal */}
-      <HelpModal 
+      <HelpModal
         isOpen={showHelp}
         onClose={() => setShowHelp(false)}
-        layoutMode={layoutMode}
       />
     </div>
   );
