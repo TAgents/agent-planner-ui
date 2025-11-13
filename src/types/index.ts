@@ -1,5 +1,6 @@
 // Plan Types
 export type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
+export type PlanVisibility = 'public' | 'private';
 
 export interface Plan {
   id: string;
@@ -7,6 +8,7 @@ export interface Plan {
   description: string;
   status: PlanStatus;
   owner_id: string;
+  visibility?: PlanVisibility;
   created_at: string;
   updated_at: string;
   metadata?: Record<string, any>;

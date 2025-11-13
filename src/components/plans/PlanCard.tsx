@@ -17,7 +17,15 @@ interface PlanCardProps {
 
 /**
  * PlanCard component displays a plan with public/private badge, progress, and GitHub link
- * Matches the landing page DashboardHeader design system
+ *
+ * DESIGN PATTERNS (see DESIGN_REFERENCE.md):
+ * - Card: rounded-xl, border-2, hover effects (lift + shadow + border color)
+ * - Colors: Blue for primary actions, semantic colors for status
+ * - Progress bar: Gradient (from-blue-500 to-blue-600), labeled with percentage
+ * - Badges: Inline-flex with icons, border-2 for prominence
+ * - Spacing: p-6 for card padding, space-y-3 for internal spacing
+ * - Typography: text-xl for title, text-sm for description
+ * - Dark mode: All colors have dark: variants
  */
 export const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
   const navigate = useNavigate();

@@ -1,13 +1,117 @@
-import React, { useState } from 'react';
-import { DEMO_PLANS } from './demoPlansData';
+import React, { useState, useEffect } from 'react';
+import { DEMO_PLANS, DemoPlan, DemoNode } from './demoPlansData';
 import { PlanSelectorDropdown } from './PlanSelectorDropdown';
 import { InteractiveDashboard } from './InteractiveDashboard';
+import { planService } from '../../services/api';
+
+// Helper function to convert API node structure to demo format
+const convertNodeToDemoFormat = (node: any, level: 'phase' | 'task' | 'subtask' = 'phase'): DemoNode => {
+  const demoNode: DemoNode = {
+    id: node.id,
+    title: node.title,
+    type: level,
+    status: node.status === 'completed' ? 'completed' :
+            node.status === 'in_progress' ? 'in_progress' : 'not_started',
+  };
+
+  if (node.children && node.children.length > 0) {
+    const nextLevel = level === 'phase' ? 'task' : 'subtask';
+    demoNode.children = node.children.map((child: any) =>
+      convertNodeToDemoFormat(child, nextLevel as any)
+    );
+  }
+
+  return demoNode;
+};
+
+// Helper function to convert API plan to demo format
+const convertPlanToDemoFormat = (apiPlan: any, structure: any): DemoPlan => {
+  const plan = apiPlan.plan || apiPlan;
+
+  // Convert the node structure (skip root node, use its children as phases)
+  const phases = structure.children || [];
+  const nodes = phases.map((phase: any) => convertNodeToDemoFormat(phase, 'phase'));
+
+  // Calculate total and completed tasks from progress
+  const totalTasks = Math.round(plan.progress ? 20 * (100 / Math.max(plan.progress, 1)) : 20);
+  const completedTasks = Math.round(totalTasks * (plan.progress || 0) / 100);
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    description: plan.description,
+    githubRepo: {
+      owner: plan.github_repo_owner || 'agentplanner',
+      name: plan.github_repo_name || 'community',
+      stars: 0,
+      url: plan.github_repo_owner && plan.github_repo_name
+        ? `https://github.com/${plan.github_repo_owner}/${plan.github_repo_name}`
+        : 'https://github.com/talkingagents/agent-planner'
+    },
+    lastUpdated: new Date(plan.updated_at),
+    lastUpdatedBy: plan.owner?.name || plan.owner?.email?.split('@')[0] || 'user',
+    progress: plan.progress || 0,
+    totalTasks: totalTasks,
+    completedTasks: completedTasks,
+    nodes: nodes
+  };
+};
 
 export const HeroSection: React.FC = () => {
+  const [plans, setPlans] = useState(DEMO_PLANS);
   const [selectedPlanId, setSelectedPlanId] = useState(DEMO_PLANS[0].id);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const selectedPlan = DEMO_PLANS.find((p) => p.id === selectedPlanId)!;
+  // Fetch real public plans on mount
+  useEffect(() => {
+    const fetchPublicPlans = async () => {
+      try {
+        const response = await planService.getPublicPlans('recent', 3, 0);
+
+        if (response.plans && response.plans.length > 0) {
+          console.log('Fetched public plans:', response.plans);
+
+          // Fetch full structure for each plan
+          const plansWithStructure = await Promise.all(
+            response.plans.slice(0, 3).map(async (plan: any) => {
+              try {
+                const fullPlan = await planService.getPublicPlanWithStructure(plan.id);
+                return convertPlanToDemoFormat(fullPlan, fullPlan.structure);
+              } catch (error) {
+                console.error(`Failed to fetch structure for plan ${plan.id}:`, error);
+                return null;
+              }
+            })
+          );
+
+          // Filter out any failed fetches and use the converted plans
+          const validPlans = plansWithStructure.filter(p => p !== null) as DemoPlan[];
+
+          if (validPlans.length > 0) {
+            setPlans(validPlans);
+            setSelectedPlanId(validPlans[0].id);
+          } else {
+            // Fallback to demo plans if all fetches failed
+            setPlans(DEMO_PLANS);
+          }
+        } else {
+          // No public plans available, use demo data
+          setPlans(DEMO_PLANS);
+        }
+      } catch (error) {
+        console.error('Failed to fetch public plans:', error);
+        // Fallback to demo plans
+        setPlans(DEMO_PLANS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPublicPlans();
+  }, []);
+
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans[0];
 
   const handlePlanChange = (planId: string) => {
     if (planId !== selectedPlanId) {
@@ -34,7 +138,7 @@ export const HeroSection: React.FC = () => {
 
         {/* Plan Selector */}
         <PlanSelectorDropdown
-          plans={DEMO_PLANS}
+          plans={plans}
           selectedPlanId={selectedPlanId}
           onSelectPlan={handlePlanChange}
         />

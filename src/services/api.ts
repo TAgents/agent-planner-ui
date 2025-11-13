@@ -364,7 +364,15 @@ export const planService = {
       data,
     });
   },
-  
+
+  updatePlanVisibility: async (planId: string, visibility: 'public' | 'private') => {
+    return request<ApiResponse<Plan>>({
+      method: 'PUT',
+      url: `/plans/${planId}/visibility`,
+      data: { visibility },
+    });
+  },
+
   deletePlan: async (planId: string, archive: boolean = true) => {
     return request<ApiResponse<null>>({
       method: 'DELETE',
@@ -438,6 +446,45 @@ export const planService = {
       method: 'GET',
       url: `/plans/${planId}/available-users`,
     });
+  },
+
+  // Public plans (no authentication required)
+  getPublicPlans: async (sort: string = 'recent', limit: number = 50, offset: number = 0) => {
+    // Create a standalone axios instance without auth interceptor for public endpoints
+    const publicApi = axios.create({
+      baseURL: API_CONFIG.BASE_URL,
+      headers: API_CONFIG.HEADERS,
+      timeout: API_CONFIG.TIMEOUT,
+    });
+
+    const response = await publicApi.get('/plans/public', {
+      params: { sort, limit, offset }
+    });
+    return response.data;
+  },
+
+  getPublicPlan: async (planId: string) => {
+    // Create a standalone axios instance without auth interceptor for public endpoints
+    const publicApi = axios.create({
+      baseURL: API_CONFIG.BASE_URL,
+      headers: API_CONFIG.HEADERS,
+      timeout: API_CONFIG.TIMEOUT,
+    });
+
+    const response = await publicApi.get(`/plans/public/${planId}`);
+    return response.data;
+  },
+
+  getPublicPlanWithStructure: async (planId: string) => {
+    // Create a standalone axios instance without auth interceptor for public endpoints
+    const publicApi = axios.create({
+      baseURL: API_CONFIG.BASE_URL,
+      headers: API_CONFIG.HEADERS,
+      timeout: API_CONFIG.TIMEOUT,
+    });
+
+    const response = await publicApi.get(`/plans/public/${planId}`);
+    return response.data;
   },
 };
 

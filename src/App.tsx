@@ -12,6 +12,7 @@ import MainLayout from './components/layout/MainLayout';
 import Landing from './pages/Landing';
 import PlansList from './pages/PlansListSimplified'; // Using simplified version
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
+import PublicPlanView from './pages/PublicPlanView'; // Public plan viewing
 // import SharedPlans from './pages/SharedPlans'; // Hidden - functionality not fully implemented
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -46,6 +47,9 @@ const App: React.FC = () => {
             <Routes>
               {/* Public Landing Page */}
               <Route path="/" element={<Landing />} />
+
+              {/* Public Plan Viewing */}
+              <Route path="/public/plans/:planId" element={<PublicPlanView />} />
 
               {/* Legal Pages */}
               <Route path="/terms" element={<TermsOfService />} />

@@ -27,6 +27,7 @@ import ShareButton from '../components/sharing/ShareButton';
 import PlanProgress from '../components/plans/PlanProgress';
 import ActivityTimeline from '../components/activity/ActivityTimeline';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
+import VisibilityToggle from '../components/plans/VisibilityToggle';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -132,6 +133,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
     }
   }, []);
 
+  // Check if current user is the plan owner
+  const isOwner = useMemo(() => {
+    if (!plan) return false;
+    const currentUserId = getUserId();
+    return plan.owner_id === currentUserId;
+  }, [plan, getUserId]);
+
   // Subscribe to real-time WebSocket updates for this plan
   usePlanEvents(planId || null, {
     onNodeCreated: useCallback(() => {
@@ -210,6 +218,14 @@ const PlanVisualizationEnhanced: React.FC = () => {
     console.log('Uploading files:', files);
     // TODO: Add API call to upload files
   }, []);
+
+  // Handle visibility change
+  const handleVisibilityChange = useCallback((newVisibility: 'public' | 'private') => {
+    console.log('Visibility changed to:', newVisibility);
+    // Invalidate plan query to refresh the plan data
+    const userId = getUserId();
+    queryClient.invalidateQueries(['plan', userId, planId]);
+  }, [planId, queryClient, getUserId]);
 
   // Scroll to top when plan loads
   useEffect(() => {
@@ -433,6 +449,14 @@ const PlanVisualizationEnhanced: React.FC = () => {
 
           {/* Right section */}
           <div className="flex items-center gap-2">
+            {/* Visibility Toggle - only shown to owner */}
+            <VisibilityToggle
+              planId={planId || ''}
+              currentVisibility={plan.visibility || 'private'}
+              isOwner={isOwner}
+              onVisibilityChange={handleVisibilityChange}
+            />
+
             <div data-tour="share-button">
               <ShareButton
                 planId={planId || ''}
