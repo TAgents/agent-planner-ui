@@ -15,7 +15,9 @@ import {
   Folder,
   FolderOpen,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
@@ -92,6 +94,9 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   const isArchived = plan.status === 'archived';
+
+  // Extract visibility information
+  const isPublic = plan.visibility === 'public' || plan.metadata?.is_public === true;
 
   // Calculate progress from actual nodes
   const nodeCount = nodes?.length || 0;
@@ -194,6 +199,28 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
 
               {/* Stats Section */}
               <div className="flex items-center gap-4 flex-shrink-0">
+                {/* Visibility Badge */}
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border-2 whitespace-nowrap ${
+                    isPublic
+                      ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                      : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+                  }`}
+                  title={isPublic ? 'Public plan - anyone can view' : 'Private plan'}
+                >
+                  {isPublic ? (
+                    <>
+                      <Unlock className="w-3.5 h-3.5" />
+                      <span>Public</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Private</span>
+                    </>
+                  )}
+                </span>
+
                 {/* Node Count */}
                 <div className="text-sm text-gray-600 dark:text-gray-400 min-w-[70px] text-right">
                   {isLoading ? (
@@ -311,8 +338,31 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
         className="block p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 hover:-translate-y-1 transition-all duration-200"
       >
         <div className="flex items-start justify-between mb-4">
-          <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-2">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            {/* Visibility Badge */}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border-2 whitespace-nowrap ${
+                isPublic
+                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                  : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+              }`}
+              title={isPublic ? 'Public plan - anyone can view' : 'Private plan'}
+            >
+              {isPublic ? (
+                <>
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Public</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Private</span>
+                </>
+              )}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className={`px-2.5 py-1 text-xs font-medium rounded ${getStatusClasses(plan.status)}`}>
