@@ -1,48 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
+import {
   User,
   Calendar,
-  Tag,
   ChevronRight,
   ChevronDown,
-  MessageSquare,
   Paperclip,
   Edit3,
   Check,
   X,
   MoreHorizontal,
   Send,
-  AtSign,
-  Hash,
   FileText,
-  Image,
-  File,
   Download,
-  Maximize2,
   Filter as FilterIcon,
-  Clock,
   CheckCircle,
   XCircle,
   PlayCircle,
   Circle,
-  AlertCircle,
-  ArrowRight,
-  Pin,
-  ThumbsUp,
-  Smile,
   Activity,
   Brain,
   AlertTriangle,
   Target,
-  UserPlus,
-  UserCheck,
   Code2,
   Save,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
+  Layers,
+  Square,
+  Trash2,
+  Copy as CopyIcon,
+  Move,
+  Archive
 } from 'lucide-react';
-import { PlanNode, NodeStatus, User as UserType, Log, Artifact } from '../../types';
+import { PlanNode, NodeStatus, User as UserType } from '../../types';
 import { formatDate } from '../../utils/planUtils';
 import { useNodeLogs } from '../../hooks/useNodeLogs';
 import { useNodeArtifacts } from '../../hooks/useNodeArtifacts';
@@ -67,9 +58,9 @@ interface UnifiedNodeDetailsProps {
   onClose?: () => void;
 }
 
-type ActivityType = 
-  | 'log' 
-  | 'status_change' 
+type ActivityType =
+  | 'log'
+  | 'status_change'
   | 'assignment'
   | 'file_upload'
   | 'edit'
@@ -77,6 +68,8 @@ type ActivityType =
   | 'dependency_removed';
 
 type LogType = 'progress' | 'reasoning' | 'challenge' | 'decision';
+
+type ActivityFilter = 'all' | 'logs' | 'files';
 
 interface UnifiedActivity {
   id: string;
@@ -117,47 +110,60 @@ const formatTimeAgo = (date: Date | string): string => {
 // Component: Log Type Icon
 const LogTypeIcon: React.FC<{ logType: LogType }> = ({ logType }) => {
   const config = {
-    progress: { icon: Activity, color: 'text-blue-500' },
-    reasoning: { icon: Brain, color: 'text-purple-500' },
-    challenge: { icon: AlertTriangle, color: 'text-yellow-500' },
-    decision: { icon: Target, color: 'text-green-500' }
+    progress: { icon: Activity, color: 'text-blue-500 dark:text-blue-400' },
+    reasoning: { icon: Brain, color: 'text-purple-500 dark:text-purple-400' },
+    challenge: { icon: AlertTriangle, color: 'text-yellow-500 dark:text-yellow-400' },
+    decision: { icon: Target, color: 'text-green-500 dark:text-green-400' }
   };
 
   const Icon = config[logType].icon;
   return <Icon className={`w-3.5 h-3.5 ${config[logType].color}`} />;
 };
 
+// Component: Node Type Icon
+const NodeTypeIcon: React.FC<{ nodeType: string }> = ({ nodeType }) => {
+  const config = {
+    phase: { icon: Layers, color: 'text-purple-500 dark:text-purple-400' },
+    task: { icon: Square, color: 'text-blue-500 dark:text-blue-400' },
+    milestone: { icon: Target, color: 'text-green-500 dark:text-green-400' }
+  };
+
+  const Icon = config[nodeType as keyof typeof config]?.icon || Square;
+  const color = config[nodeType as keyof typeof config]?.color || 'text-gray-500 dark:text-gray-400';
+
+  return <Icon className={`w-4 h-4 ${color}`} />;
+};
+
 // Component: Status Badge
-const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus) => void; nodeId?: string }> = ({ 
-  status, 
+const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus) => void; nodeId?: string }> = ({
+  status,
   onChange,
-  nodeId 
+  nodeId
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localStatus, setLocalStatus] = useState<NodeStatus | null>(null);
-  
+
   // Reset local status when node changes or when status prop changes
-  // This ensures we use fresh data after API updates
   React.useEffect(() => {
     setLocalStatus(null);
     setIsOpen(false);
   }, [nodeId, status]);
-  
+
   // Use local status if set (after user selection), otherwise use prop
   const displayStatus = localStatus || status;
-  
+
   const statusConfig = {
-    not_started: { icon: Circle, color: 'text-gray-500', bg: 'bg-gray-100' },
-    in_progress: { icon: PlayCircle, color: 'text-blue-500', bg: 'bg-blue-100' },
-    completed: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-100' },
-    blocked: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-100' }
+    not_started: { icon: Circle, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-200' },
+    in_progress: { icon: PlayCircle, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-800 dark:text-blue-200' },
+    completed: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-200' },
+    blocked: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-200' }
   };
 
   const Icon = statusConfig[displayStatus].icon;
 
   if (!onChange) {
     return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[displayStatus].bg} ${statusConfig[displayStatus].color}`}>
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[displayStatus].bg} ${statusConfig[displayStatus].text}`}>
         <Icon className="w-3.5 h-3.5" />
         <span className="capitalize">{displayStatus.replace('_', ' ')}</span>
       </span>
@@ -168,15 +174,15 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[displayStatus].bg} ${statusConfig[displayStatus].color}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[displayStatus].bg} ${statusConfig[displayStatus].text} hover:opacity-90 transition-all duration-200`}
       >
         <Icon className="w-3.5 h-3.5" />
         <span className="capitalize">{displayStatus.replace('_', ' ')}</span>
         <ChevronDown className="w-3 h-3" />
       </button>
-      
+
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[9999]">
+        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[9999] min-w-[160px]">
           {(['not_started', 'in_progress', 'completed', 'blocked'] as NodeStatus[]).map(s => {
             const SIcon = statusConfig[s].icon;
             return (
@@ -187,7 +193,7 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
                   onChange(s);
                   setIsOpen(false);
                 }}
-                className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 w-full"
+                className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left transition-colors duration-200"
               >
                 <SIcon className={`w-3.5 h-3.5 ${statusConfig[s].color}`} />
                 <span className="capitalize">{s.replace('_', ' ')}</span>
@@ -201,12 +207,12 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
 };
 
 // Component: User Avatar with real initials
-const Avatar: React.FC<{ 
-  user: { name?: string; email?: string; avatar?: string }; 
-  size?: 'xs' | 'sm' | 'md' 
-}> = ({ 
-  user, 
-  size = 'sm' 
+const Avatar: React.FC<{
+  user: { name?: string; email?: string; avatar?: string };
+  size?: 'xs' | 'sm' | 'md'
+}> = ({
+  user,
+  size = 'sm'
 }) => {
   const sizeClasses = {
     xs: 'w-5 h-5 text-xs',
@@ -245,6 +251,108 @@ const Avatar: React.FC<{
   );
 };
 
+// Component: Actions Menu (NEW)
+const ActionsMenu: React.FC<{
+  onEdit?: () => void;
+  onCopyId?: () => void;
+  onMove?: () => void;
+  onDuplicate?: () => void;
+  onArchive?: () => void;
+  onDelete?: () => void;
+}> = ({ onEdit, onCopyId, onMove, onDuplicate, onArchive, onDelete }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
+        title="More actions"
+        aria-label="More actions"
+      >
+        <MoreHorizontal className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[9999] min-w-[180px]">
+          {onEdit && (
+            <button
+              onClick={() => { onEdit(); setIsOpen(false); }}
+              className="w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 min-h-[44px]"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Edit details
+            </button>
+          )}
+          {onCopyId && (
+            <button
+              onClick={() => { onCopyId(); setIsOpen(false); }}
+              className="w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 min-h-[44px]"
+            >
+              <CopyIcon className="w-3.5 h-3.5" />
+              Copy node ID
+            </button>
+          )}
+          {onMove && (
+            <button
+              onClick={() => { onMove(); setIsOpen(false); }}
+              className="w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 min-h-[44px]"
+            >
+              <Move className="w-3.5 h-3.5" />
+              Move to...
+            </button>
+          )}
+          {onDuplicate && (
+            <button
+              onClick={() => { onDuplicate(); setIsOpen(false); }}
+              className="w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 min-h-[44px]"
+            >
+              <CopyIcon className="w-3.5 h-3.5" />
+              Duplicate
+            </button>
+          )}
+          {onArchive && (
+            <button
+              onClick={() => { onArchive(); setIsOpen(false); }}
+              className="w-full px-3 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 min-h-[44px]"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              Archive
+            </button>
+          )}
+          {onDelete && (
+            <>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+              <button
+                onClick={() => { onDelete(); setIsOpen(false); }}
+                className="w-full px-3 py-2.5 text-sm text-left hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-red-600 dark:text-red-400 transition-colors duration-200 min-h-[44px]"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Component: Assignment Selector
 const AssignmentSelector: React.FC<{
   assignedUser?: { id: string; name?: string; email?: string };
@@ -276,30 +384,30 @@ const AssignmentSelector: React.FC<{
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading || isUpdating}
-        className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <>
-            <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            <span>Loading...</span>
+            <div className="w-3 h-3 border-2 border-gray-400 dark:border-gray-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-700 dark:text-gray-300">Loading...</span>
           </>
         ) : isUpdating ? (
           <>
-            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span>Updating...</span>
+            <div className="w-3 h-3 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-700 dark:text-gray-300">Updating...</span>
           </>
         ) : assignedUser ? (
           <>
             <Avatar user={assignedUser} size="xs" />
-            <span>{assignedUser.name || assignedUser.email || 'Assigned'}</span>
+            <span className="text-gray-700 dark:text-gray-300">{assignedUser.name || assignedUser.email || 'Assigned'}</span>
           </>
         ) : (
           <>
-            <User className="w-3 h-3" />
-            <span>Unassigned</span>
+            <User className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+            <span className="text-gray-500 dark:text-gray-400">Unassigned</span>
           </>
         )}
-        {!isLoading && !isUpdating && <ChevronDown className="w-3 h-3" />}
+        {!isLoading && !isUpdating && <ChevronDown className="w-3 h-3 text-gray-500 dark:text-gray-400" />}
       </button>
 
       {isOpen && (
@@ -310,15 +418,15 @@ const AssignmentSelector: React.FC<{
                 onUnassign();
                 setIsOpen(false);
               }}
-              className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300"
             >
               <X className="w-3 h-3" />
               Unassign
             </button>
           )}
-          
+
           <div className="border-t border-gray-200 dark:border-gray-700">
-            <div className="px-3 py-1.5 text-xs font-medium text-gray-500">Assign to:</div>
+            <div className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">Assign to:</div>
             {collaborators.map(collab => {
               const userData = collab.user || collab;
               return (
@@ -328,13 +436,13 @@ const AssignmentSelector: React.FC<{
                     onAssign(userData.id || collab.id);
                     setIsOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                  className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 disabled:opacity-50"
                   disabled={assignedUser?.id === (userData.id || collab.id)}
                 >
                   <Avatar user={userData} size="xs" />
                   <span>{userData.name || userData.email || 'Unknown'}</span>
                   {assignedUser?.id === (userData.id || collab.id) && (
-                    <Check className="w-3 h-3 ml-auto text-green-500" />
+                    <Check className="w-3 h-3 ml-auto text-green-500 dark:text-green-400" />
                   )}
                 </button>
               );
@@ -347,7 +455,7 @@ const AssignmentSelector: React.FC<{
 };
 
 // Component: Activity Item
-const ActivityItem: React.FC<{ 
+const ActivityItem: React.FC<{
   activity: UnifiedActivity;
   onReact?: (emoji: string) => void;
   onReply?: (text: string) => void;
@@ -363,10 +471,10 @@ const ActivityItem: React.FC<{
             <Avatar user={activity.actor} size="sm" />
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{activity.actor.name}</span>
+                <span className="font-medium text-sm text-gray-900 dark:text-white">{activity.actor.name}</span>
                 <LogTypeIcon logType={activity.data.logType} />
-                <span className="text-xs text-gray-500">{activity.data.logType}</span>
-                <span className="text-xs text-gray-500 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{activity.data.logType}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                 {activity.data.content}
@@ -374,24 +482,24 @@ const ActivityItem: React.FC<{
               {activity.data.tags && activity.data.tags.length > 0 && (
                 <div className="flex gap-1 flex-wrap">
                   {activity.data.tags.map((tag: string, i: number) => (
-                    <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">
+                    <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs text-gray-600 dark:text-gray-400">
                       #{tag}
                     </span>
                   ))}
                 </div>
               )}
-              
+
               {/* Actions */}
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <button 
+              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <button
                   onClick={() => onReact?.('👍')}
-                  className="hover:text-gray-700 dark:hover:text-gray-300"
+                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                 >
                   React
                 </button>
-                <button 
+                <button
                   onClick={() => setShowReply(!showReply)}
-                  className="hover:text-gray-700 dark:hover:text-gray-300"
+                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
                 >
                   Reply
                 </button>
@@ -407,10 +515,10 @@ const ActivityItem: React.FC<{
               <Activity className="w-3 h-3 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 flex items-center gap-2 text-sm">
-              <span className="font-medium">{activity.actor.name}</span>
-              <span className="text-gray-500">changed status to</span>
+              <span className="font-medium text-gray-900 dark:text-white">{activity.actor.name}</span>
+              <span className="text-gray-500 dark:text-gray-400">changed status to</span>
               <StatusBadge status={activity.data.newStatus} />
-              <span className="text-xs text-gray-500 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
             </div>
           </div>
         );
@@ -421,18 +529,18 @@ const ActivityItem: React.FC<{
             <Avatar user={activity.actor} size="sm" />
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{activity.actor.name}</span>
-                <span className="text-xs text-gray-500">uploaded a file</span>
-                <span className="text-xs text-gray-500 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
+                <span className="font-medium text-sm text-gray-900 dark:text-white">{activity.actor.name}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">uploaded a file</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-gray-500" />
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 flex items-center gap-2 border border-gray-200 dark:border-gray-700">
+                <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm">{activity.data.fileName}</div>
-                  <div className="text-xs text-gray-500">{activity.data.fileSize}</div>
+                  <div className="font-medium text-sm text-gray-900 dark:text-white">{activity.data.fileName}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{activity.data.fileSize}</div>
                 </div>
-                <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">
-                  <Download className="w-4 h-4" />
+                <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors">
+                  <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -446,11 +554,11 @@ const ActivityItem: React.FC<{
               <User className="w-3 h-3 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex-1 flex items-center gap-2 text-sm">
-              <span className="font-medium">{activity.actor.name}</span>
-              <span className="text-gray-500">assigned</span>
-              <span className="font-medium">{activity.data.assignee.name}</span>
-              <span className="text-gray-500">to this task</span>
-              <span className="text-xs text-gray-500 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
+              <span className="font-medium text-gray-900 dark:text-white">{activity.actor.name}</span>
+              <span className="text-gray-500 dark:text-gray-400">assigned</span>
+              <span className="font-medium text-gray-900 dark:text-white">{activity.data.assignee.name}</span>
+              <span className="text-gray-500 dark:text-gray-400">to this task</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
             </div>
           </div>
         );
@@ -463,7 +571,7 @@ const ActivityItem: React.FC<{
   return (
     <div className="relative">
       {renderContent()}
-      
+
       {/* Reply Input */}
       {showReply && (
         <div className="ml-9 mt-2">
@@ -473,7 +581,7 @@ const ActivityItem: React.FC<{
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write a reply..."
-              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && replyText.trim()) {
                   onReply?.(replyText);
@@ -482,7 +590,7 @@ const ActivityItem: React.FC<{
                 }
               }}
             />
-            <button 
+            <button
               onClick={() => {
                 if (replyText.trim()) {
                   onReply?.(replyText);
@@ -490,14 +598,15 @@ const ActivityItem: React.FC<{
                   setShowReply(false);
                 }
               }}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!replyText.trim()}
             >
               Reply
             </button>
           </div>
         </div>
       )}
-      
+
       {/* Thread */}
       {activity.metadata?.thread && activity.metadata.thread.length > 0 && (
         <div className="ml-9 mt-2 space-y-2">
@@ -514,12 +623,18 @@ const ActivityItem: React.FC<{
 const LogComposer: React.FC<{
   onLogAdd: (content: string, logType: string, tags?: string[]) => void;
   onFileUpload: (files: File[]) => void;
-}> = ({ onLogAdd, onFileUpload }) => {
-  const [mode, setMode] = useState<'log' | 'file'>('log');
+  initialMode?: 'log' | 'file';
+}> = ({ onLogAdd, onFileUpload, initialMode = 'log' }) => {
+  const [mode, setMode] = useState<'log' | 'file'>(initialMode);
   const [logContent, setLogContent] = useState('');
   const [logType, setLogType] = useState<LogType>('progress');
   const [tags, setTags] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync mode with initialMode prop
+  React.useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
 
   const handleSubmit = () => {
     if (logContent.trim()) {
@@ -532,39 +647,39 @@ const LogComposer: React.FC<{
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 p-3">
-      <div className="flex gap-2 mb-2">
+    <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 bg-gray-50 dark:bg-gray-900">
+      <div className="flex gap-1 mb-3">
         <button
           onClick={() => setMode('log')}
-          className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-            mode === 'log' 
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+          className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 flex items-center gap-1 sm:gap-1.5 font-medium ${
+            mode === 'log'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
           }`}
         >
-          <Edit3 className="w-3.5 h-3.5 inline mr-1" />
+          <Edit3 className="w-3.5 h-3.5" />
           Add Log
         </button>
         <button
           onClick={() => setMode('file')}
-          className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-            mode === 'file' 
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+          className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 flex items-center gap-1 sm:gap-1.5 font-medium ${
+            mode === 'file'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
           }`}
         >
-          <Paperclip className="w-3.5 h-3.5 inline mr-1" />
+          <Paperclip className="w-3.5 h-3.5" />
           Attach
         </button>
       </div>
 
       {mode === 'log' ? (
-        <div className="space-y-2">
-          <div className="flex gap-2">
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={logType}
               onChange={(e) => setLogType(e.target.value as LogType)}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 min-h-[44px]"
             >
               <option value="progress">Progress</option>
               <option value="reasoning">Reasoning</option>
@@ -576,15 +691,15 @@ const LogComposer: React.FC<{
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="Tags (comma separated)"
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200 min-h-[44px]"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <textarea
               value={logContent}
               onChange={(e) => setLogContent(e.target.value)}
-              placeholder="Write a log entry..."
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 resize-none"
+              placeholder="Write a log entry... (Ctrl+Enter to submit)"
+              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-colors duration-200"
               rows={3}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -596,7 +711,8 @@ const LogComposer: React.FC<{
             <button
               onClick={handleSubmit}
               disabled={!logContent.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium min-h-[44px] flex items-center justify-center"
+              aria-label="Send log entry"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -617,10 +733,10 @@ const LogComposer: React.FC<{
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+            className="w-full py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200 min-h-[44px]"
           >
-            <Paperclip className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <Paperclip className="w-6 h-6 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
+            <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
               Click to upload or drag files here
             </div>
           </button>
@@ -631,7 +747,7 @@ const LogComposer: React.FC<{
 };
 
 // Component: Agent Instructions Editor
-const AgentInstructionsTab: React.FC<{ 
+const AgentInstructionsTab: React.FC<{
   node: PlanNode;
   onUpdate?: (instructions: string) => Promise<void>;
   readOnly?: boolean;
@@ -662,19 +778,14 @@ const AgentInstructionsTab: React.FC<{
       console.error('No update handler provided');
       return;
     }
-    
+
     setIsSaving(true);
     try {
-      // Call the update function and wait for it to complete
       await onUpdate(instructions);
-      
-      // Only close the editor if the save was successful
       setIsEditing(false);
-      
       console.log('Agent instructions saved successfully');
     } catch (error) {
       console.error('Failed to save agent instructions:', error);
-      // Keep the editor open so the user doesn't lose their changes
       alert('Failed to save agent instructions. Please try again.');
     } finally {
       setIsSaving(false);
@@ -695,13 +806,13 @@ const AgentInstructionsTab: React.FC<{
   const renderContent = () => {
     if (!instructions && !isEditing) {
       return (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+        <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
           <Code2 className="w-12 h-12 mb-3" />
           <p className="text-sm mb-4">No agent instructions defined</p>
           {!readOnly && (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors duration-200 font-medium"
             >
               Add Instructions
             </button>
@@ -715,47 +826,46 @@ const AgentInstructionsTab: React.FC<{
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium">Editing Agent Instructions</span>
+              <Code2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">Editing Agent Instructions</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors hidden lg:block"
                 title={showPreview ? "Hide preview" : "Show preview"}
               >
                 {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
-          
-          <div className={showPreview ? "grid grid-cols-2 gap-4" : ""}>
+
+          <div className={showPreview ? "grid lg:grid-cols-2 gap-4" : ""}>
             <div>
               <textarea
                 ref={textareaRef}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Enter detailed instructions for AI agents working on this task...\n\nYou can include:\n• Task objectives and goals\n• Step-by-step procedures\n• Code examples and templates (use markdown)\n• Important constraints or requirements\n• Expected outputs and formats\n\nSupports markdown formatting:
-**bold**, *italic*, `code`, ```code blocks```"
-                className="w-full px-4 py-3 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 resize-none"
+                placeholder="Enter detailed instructions for AI agents working on this task...\n\nYou can include:\n• Task objectives and goals\n• Step-by-step procedures\n• Code examples and templates (use markdown)\n• Important constraints or requirements\n• Expected outputs and formats\n\nSupports markdown formatting: **bold**, *italic*, `code`, ```code blocks```"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white resize-none"
                 style={{ minHeight: '400px' }}
               />
             </div>
-            
+
             {showPreview && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 overflow-auto">
-                <div className="text-xs text-gray-500 mb-2">Preview</div>
-                <pre className="text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 overflow-auto hidden lg:block">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview</div>
+                <pre className="text-xs sm:text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
                   {instructions || 'Instructions will appear here...'}
                 </pre>
               </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-2">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm"
+              className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               disabled={isSaving}
             >
               Cancel
@@ -763,7 +873,7 @@ const AgentInstructionsTab: React.FC<{
             <button
               onClick={handleSave}
               disabled={isSaving || instructions === node.agent_instructions}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2"
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-colors duration-200 font-medium min-h-[44px]"
             >
               {isSaving ? (
                 <>
@@ -787,47 +897,49 @@ const AgentInstructionsTab: React.FC<{
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Code2 className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium">Agent Instructions</span>
+            <Code2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Agent Instructions</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded relative"
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative transition-colors duration-200"
               title="Copy to clipboard"
+              aria-label="Copy to clipboard"
             >
               {copied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-green-500" />
-                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                  <Check className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
+                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg">
                     Copied!
                   </span>
                 </>
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
               )}
             </button>
             {!readOnly && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
                 title="Edit instructions"
+                aria-label="Edit instructions"
               >
-                <Edit3 className="w-3.5 h-3.5" />
+                <Edit3 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
               </button>
             )}
           </div>
         </div>
-        
+
         <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 max-h-[600px] overflow-y-auto">
           <pre className="text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300 leading-relaxed">
             {instructions}
           </pre>
         </div>
-        
+
         {/* Metadata about instructions */}
         {node.agent_instructions && (
-          <div className="text-xs text-gray-500 flex items-center gap-4">
+          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-4">
             <span>
               {instructions.length} characters
             </span>
@@ -846,125 +958,38 @@ const AgentInstructionsTab: React.FC<{
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4">
+    <div className="h-full overflow-y-auto p-3 sm:p-4">
       {renderContent()}
     </div>
   );
 };
 
-// Component: Collapsible Details Section
-const DetailsSection: React.FC<{ node: PlanNode }> = ({ node }) => {
-  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
-    description: true,
-    acceptance_criteria: true,
-    context: false
-  });
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
+// Component: Collapsible Section (NEW - for Overview tab)
+const CollapsibleSection: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
+  icon?: React.ReactNode;
+}> = ({ title, children, defaultExpanded = true, icon }) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="font-medium text-sm text-gray-900 dark:text-white">Details</h3>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {/* Description */}
-        {node.description && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-            <button
-              onClick={() => toggleSection('description')}
-              className="w-full px-3 py-2 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-t-lg"
-            >
-              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Description</h4>
-              {expandedSections.description ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-            {expandedSections.description && (
-              <div className="p-3 bg-white dark:bg-gray-900">
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                  {node.description}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Acceptance Criteria */}
-        {node.acceptance_criteria && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-            <button
-              onClick={() => toggleSection('acceptance_criteria')}
-              className="w-full px-3 py-2 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-t-lg"
-            >
-              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Acceptance Criteria</h4>
-              {expandedSections.acceptance_criteria ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-            {expandedSections.acceptance_criteria && (
-              <div className="p-3 bg-white dark:bg-gray-900">
-                <div className="space-y-1">
-                  {node.acceptance_criteria.split('\n').filter(c => c.trim()).map((criterion, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 dark:text-gray-300 break-words">{criterion}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Context */}
-        {node.context && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-            <button
-              onClick={() => toggleSection('context')}
-              className="w-full px-3 py-2 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-t-lg"
-            >
-              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Context</h4>
-              {expandedSections.context ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-            {expandedSections.context && (
-              <div className="p-3 bg-white dark:bg-gray-900">
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                  {node.context}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Component: Active Users Display
-const ActiveUsersDisplay: React.FC<{ 
-  users: UserType[];
-  label?: string;
-}> = ({ users, label = "Active" }) => {
-  if (users.length === 0) return null;
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex -space-x-2">
-        {users.slice(0, 3).map(user => (
-          <Avatar key={user.id} user={user} size="xs" />
-        ))}
-        {users.length > 3 && (
-          <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium">
-            +{users.length - 3}
-          </div>
-        )}
-      </div>
-      <span className="text-xs text-gray-500">
-        {users.length} {label.toLowerCase()}
-      </span>
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-3 sm:px-4 py-2.5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 min-h-[44px]"
+      >
+        <div className="flex items-center gap-2">
+          {icon}
+          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">{title}</h4>
+        </div>
+        {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />}
+      </button>
+      {isExpanded && (
+        <div className="p-3 sm:p-4 bg-white dark:bg-gray-900">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
@@ -985,18 +1010,19 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onUnassignUser,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'activity' | 'logs' | 'files' | 'instructions'>('activity');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions'>('overview');
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [assignedUser, setAssignedUser] = useState<any>(null);
-  
+
   // Reset tab when node changes
   React.useEffect(() => {
-    setActiveTab('activity');
+    setActiveTab('overview');
   }, [node.id]);
-  
+
   // Fetch logs and artifacts from API
   const { logs, isLoading: logsLoading, addLogEntry, refetch: refetchLogs } = useNodeLogs(node.plan_id || planId, node.id);
   const { artifacts, isLoading: artifactsLoading, refetch: refetchArtifacts } = useNodeArtifacts(node.plan_id || planId, node.id);
-  
+
   // Refetch logs and artifacts when node changes or status updates
   React.useEffect(() => {
     if (node.id) {
@@ -1004,35 +1030,32 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
       refetchArtifacts();
     }
   }, [node.id, node.status, refetchLogs, refetchArtifacts]);
-  
+
   // Fetch collaborators for assignment
   const { collaborators } = useCollaborators(planId);
-  
+
   // Handle agent instructions updates
   const { updateInstructions } = useNodeInstructions(planId, node.id);
-  
+
   // Fetch and manage node assignments
-  const { 
-    assignments, 
+  const {
+    assignments,
     isLoading: assignmentsLoading,
     assignUser: assignUserToNode,
     unassignUser: unassignUserFromNode,
     isAssigning,
     isUnassigning
   } = useNodeAssignments(planId, node.id);
-  
+
   // Set assigned user from assignments when they load
   React.useEffect(() => {
     if (assignments && assignments.length > 0 && collaborators.length > 0) {
-      // Get the first assignment (UI currently shows single assignment)
       const assignment = assignments[0];
-      
-      // Find the user in collaborators
       const user = collaborators.find(c => {
         const userData = c.user || c;
         return (userData.id || c.id) === assignment.user_id;
       });
-      
+
       if (user) {
         const userData = user.user || user;
         setAssignedUser({
@@ -1042,15 +1065,14 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
         });
       }
     } else if (assignments && assignments.length === 0) {
-      // No assignments, clear the assigned user
       setAssignedUser(null);
     }
   }, [assignments, collaborators]);
-  
+
   // Calculate progress
-  const progress = node.status === 'completed' ? 100 : 
+  const progress = node.status === 'completed' ? 100 :
                    node.status === 'in_progress' ? 50 : 0;
-  
+
   // Convert logs and artifacts to unified activities
   const activities: UnifiedActivity[] = React.useMemo(() => {
     const logActivities: UnifiedActivity[] = logs.map(log => ({
@@ -1070,7 +1092,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
         tags: log.tags
       }
     }));
-    
+
     const artifactActivities: UnifiedActivity[] = artifacts.map(artifact => ({
       id: artifact.id,
       nodeId: node.id,
@@ -1084,69 +1106,25 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
       timestamp: new Date(artifact.created_at),
       data: {
         fileName: artifact.name,
-        fileSize: 'Unknown size', // Would need to add size to artifact data
+        fileSize: 'Unknown size',
         fileType: artifact.content_type,
         url: artifact.url
       }
     }));
-    
+
     // Combine and sort by timestamp
     return [...logActivities, ...artifactActivities].sort(
       (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
     );
   }, [logs, artifacts, node.id]);
-  
-  // Get content based on active tab
-  const getTabContent = () => {
-    switch(activeTab) {
-      case 'activity':
-        // Show all activities (logs, files, status changes, assignments, etc.)
-        return activities;
-      case 'logs':
-        // Show only log entries
-        return logs.map(log => ({
-          id: log.id,
-          nodeId: node.id,
-          type: 'log' as const,
-          actor: {
-            id: log.user?.id || log.user_id,
-            name: log.user?.name || 'Unknown User',
-            email: log.user?.email,
-            avatar: undefined
-          },
-          timestamp: new Date(log.created_at),
-          data: {
-            content: log.content,
-            logType: log.log_type,
-            tags: log.tags
-          }
-        }));
-      case 'files':
-        // Show only artifacts/files
-        return artifacts.map(artifact => ({
-          id: artifact.id,
-          nodeId: node.id,
-          type: 'file_upload' as const,
-          actor: {
-            id: artifact.user?.id || artifact.created_by,
-            name: artifact.user?.name || 'Unknown User',
-            email: artifact.user?.email,
-            avatar: undefined
-          },
-          timestamp: new Date(artifact.created_at),
-          data: {
-            fileName: artifact.name,
-            fileSize: 'Unknown size',
-            fileType: artifact.content_type,
-            url: artifact.url
-          }
-        }));
-      default:
-        return [];
-    }
-  };
 
-  const tabContent = React.useMemo(() => getTabContent(), [activeTab, activities, logs, artifacts, node.id]);
+  // Filter activities based on current filter
+  const filteredActivities = React.useMemo(() => {
+    if (activityFilter === 'all') return activities;
+    if (activityFilter === 'logs') return activities.filter(a => a.type === 'log');
+    if (activityFilter === 'files') return activities.filter(a => a.type === 'file_upload');
+    return activities;
+  }, [activities, activityFilter]);
 
   // Handle log addition
   const handleLogAdd = (content: string, logType: string, tags?: string[]) => {
@@ -1161,15 +1139,12 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   // Handle assignment
   const handleAssign = async (userId: string) => {
     try {
-      // Call API to assign user
       await assignUserToNode(userId);
-      
-      // Find user details for immediate UI update
       const user = collaborators.find(c => {
         const userData = c.user || c;
         return (userData.id || c.id) === userId;
       });
-      
+
       if (user) {
         const userData = user.user || user;
         setAssignedUser({
@@ -1178,207 +1153,319 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           email: userData.email
         });
       }
-      
-      // Call optional callback
+
       onAssignUser?.(userId);
     } catch (error) {
       console.error('Failed to assign user:', error);
-      // Could add toast notification here
     }
   };
 
   const handleUnassign = async () => {
     if (assignedUser) {
       try {
-        // Call API to unassign user
         await unassignUserFromNode(assignedUser.id);
-        
-        // Clear assigned user in UI
         setAssignedUser(null);
-        
-        // Call optional callback
         onUnassignUser?.(assignedUser.id);
       } catch (error) {
         console.error('Failed to unassign user:', error);
-        // Could add toast notification here
       }
+    }
+  };
+
+  // Action handlers (placeholders for future implementation)
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(node.id);
+    alert('Node ID copied to clipboard');
+  };
+
+  const handleEdit = () => {
+    // Create a simple inline edit experience
+    const newTitle = prompt('Edit node title:', node.title);
+    if (newTitle && newTitle !== node.title) {
+      // TODO: Call API to update node title
+      console.log('Update title to:', newTitle);
+      alert('Edit functionality is not fully implemented yet. This would update the node title to: ' + newTitle);
+    }
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this node?')) {
+      console.log('Delete node:', node.id);
+      // TODO: Implement delete
     }
   };
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
-      {/* Minimal Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate flex-1 pr-2">
-            {node.title}
-          </h2>
-          <div className="flex items-center gap-2">
+      {/* SIMPLIFIED HEADER */}
+      <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+            <NodeTypeIcon nodeType={node.node_type} />
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate" title={node.title}>
+              {node.title}
+            </h2>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
             <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
+            <ActionsMenu
+              onEdit={handleEdit}
+              onCopyId={handleCopyId}
+              onDelete={handleDelete}
+            />
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors md:hidden"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 md:hidden"
                 title="Close (ESC)"
+                aria-label="Close details panel"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </button>
             )}
           </div>
         </div>
-        
+      </div>
+
+      {/* COMPACT METADATA BAR */}
+      <div className="px-3 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         {/* Progress Bar */}
-        <div className="relative h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div 
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Quick Info Bar */}
-      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 overflow-visible relative">
-        {/* Assignment with dropdown */}
-        <AssignmentSelector
-          assignedUser={assignedUser}
-          collaborators={collaborators}
-          onAssign={handleAssign}
-          onUnassign={handleUnassign}
-          isLoading={assignmentsLoading}
-          isUpdating={isAssigning || isUnassigning}
-        />
-        
-        {node.due_date && (
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs whitespace-nowrap">
-            <Calendar className="w-3 h-3" />
-            <span>{formatDate(node.due_date)}</span>
+        <div className="mb-2">
+          <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+            <span className="font-medium">Progress</span>
+            <span className="font-semibold text-gray-700 dark:text-gray-300">{progress}%</span>
           </div>
-        )}
-        
-        {/* Active users display - Hidden as feature not implemented */}
-        {/* {activeUsers.length > 0 && (
-          <ActiveUsersDisplay users={activeUsers} label="active" />
-        )} */}
-      </div>
-
-      {/* Two-Column Layout with better responsive sizing */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Details (Responsive width with proper scrolling) */}
-        <div className="w-2/5 min-w-[280px] max-w-[400px] border-r border-gray-200 dark:border-gray-700">
-          <DetailsSection node={node} />
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 shadow-inner overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 transition-all duration-500 rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
 
-        {/* Right: Tabbed Content (Flexible width) */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Tab Navigation */}
-          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex gap-1">
+        {/* Assignment and Due Date */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500 dark:text-gray-400">Assigned to:</span>
+            <AssignmentSelector
+              assignedUser={assignedUser}
+              collaborators={collaborators}
+              onAssign={handleAssign}
+              onUnassign={handleUnassign}
+              isLoading={assignmentsLoading}
+              isUpdating={isAssigning || isUnassigning}
+            />
+          </div>
+          {node.due_date && (
+            <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+              <Calendar className="w-3 h-3" />
+              <span>Due: {formatDate(node.due_date)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* TABBED CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Tab Navigation */}
+        <div className="px-2 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'overview'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Overview</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'activity'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Activity</span>
+              {activities.length > 0 && (
+                <span className="ml-0.5 sm:ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                  {activities.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('instructions')}
+              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 relative whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'instructions'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              <Code2 className="w-3.5 h-3.5" />
+              <span>Instructions</span>
+              {node.agent_instructions && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
+            {/* Description */}
+            {node.description && (
+              <CollapsibleSection title="DESCRIPTION" defaultExpanded={true}>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                  {node.description}
+                </p>
+              </CollapsibleSection>
+            )}
+
+            {/* Acceptance Criteria */}
+            {node.acceptance_criteria && (
+              <CollapsibleSection title="ACCEPTANCE CRITERIA" defaultExpanded={true}>
+                <div className="space-y-1">
+                  {node.acceptance_criteria.split('\n').filter(c => c.trim()).map((criterion, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <Check className="w-3 h-3 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 dark:text-gray-300 break-words">{criterion}</span>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Context */}
+            {node.context && (
+              <CollapsibleSection title="CONTEXT" defaultExpanded={false}>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                  {node.context}
+                </p>
+              </CollapsibleSection>
+            )}
+
+            {/* Quick Actions */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <button
-                onClick={() => setActiveTab('activity')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                  activeTab === 'activity'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
+                onClick={() => {
+                  setActivityFilter('logs');
+                  setActiveTab('activity');
+                }}
+                className="px-4 py-2.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
               >
-                <Activity className="w-3.5 h-3.5" />
-                Activity
+                <Edit3 className="w-3.5 h-3.5" />
+                Add Log
               </button>
               <button
-                onClick={() => setActiveTab('logs')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                  activeTab === 'logs'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Logs
-                {logs.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
-                    {logs.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('files')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                  activeTab === 'files'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
+                onClick={() => {
+                  setActivityFilter('files');
+                  setActiveTab('activity');
+                }}
+                className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
               >
                 <Paperclip className="w-3.5 h-3.5" />
-                Files
-                {artifacts.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
-                    {artifacts.length}
-                  </span>
-                )}
+                Upload File
               </button>
               <button
-                onClick={() => setActiveTab('instructions')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 relative ${
-                  activeTab === 'instructions'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
+                onClick={handleEdit}
+                className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
               >
-                <Code2 className="w-3.5 h-3.5" />
-                Agent Instructions
-                {node.agent_instructions && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
-                )}
+                <Edit3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Edit Details</span>
+                <span className="sm:hidden">Edit</span>
               </button>
             </div>
           </div>
+        )}
 
-          {/* Tab Content */}
-          {activeTab === 'instructions' ? (
-            <AgentInstructionsTab 
-              node={node} 
-              onUpdate={updateInstructions}
-            />
-          ) : (
-            <>
-              {/* Activity Feed Content */}
-              <div className="flex-1 flex flex-col min-w-0">
-                {/* Activity List */}
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                  {logsLoading || artifactsLoading ? (
-                    <div className="text-center py-8">
-                      <div className="spinner w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                      <p className="text-gray-500 text-sm mt-2">Loading {activeTab}...</p>
-                    </div>
-                  ) : tabContent.length > 0 ? (
-                    tabContent.map(activity => (
-                      <ActivityItem
-                        key={activity.id}
-                        activity={activity}
-                        onReact={(emoji) => onActivityReact?.(activity.id, emoji)}
-                        onReply={(text) => onActivityReply?.(activity.id, text)}
-                      />
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500 text-sm">
-                      {activeTab === 'logs' ? 'No logs yet. Add your first log entry!' :
-                       activeTab === 'files' ? 'No files uploaded yet.' :
-                       'No activity yet. Start by adding a log entry or uploading a file.'}
-                    </div>
-                  )}
+        {activeTab === 'activity' && (
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
+            {/* Filter Bar */}
+            <div className="px-2 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                <FilterIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setActivityFilter('all')}
+                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 font-medium whitespace-nowrap ${
+                      activityFilter === 'all'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    All ({activities.length})
+                  </button>
+                  <button
+                    onClick={() => setActivityFilter('logs')}
+                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 font-medium whitespace-nowrap ${
+                      activityFilter === 'logs'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    Logs ({logs.length})
+                  </button>
+                  <button
+                    onClick={() => setActivityFilter('files')}
+                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 font-medium whitespace-nowrap ${
+                      activityFilter === 'files'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    Files ({artifacts.length})
+                  </button>
                 </div>
-
-                {/* Log Composer - show for activity and logs tabs */}
-                {(activeTab === 'activity' || activeTab === 'logs') && (
-                  <LogComposer
-                    onLogAdd={handleLogAdd}
-                    onFileUpload={onFileUpload}
-                  />
-                )}
               </div>
-            </>
-          )}
-        </div>
+            </div>
+
+            {/* Activity List */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 space-y-4">
+              {logsLoading || artifactsLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-3 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Loading activity...</p>
+                </div>
+              ) : filteredActivities.length > 0 ? (
+                filteredActivities.map(activity => (
+                  <ActivityItem
+                    key={activity.id}
+                    activity={activity}
+                    onReact={(emoji) => onActivityReact?.(activity.id, emoji)}
+                    onReply={(text) => onActivityReply?.(activity.id, text)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                  {activityFilter === 'logs' ? 'No logs yet. Add your first log entry!' :
+                   activityFilter === 'files' ? 'No files uploaded yet.' :
+                   'No activity yet. Start by adding a log entry or uploading a file.'}
+                </div>
+              )}
+            </div>
+
+            {/* Log Composer */}
+            <div className="flex-shrink-0">
+              <LogComposer
+                onLogAdd={handleLogAdd}
+                onFileUpload={onFileUpload}
+                initialMode={activityFilter === 'files' ? 'file' : 'log'}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'instructions' && (
+          <AgentInstructionsTab
+            node={node}
+            onUpdate={updateInstructions}
+          />
+        )}
       </div>
     </div>
   );

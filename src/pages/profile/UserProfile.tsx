@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Building, Calendar, Shield, Save, X, Edit3, Lock, ShieldCheck } from 'lucide-react';
+import { User, Mail, Building, Calendar, Shield, Save, X, Edit3, Lock, ShieldCheck, Github } from 'lucide-react';
 import AvatarUpload from '../../components/auth/AvatarUpload';
 import api from '../../services/api';
 
@@ -10,6 +10,10 @@ interface UserData {
   organization?: string;
   createdAt?: string;
   avatar?: string;
+  github_id?: string;
+  github_username?: string;
+  github_avatar_url?: string;
+  github_profile_url?: string;
 }
 
 const UserProfile: React.FC = () => {
@@ -38,6 +42,10 @@ const UserProfile: React.FC = () => {
           organization: response.data.organization,
           createdAt: response.data.created_at,
           avatar: response.data.avatar_url,
+          github_id: response.data.github_id,
+          github_username: response.data.github_username,
+          github_avatar_url: response.data.github_avatar_url,
+          github_profile_url: response.data.github_profile_url,
         });
       } else {
         throw new Error('Invalid response from server');
@@ -299,6 +307,46 @@ const UserProfile: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Connected Accounts Section */}
+          {userData?.github_username && (
+            <div className="px-8 py-6 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+                Connected Accounts
+              </h3>
+
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gray-900 dark:bg-white rounded-full p-3">
+                    <Github className="w-6 h-6 text-white dark:text-gray-900" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-md font-medium text-gray-900 dark:text-white">
+                        GitHub
+                      </h4>
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium rounded-full">
+                        Connected
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      @{userData.github_username}
+                    </p>
+                  </div>
+                </div>
+                {userData.github_profile_url && (
+                  <a
+                    href={userData.github_profile_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                  >
+                    View Profile
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Security Settings Section */}
           <div className="px-8 py-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">

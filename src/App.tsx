@@ -18,6 +18,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
 import Settings from './pages/Settings';
@@ -60,6 +61,7 @@ const App: React.FC = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/callback" element={<Callback />} />
 
               {/* Protected Main Application Routes */}
               <Route element={<ProtectedRoute />}>

@@ -486,6 +486,18 @@ export const planService = {
     const response = await publicApi.get(`/plans/public/${planId}`);
     return response.data;
   },
+
+  // Link GitHub repository to plan
+  linkGitHubRepo: async (planId: string, owner: string, name: string) => {
+    return request<ApiResponse<Plan>>({
+      method: 'PUT',
+      url: `/plans/${planId}/github`,
+      data: {
+        github_repo_owner: owner,
+        github_repo_name: name,
+      },
+    });
+  },
 };
 
 // Helper function to flatten hierarchical node structure
