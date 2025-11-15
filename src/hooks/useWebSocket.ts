@@ -108,10 +108,14 @@ export function usePlanEvents(
     onUserAssigned?: (message: WebSocketMessage) => void;
   }
 ) {
-  const { subscribe } = useWebSocketContext();
+  const { subscribe, send } = useWebSocketContext();
 
   useEffect(() => {
     if (!planId) return;
+
+    // Join the plan room
+    console.log('[usePlanEvents] Joining plan room:', planId);
+    send({ type: 'join_plan', planId });
 
     const unsubscribers: Array<() => void> = [];
 
@@ -200,9 +204,14 @@ export function usePlanEvents(
 
     // Cleanup
     return () => {
+      // Leave the plan room
+      console.log('[usePlanEvents] Leaving plan room:', planId);
+      send({ type: 'leave_plan', planId });
+
       unsubscribers.forEach(unsubscribe => unsubscribe());
     };
-  }, [planId, subscribe, handlers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, subscribe, send]);
 }
 
 /**
@@ -292,7 +301,8 @@ export function usePresenceEvents(
     return () => {
       unsubscribers.forEach(unsubscribe => unsubscribe());
     };
-  }, [planId, subscribe, handlers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, subscribe]);
 }
 
 /**

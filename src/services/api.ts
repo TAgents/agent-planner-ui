@@ -246,7 +246,7 @@ export const authService = {
     try {
       const response = await request<any>({
         method: 'GET',
-        url: '/users/profile'
+        url: '/auth/profile'
       });
       return { status: 200, data: response };
     } catch (error: any) {
@@ -259,7 +259,7 @@ export const authService = {
     try {
       const response = await request<any>({
         method: 'PUT',
-        url: '/users/profile',
+        url: '/auth/profile',
         data
       });
       return { status: 200, data: response };

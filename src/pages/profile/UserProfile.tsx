@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Building, Calendar, Shield, Save, X, Edit3, Lock, ShieldCheck, Github } from 'lucide-react';
+import { Save, X, Edit3, ShieldCheck, Github } from 'lucide-react';
 import AvatarUpload from '../../components/auth/AvatarUpload';
 import api from '../../services/api';
 
@@ -99,7 +99,13 @@ const UserProfile: React.FC = () => {
     try {
       const response = await api.auth.updateProfile(editData);
       if (response && response.data) {
-        setUserData(prev => prev ? { ...prev, ...response.data } : null);
+        // Map response fields to match userData interface
+        setUserData(prev => prev ? {
+          ...prev,
+          name: response.data.name || prev.name,
+          organization: response.data.organization || prev.organization,
+          avatar: response.data.avatar_url || prev.avatar,
+        } : null);
         setIsEditing(false);
         setSuccess('Profile updated successfully');
         setTimeout(() => setSuccess(null), 5000);
@@ -136,241 +142,196 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Manage your personal information and account settings
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Manage your profile information
           </p>
         </div>
 
         {/* Messages */}
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-center">
-            <Shield className="w-5 h-5 mr-2" />
+          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-center">
+            <X className="w-4 h-4 mr-2" />
             {error}
           </div>
         )}
-        
+
         {success && (
-          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg flex items-center">
-            <ShieldCheck className="w-5 h-5 mr-2" />
+          <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg flex items-center">
+            <ShieldCheck className="w-4 h-4 mr-2" />
             {success}
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-          {/* Profile Header with Avatar */}
-          <div className="relative">
-            {/* Background Gradient */}
-            <div className="h-32 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600"></div>
-            
-            {/* Avatar and Basic Info */}
-            <div className="relative -mt-16 px-8 pb-8">
-              <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
-                {/* Avatar Upload Component */}
-                <div className="relative z-10">
-                  <AvatarUpload 
-                    currentAvatar={userData?.avatar}
-                    onAvatarChange={handleAvatarChange}
-                    size="xl"
-                    userName={userData?.name}
-                  />
-                </div>
+        {/* Profile Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
 
-                {/* User Info */}
-                <div className="flex-1 text-center sm:text-left pb-4">
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {userData?.name}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    {userData?.email}
-                  </p>
-                  {userData?.organization && (
-                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                      {userData.organization}
-                    </p>
-                  )}
-                </div>
-
-                {/* Edit Profile Button */}
-                <div className="pb-4">
-                  {!isEditing ? (
-                    <button
-                      onClick={handleEdit}
-                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      <span className="font-medium">Edit Profile</span>
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleCancel}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        disabled={saveLoading}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
-                      >
-                        <Save className="w-4 h-4" />
-                        <span>{saveLoading ? 'Saving...' : 'Save'}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Information Section */}
-          <div className="px-8 py-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Profile Information
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <User className="w-4 h-4 mr-2 text-gray-400" />
-                  Full Name
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="name"
-                    value={editData.name || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
-                    placeholder="Enter your name"
-                  />
-                ) : (
-                  <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-900 dark:text-white">
-                    {userData?.name}
-                  </div>
-                )}
-              </div>
-
-              {/* Email Address */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                  Email Address
-                </label>
-                <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-900 dark:text-white">
+          {/* Avatar Section */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-6">
+              <AvatarUpload
+                currentAvatar={userData?.avatar}
+                onAvatarChange={handleAvatarChange}
+                size="lg"
+                userName={userData?.name}
+              />
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {userData?.name}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {userData?.email}
-                </div>
+                </p>
               </div>
-
-              {/* Organization */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Building className="w-4 h-4 mr-2 text-gray-400" />
-                  Organization
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="organization"
-                    value={editData.organization || ''}
-                    onChange={handleInputChange}
-                    placeholder="Enter your organization"
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
-                  />
-                ) : (
-                  <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-900 dark:text-white">
-                    {userData?.organization || 'Not specified'}
-                  </div>
-                )}
-              </div>
-
-              {/* Member Since */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                  Member Since
-                </label>
-                <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-900 dark:text-white">
-                  {userData?.createdAt 
-                    ? new Date(userData.createdAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })
-                    : 'Unknown'}
-                </div>
-              </div>
+              {!isEditing && (
+                <button
+                  onClick={handleEdit}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Connected Accounts Section */}
-          {userData?.github_username && (
-            <div className="px-8 py-6 border-t border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-                Connected Accounts
-              </h3>
-
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gray-900 dark:bg-white rounded-full p-3">
-                    <Github className="w-6 h-6 text-white dark:text-gray-900" />
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-md font-medium text-gray-900 dark:text-white">
-                        GitHub
-                      </h4>
-                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium rounded-full">
-                        Connected
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      @{userData.github_username}
-                    </p>
-                  </div>
+          {/* Profile Information */}
+          <div className="p-6 space-y-4">
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Full Name
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="name"
+                  value={editData.name || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter your name"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-900 dark:text-white">
+                  {userData?.name}
                 </div>
-                {userData.github_profile_url && (
-                  <a
-                    href={userData.github_profile_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-                  >
-                    View Profile
-                  </a>
-                )}
+              )}
+            </div>
+
+            {/* Email Address */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email Address
+              </label>
+              <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-500 dark:text-gray-400">
+                {userData?.email}
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Email cannot be changed
+              </p>
+            </div>
+
+            {/* Organization */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Organization (Optional)
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="organization"
+                  value={editData.organization || ''}
+                  onChange={handleInputChange}
+                  placeholder="Enter your organization"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-900 dark:text-white">
+                  {userData?.organization || 'Not specified'}
+                </div>
+              )}
+            </div>
+
+            {/* Member Since */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Member Since
+              </label>
+              <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-gray-500 dark:text-gray-400">
+                {userData?.createdAt
+                  ? new Date(userData.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })
+                  : 'Unknown'}
               </div>
             </div>
-          )}
 
-          {/* Security Settings Section */}
-          <div className="px-8 py-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Security Settings
-            </h3>
-            
-            <div className="flex flex-wrap gap-4">
-              <button className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                <Lock className="w-4 h-4" />
-                <span className="font-medium">Change Password</span>
-              </button>
-              
-              <button className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                <ShieldCheck className="w-4 h-4" />
-                <span className="font-medium">Enable Two-Factor Authentication</span>
-              </button>
-            </div>
-            
-            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-              Keep your account secure by using a strong password and enabling two-factor authentication.
-            </p>
+            {/* Edit Actions */}
+            {isEditing && (
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saveLoading}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saveLoading ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Connected Accounts */}
+        {userData?.github_username && (
+          <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+              Connected Accounts
+            </h3>
+
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="bg-gray-900 dark:bg-white rounded-lg p-2">
+                  <Github className="w-5 h-5 text-white dark:text-gray-900" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      GitHub
+                    </span>
+                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-medium rounded">
+                      Connected
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                    @{userData.github_username}
+                  </p>
+                </div>
+              </div>
+              {userData.github_profile_url && (
+                <a
+                  href={userData.github_profile_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                >
+                  View
+                </a>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

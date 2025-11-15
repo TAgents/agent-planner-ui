@@ -313,7 +313,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   // Reconnect when token changes
   useEffect(() => {
@@ -330,7 +331,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     return () => {
       window.removeEventListener('auth-change', handleAuthChange);
     };
-  }, [connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - connect/disconnect are stable via useCallback
 
   // ============================================================================
   // Context Value
