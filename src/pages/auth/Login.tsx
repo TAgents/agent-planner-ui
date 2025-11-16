@@ -43,29 +43,35 @@ const Login: React.FC = () => {
 
     try {
       const response = await api.auth.login(email, password);
-      console.log('Login successful:', response);
-      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Login successful');
+      }
+
       // Clear all React Query cache to ensure fresh data for new user
       queryClient.clear();
-      
+
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
       } else {
         localStorage.removeItem('rememberedEmail');
       }
-      
+
       // Trigger a custom event to notify ProtectedRoute
       window.dispatchEvent(new Event('auth-change'));
-      
+
       // Navigate to the page they were trying to access, or default to /app/plans
       const state = location.state as LocationState;
       const from = state?.from?.pathname || '/app/plans';
 
-      console.log('Navigating to:', from);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Navigating to:', from);
+      }
       navigate(from, { replace: true });
     } catch (err: any) {
-      console.error('Login error:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Login error:', err.message);
+      }
       setError(err.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
@@ -79,7 +85,9 @@ const Login: React.FC = () => {
     try {
       // Use the demo account credentials
       const response = await api.auth.login('demo@example.com', 'Demo123456!');
-      console.log('Demo login successful:', response);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Demo login successful');
+      }
 
       // Clear all React Query cache to ensure fresh data for new user
       queryClient.clear();
@@ -89,7 +97,9 @@ const Login: React.FC = () => {
 
       navigate('/app/plans');
     } catch (err: any) {
-      console.error('Demo login error:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Demo login error:', err.message);
+      }
       setError(err.message || 'Failed to login with demo account. Please try again later.');
     } finally {
       setLoading(false);
@@ -110,14 +120,18 @@ const Login: React.FC = () => {
       });
 
       if (error) {
-        console.error('GitHub OAuth error:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('GitHub OAuth error:', error.message);
+        }
         setError(error.message || 'Failed to initiate GitHub login');
         setLoading(false);
       }
       // If successful, the browser will redirect to GitHub
       // So we don't need to do anything else here
     } catch (err: any) {
-      console.error('GitHub login error:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('GitHub login error:', err.message);
+      }
       setError(err.message || 'Failed to login with GitHub');
       setLoading(false);
     }

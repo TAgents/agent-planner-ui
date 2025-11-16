@@ -10,6 +10,7 @@ import MainLayout from './components/layout/MainLayout';
 
 // Pages
 import Landing from './pages/Landing';
+import ExplorePlansPage from './pages/ExplorePlansPage';
 import PlansList from './pages/PlansListSimplified'; // Using simplified version
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
 import PublicPlanView from './pages/PublicPlanView'; // Public plan viewing
@@ -48,6 +49,9 @@ const App: React.FC = () => {
             <Routes>
               {/* Public Landing Page */}
               <Route path="/" element={<Landing />} />
+
+              {/* Explore Public Plans */}
+              <Route path="/explore" element={<ExplorePlansPage />} />
 
               {/* Public Plan Viewing */}
               <Route path="/public/plans/:planId" element={<PublicPlanView />} />

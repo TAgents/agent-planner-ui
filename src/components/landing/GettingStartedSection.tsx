@@ -1,30 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CodeBlock } from './CodeBlock';
 import { StepCard } from './StepCard';
 
 export const GettingStartedSection: React.FC = () => {
-  const steps = [
-    {
-      number: 1,
-      title: 'Sign in to your account',
-      description: 'Sign in with GitHub or create an account with email. GitHub integration syncs your permissions automatically.',
-      code: null,
-      language: null,
-      showButton: true
-    },
-    {
-      number: 2,
-      title: 'Install MCP Server',
-      description: 'Run the Agent Planner MCP server to enable AI agent integration with Claude.',
-      code: 'npx -y agent-planner-mcp',
-      language: 'bash',
-      showButton: false
-    },
-    {
-      number: 3,
-      title: 'Configure Claude Desktop',
-      description: 'Add the Agent Planner MCP server to your Claude Desktop configuration file.',
-      code: `{
+  const [configTab, setConfigTab] = useState<'desktop' | 'code'>('desktop');
+
+  const claudeDesktopConfig = `{
   "mcpServers": {
     "planning-system": {
       "command": "npx",
@@ -35,9 +16,39 @@ export const GettingStartedSection: React.FC = () => {
       }
     }
   }
-}`,
+}`;
+
+  const claudeCodeConfig = `claude mcp add planning-system npx agent-planner-mcp \\
+  -e API_URL=https://api.agentplanner.io \\
+  -e USER_API_TOKEN=your_api_token_here`;
+
+  const steps = [
+    {
+      number: 1,
+      title: 'Sign in to your account',
+      description: 'Sign in with GitHub or create an account with email. GitHub integration syncs your permissions automatically.',
+      code: null,
+      language: null,
+      showButton: true,
+      showTabs: false
+    },
+    {
+      number: 2,
+      title: 'Generate an API Token',
+      description: 'Go to Settings → API Tokens and create a new token. Copy it - you\'ll need it for the next step.',
+      code: null,
+      language: null,
+      showButton: false,
+      showTabs: false
+    },
+    {
+      number: 3,
+      title: 'Configure Claude',
+      description: 'Add the Agent Planner MCP server to your Claude configuration. The server runs via npx - no installation needed!',
+      code: null,
       language: 'json',
-      showButton: false
+      showButton: false,
+      showTabs: true
     },
     {
       number: 4,
@@ -45,7 +56,8 @@ export const GettingStartedSection: React.FC = () => {
       description: 'Tell Claude to create your first plan. The agent will use MCP tools to interact with Agent Planner.',
       code: `Create a plan for "Build REST API" with phases for design, implementation, and testing. Add tasks to the implementation phase: set up Express server, add authentication, create database models.`,
       language: 'text',
-      showButton: false
+      showButton: false,
+      showTabs: false
     }
   ];
 
@@ -72,7 +84,45 @@ export const GettingStartedSection: React.FC = () => {
               description={step.description}
               isLast={index === steps.length - 1}
             >
-              {step.code && (
+              {/* Configuration Tabs for Step 3 */}
+              {step.showTabs && (
+                <>
+                  <div className="flex gap-2 mb-4 border-b border-gray-200">
+                    <button
+                      onClick={() => setConfigTab('desktop')}
+                      className={`px-4 py-2 font-medium transition-colors ${
+                        configTab === 'desktop'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Claude Desktop
+                    </button>
+                    <button
+                      onClick={() => setConfigTab('code')}
+                      className={`px-4 py-2 font-medium transition-colors ${
+                        configTab === 'code'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Claude Code
+                    </button>
+                  </div>
+                  <CodeBlock
+                    code={configTab === 'desktop' ? claudeDesktopConfig : claudeCodeConfig}
+                    language={configTab === 'desktop' ? 'json' : 'bash'}
+                  />
+                  <p className="mt-3 text-sm text-gray-600">
+                    {configTab === 'desktop'
+                      ? 'Add to ~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%/Claude/claude_desktop_config.json (Windows)'
+                      : 'Run this command in your project directory to configure Claude Code'
+                    }
+                  </p>
+                </>
+              )}
+
+              {step.code && !step.showTabs && (
                 <CodeBlock
                   code={step.code}
                   language={step.language || 'text'}

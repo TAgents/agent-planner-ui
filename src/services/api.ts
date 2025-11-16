@@ -10,10 +10,12 @@ const API_CONFIG = {
   },
 };
 
-console.log('API Configuration:', {
-  BASE_URL: API_CONFIG.BASE_URL,
-  ENV_VAR: process.env.REACT_APP_API_URL
-});
+if (process.env.NODE_ENV === 'development') {
+  console.log('API Configuration:', {
+    BASE_URL: API_CONFIG.BASE_URL,
+    ENV_VAR: process.env.REACT_APP_API_URL
+  });
+}
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -27,13 +29,17 @@ api.interceptors.request.use(
   (config) => {
     // Get token from localStorage (stored after login)
     const sessionStr = localStorage.getItem('auth_session');
-    console.log('Interceptor checking auth_session:', sessionStr ? 'Found' : 'Not found');
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Interceptor checking auth_session:', sessionStr ? 'Found' : 'Not found');
+    }
+
     if (sessionStr) {
       try {
         const session = JSON.parse(sessionStr);
-        console.log('Parsed session object:', session);
-        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Parsed session object (keys only):', Object.keys(session));
+        }
+
         // Try different token field names
         let token = null;
         if (session.access_token) {
@@ -44,17 +50,21 @@ api.interceptors.request.use(
           // Maybe the session IS the token
           token = session;
         }
-        
+
         if (token) {
-          console.log('Setting Authorization header with token');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Setting Authorization header with token');
+          }
           config.headers.Authorization = `Bearer ${token}`;
-        } else {
+        } else if (process.env.NODE_ENV === 'development') {
           console.warn('No token found in session. Session keys:', Object.keys(session || {}));
         }
       } catch (e) {
-        console.error('Failed to parse session', e);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to parse session', e);
+        }
       }
-    } else {
+    } else if (process.env.NODE_ENV === 'development') {
       console.warn('No auth_session found in localStorage');
     }
     return config;
@@ -107,9 +117,11 @@ const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
 export const authService = {
   login: async (email: string, password: string) => {
     try {
-      console.log('Attempting login to:', `${API_CONFIG.BASE_URL}/auth/login`);
-      console.log('With credentials:', { email, password: '***' });
-      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Attempting login to:', `${API_CONFIG.BASE_URL}/auth/login`);
+        console.log('With credentials:', { email, password: '***' });
+      }
+
       const response = await request<{
         user: any;
         session: any;
@@ -118,27 +130,36 @@ export const authService = {
         url: '/auth/login',
         data: { email, password }
       });
-      
-      console.log('Login response received:', response);
-      
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Login response received (user only):', {
+          hasSession: !!response.session,
+          hasUser: !!response.user,
+          userEmail: response.user?.email
+        });
+      }
+
       // Store the session in localStorage
       if (response.session) {
-        console.log('Storing session in localStorage');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Storing session in localStorage');
+        }
         localStorage.setItem('auth_session', JSON.stringify(response.session));
-      } else {
-        console.warn('No session in response:', response);
+      } else if (process.env.NODE_ENV === 'development') {
+        console.warn('No session in response');
       }
-      
+
       return {
         status: 200,
         data: response
       };
     } catch (error: any) {
-      console.error('Login error details:', {
-        message: error.message,
-        response: error.response,
-        stack: error.stack
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Login error details:', {
+          message: error.message,
+          status: error.response?.status
+        });
+      }
       throw error;
     }
   },
@@ -153,18 +174,26 @@ export const authService = {
         url: '/auth/register',
         data: { email, password, name }
       });
-      
+
       // Store the session if registration is successful
       if (response.session) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Registration successful, storing session');
+        }
         localStorage.setItem('auth_session', JSON.stringify(response.session));
       }
-      
+
       return {
         status: 201,
         data: response
       };
     } catch (error: any) {
-      console.error('Registration error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Registration error:', {
+          message: error.message,
+          status: error.response?.status
+        });
+      }
       throw error;
     }
   },
@@ -178,14 +207,16 @@ export const authService = {
       });
     } catch (error) {
       // Even if the API call fails, clear local session
-      console.error('Logout API error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Logout API error:', error);
+      }
     } finally {
       // Always clear local session
       localStorage.removeItem('auth_session');
       return { message: 'Logged out successfully' };
     }
   },
-  
+
   forgotPassword: async (email: string) => {
     try {
       const response = await request<{ message: string }>({
@@ -195,11 +226,13 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Forgot password error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Forgot password error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   resetPassword: async (token: string, password: string) => {
     try {
       const response = await request<{ message: string }>({
@@ -209,11 +242,13 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Reset password error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Reset password error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   verifyEmail: async (token: string) => {
     try {
       const response = await request<{ message: string; user: any }>({
@@ -223,11 +258,13 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Verify email error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Verify email error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   resendVerification: async (email: string) => {
     try {
       const response = await request<{ message: string }>({
@@ -237,11 +274,13 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Resend verification error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Resend verification error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   getProfile: async () => {
     try {
       const response = await request<any>({
@@ -250,11 +289,13 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Get profile error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Get profile error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   updateProfile: async (data: { name?: string; organization?: string; avatar_url?: string }) => {
     try {
       const response = await request<any>({
@@ -264,11 +305,13 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Update profile error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Update profile error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   changePassword: async (currentPassword: string, newPassword: string) => {
     try {
       const response = await request<{ message: string }>({
@@ -278,16 +321,18 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Change password error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Change password error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   uploadAvatar: async (file: File) => {
     try {
       const formData = new FormData();
       formData.append('avatar', file);
-      
+
       const response = await api.post<{ message: string; avatar_url: string }>(
         '/upload/avatar',
         formData,
@@ -297,14 +342,16 @@ export const authService = {
           }
         }
       );
-      
+
       return { status: 200, data: response.data };
     } catch (error: any) {
-      console.error('Upload avatar error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Upload avatar error:', error.message);
+      }
       throw error;
     }
   },
-  
+
   deleteAvatar: async () => {
     try {
       const response = await request<{ message: string }>({
@@ -313,7 +360,9 @@ export const authService = {
       });
       return { status: 200, data: response };
     } catch (error: any) {
-      console.error('Delete avatar error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Delete avatar error:', error.message);
+      }
       throw error;
     }
   },
@@ -325,14 +374,16 @@ export const planService = {
     // Use a more generic type to handle both array and paginated responses
     // Make sure we're sending the status parameter correctly
     const params: Record<string, any> = { page, limit };
-    
+
     // Only add status param if it's defined
     if (status) {
       params.status = status;
     }
 
-    console.log('Getting plans with params:', params);
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Getting plans with params:', params);
+    }
+
     return request<any>({
       method: 'GET',
       url: '/plans',
@@ -496,6 +547,36 @@ export const planService = {
         github_repo_owner: owner,
         github_repo_name: name,
       },
+    });
+  },
+
+  // Star/Unstar plans
+  starPlan: async (planId: string) => {
+    return request<{ success: boolean; starred: boolean; star_count: number }>({
+      method: 'POST',
+      url: `/plans/${planId}/star`,
+    });
+  },
+
+  unstarPlan: async (planId: string) => {
+    return request<{ success: boolean; starred: boolean; star_count: number }>({
+      method: 'DELETE',
+      url: `/plans/${planId}/star`,
+    });
+  },
+
+  getPlanStars: async (planId: string) => {
+    return request<{ plan_id: string; star_count: number; is_starred: boolean }>({
+      method: 'GET',
+      url: `/plans/${planId}/stars`,
+    });
+  },
+
+  getUserStarredPlans: async (page: number = 1, limit: number = 12) => {
+    return request<any>({
+      method: 'GET',
+      url: '/plans/starred',
+      params: { page, limit },
     });
   },
 };
@@ -786,7 +867,9 @@ export const searchService = {
   
   // New comprehensive plan search endpoint
   searchPlanContents: async (planId: string, query: string) => {
-    console.log(`[api.ts] Searching plan ${planId} for: ${query}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[api.ts] Searching plan ${planId} for: ${query}`);
+    }
     return request<ApiResponse<{
       query: string;
       results: Array<{
@@ -995,47 +1078,66 @@ export const collaborationService = {
 // API Tokens endpoints
 export const tokenService = {
   getTokens: async () => {
-    console.log('Fetching tokens from API...');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching tokens from API...');
+    }
     try {
-      const result = await request<ApiToken[] | ApiResponse<ApiToken[]>>({ 
+      const result = await request<ApiToken[] | ApiResponse<ApiToken[]>>({
         method: 'GET',
         url: '/auth/token',
       });
-      console.log('Raw API response for getTokens:', result);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Tokens fetched (count):', Array.isArray(result) ? result.length : 'N/A');
+      }
       return result;
     } catch (error) {
-      console.error('Error in tokenService.getTokens:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in tokenService.getTokens:', error);
+      }
       throw error;
     }
   },
-  
+
   createToken: async (name: string, permissions?: TokenPermission[]) => {
-    console.log('Creating token with name:', name, 'permissions:', permissions);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Creating token with name:', name, 'permissions:', permissions);
+    }
     try {
-      const result = await request<ApiToken | ApiResponse<ApiToken>>({ 
+      const result = await request<ApiToken | ApiResponse<ApiToken>>({
         method: 'POST',
         url: '/auth/token',
         data: { name, permissions },
       });
-      console.log('Raw API response for createToken:', result);
+      if (process.env.NODE_ENV === 'development') {
+        // Don't log the actual token value for security
+        console.log('Token created successfully');
+      }
       return result;
     } catch (error) {
-      console.error('Error in tokenService.createToken:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in tokenService.createToken:', error);
+      }
       throw error;
     }
   },
-  
+
   revokeToken: async (tokenId: string) => {
-    console.log('Revoking token:', tokenId);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Revoking token:', tokenId);
+    }
     try {
-      const result = await request<any>({  
+      const result = await request<any>({
         method: 'DELETE',
         url: `/auth/token/${tokenId}`,
       });
-      console.log('Raw API response for revokeToken:', result);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Token revoked successfully');
+      }
       return result;
     } catch (error) {
-      console.error('Error in tokenService.revokeToken:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in tokenService.revokeToken:', error);
+      }
       throw error;
     }
   },

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'react-query';
 import {
   ArrowLeft,
   Eye,
@@ -12,40 +12,46 @@ import {
   Clock,
   AlertCircle,
   Loader2,
+  Copy,
+  Star,
 } from 'lucide-react';
 import { planService } from '../services/api';
 import { formatDate } from '../utils/planUtils';
+import Navigation from '../components/navigation/Navigation';
+import { useAuth } from '../hooks/useAuth';
 
-interface PublicPlan {
+interface PublicPlanNode {
   id: string;
   title: string;
-  description: string;
+  description?: string;
+  node_type: string;
   status: string;
-  visibility: string;
-  created_at: string;
-  updated_at: string;
-  owner: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  view_count: number;
-  progress: {
-    total: number;
-    completed: number;
-    in_progress: number;
-    percentage: number;
-  };
-  nodes: Array<{
+  parent_id: string | null;
+  children?: PublicPlanNode[];
+}
+
+interface PublicPlanResponse {
+  plan: {
     id: string;
     title: string;
-    description: string;
-    node_type: string;
+    description?: string;
     status: string;
-    parent_id: string | null;
-    order_index: number;
-    children?: any[];
-  }>;
+    view_count: number;
+    created_at: string;
+    updated_at: string;
+    github_repo_owner?: string;
+    github_repo_name?: string;
+    metadata?: any;
+    owner: {
+      id: string;
+      name: string;
+      email: string;
+      github_username?: string;
+      avatar_url?: string;
+    };
+    progress: number;
+  };
+  structure: PublicPlanNode;
 }
 
 const getStatusIcon = (status: string) => {
@@ -87,6 +93,50 @@ const getNodeTypeColor = (nodeType: string) => {
   }
 };
 
+// Calculate node statistics from the structure tree
+const calculateNodeStats = (node: PublicPlanNode | undefined): {
+  total: number;
+  completed: number;
+  in_progress: number;
+  not_started: number;
+  blocked: number;
+} => {
+  if (!node) {
+    return { total: 0, completed: 0, in_progress: 0, not_started: 0, blocked: 0 };
+  }
+
+  // Don't count the root node itself, only its children
+  let stats = { total: 0, completed: 0, in_progress: 0, not_started: 0, blocked: 0 };
+
+  const countNodes = (n: PublicPlanNode, isRoot: boolean = false) => {
+    // Count this node unless it's the root
+    if (!isRoot) {
+      stats.total++;
+      switch (n.status) {
+        case 'completed':
+          stats.completed++;
+          break;
+        case 'in_progress':
+          stats.in_progress++;
+          break;
+        case 'blocked':
+          stats.blocked++;
+          break;
+        default:
+          stats.not_started++;
+      }
+    }
+
+    // Recursively count children
+    if (n.children && n.children.length > 0) {
+      n.children.forEach(child => countNodes(child, false));
+    }
+  };
+
+  countNodes(node, true);
+  return stats;
+};
+
 const NodeItem: React.FC<{ node: any; depth: number }> = ({ node, depth }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
@@ -107,9 +157,11 @@ const NodeItem: React.FC<{ node: any; depth: number }> = ({ node, depth }) => {
             <span className={`px-2 py-1 text-xs font-medium rounded-lg ${getNodeTypeColor(node.node_type)}`}>
               {node.node_type}
             </span>
-            <span className={`px-2 py-1 text-xs font-medium rounded-lg ${getStatusColor(node.status)}`}>
-              {node.status.replace('_', ' ')}
-            </span>
+            {node.status && (
+              <span className={`px-2 py-1 text-xs font-medium rounded-lg ${getStatusColor(node.status)}`}>
+                {node.status.replace('_', ' ')}
+              </span>
+            )}
           </div>
 
           {node.description && (
@@ -140,10 +192,16 @@ const NodeItem: React.FC<{ node: any; depth: number }> = ({ node, depth }) => {
   );
 };
 
+// Helper to check authentication
 const PublicPlanView: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
+  const navigate = useNavigate();
+  const { isAuthenticated, userId: currentUserId } = useAuth();
 
-  const { data: plan, isLoading, error } = useQuery<PublicPlan>(
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+
+  const { data: response, isLoading, error } = useQuery<PublicPlanResponse>(
     ['publicPlan', planId],
     () => planService.getPublicPlan(planId!),
     {
@@ -154,6 +212,103 @@ const PublicPlanView: React.FC = () => {
       },
     }
   );
+
+  const plan = response?.plan;
+  const structure = response?.structure;
+
+  // Calculate node statistics from structure
+  const nodeStats = React.useMemo(
+    () => calculateNodeStats(structure),
+    [structure]
+  );
+
+  // Fetch star status (only if authenticated)
+  const { data: starData, refetch: refetchStars } = useQuery(
+    ['planStars', planId],
+    () => planService.getPlanStars(planId!),
+    {
+      enabled: !!planId && isAuthenticated,
+      retry: 1,
+      onError: (err: any) => {
+        console.error('Error fetching star status:', err);
+      },
+    }
+  );
+
+  // Star mutation
+  const starMutation = useMutation(
+    () => planService.starPlan(planId!),
+    {
+      onSuccess: () => {
+        refetchStars();
+      },
+      onError: (err: any) => {
+        console.error('Error starring plan:', err);
+        alert('Failed to star plan. Please try again.');
+      },
+    }
+  );
+
+  // Unstar mutation
+  const unstarMutation = useMutation(
+    () => planService.unstarPlan(planId!),
+    {
+      onSuccess: () => {
+        refetchStars();
+      },
+      onError: (err: any) => {
+        console.error('Error unstarring plan:', err);
+        alert('Failed to unstar plan. Please try again.');
+      },
+    }
+  );
+
+  const handleToggleStar = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (starData?.is_starred) {
+      unstarMutation.mutate();
+    } else {
+      starMutation.mutate();
+    }
+  };
+
+  const handleUseAsTemplate = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (!plan) return;
+
+    setIsCreatingTemplate(true);
+    setTemplateError(null);
+
+    try {
+      // Create new plan based on template
+      const newPlan = await planService.createPlan({
+        title: `${plan.title} (Copy)`,
+        description: plan.description || '',
+        status: 'draft',
+      });
+
+      // Note: Full node copying would require a backend endpoint
+      // For now, just create the plan and redirect
+      // TODO: Implement backend endpoint POST /plans/:id/duplicate to copy all nodes
+
+      navigate(`/app/plans/${newPlan.id}`);
+    } catch (err: any) {
+      console.error('Error creating template:', err);
+      setTemplateError('Failed to create template. Please try again.');
+    } finally {
+      setIsCreatingTemplate(false);
+    }
+  };
+
+  const isPlanOwner = plan?.owner?.id === currentUserId;
 
   if (isLoading) {
     return (
@@ -191,16 +346,19 @@ const PublicPlanView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      {/* Top Navigation */}
+      <Navigation />
+
+      {/* Secondary Header with Plan Actions */}
+      <header className="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link
-              to="/"
+              to="/explore"
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back to Home</span>
+              <span className="font-medium">Back to Explore</span>
             </Link>
 
             <div className="flex items-center gap-4">
@@ -208,6 +366,42 @@ const PublicPlanView: React.FC = () => {
                 <Eye className="w-4 h-4" />
                 <span>{plan.view_count} views</span>
               </div>
+
+              {/* Star Button - visible to all authenticated users */}
+              {isAuthenticated && (
+                <button
+                  onClick={handleToggleStar}
+                  disabled={starMutation.isLoading || unstarMutation.isLoading}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    starData?.is_starred
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800'
+                      : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={starData?.is_starred ? 'Unstar this plan' : 'Star this plan'}
+                >
+                  <Star
+                    className={`w-4 h-4 ${starData?.is_starred ? 'fill-current' : ''}`}
+                  />
+                  <span>{starData?.star_count || 0}</span>
+                </button>
+              )}
+
+              {/* Use as Template Button - visible only to non-owners */}
+              {isAuthenticated && !isPlanOwner && (
+                <button
+                  onClick={handleUseAsTemplate}
+                  disabled={isCreatingTemplate}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Create a copy of this plan"
+                >
+                  {isCreatingTemplate ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  <span>{isCreatingTemplate ? 'Creating...' : 'Use as Template'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -215,6 +409,23 @@ const PublicPlanView: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Message for Template Creation */}
+        {templateError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-800 dark:text-red-200 font-medium">Error</p>
+              <p className="text-red-700 dark:text-red-300 text-sm">{templateError}</p>
+            </div>
+            <button
+              onClick={() => setTemplateError(null)}
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Plan Header */}
         <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-8 mb-6">
           <div className="flex items-start justify-between mb-4">
@@ -228,22 +439,26 @@ const PublicPlanView: React.FC = () => {
                 </p>
               )}
             </div>
-            <span className={`px-3 py-1.5 text-sm font-medium rounded-lg ${getStatusColor(plan.status)}`}>
-              {plan.status.replace('_', ' ')}
-            </span>
+            {plan.status && (
+              <span className={`px-3 py-1.5 text-sm font-medium rounded-lg ${getStatusColor(plan.status)}`}>
+                {plan.status.replace('_', ' ')}
+              </span>
+            )}
           </div>
 
           {/* Plan Meta */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <User className="w-5 h-5" />
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {plan.owner.name}
-                </p>
-                <p className="text-xs">Plan Owner</p>
+            {plan.owner && (
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <User className="w-5 h-5" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {plan.owner.name}
+                  </p>
+                  <p className="text-xs">Plan Owner</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
               <Calendar className="w-5 h-5" />
@@ -259,7 +474,7 @@ const PublicPlanView: React.FC = () => {
               <GitBranch className="w-5 h-5" />
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {plan.nodes.length} nodes
+                  {nodeStats.total} nodes
                 </p>
                 <p className="text-xs">Total Items</p>
               </div>
@@ -267,26 +482,26 @@ const PublicPlanView: React.FC = () => {
           </div>
 
           {/* Progress Bar */}
-          {plan.progress && (
+          {plan && typeof plan.progress === 'number' && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Progress
                 </span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {Math.round(plan.progress.percentage)}%
+                  {Math.round(plan.progress || 0)}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 shadow-sm"
-                  style={{ width: `${plan.progress.percentage}%` }}
+                  style={{ width: `${plan.progress || 0}%` }}
                 />
               </div>
               <div className="flex items-center justify-between mt-2 text-xs text-gray-600 dark:text-gray-400">
-                <span>{plan.progress.completed} completed</span>
-                <span>{plan.progress.in_progress} in progress</span>
-                <span>{plan.progress.total - plan.progress.completed - plan.progress.in_progress} not started</span>
+                <span>{nodeStats.completed} completed</span>
+                <span>{nodeStats.in_progress} in progress</span>
+                <span>{nodeStats.not_started} not started</span>
               </div>
             </div>
           )}
@@ -299,14 +514,11 @@ const PublicPlanView: React.FC = () => {
             Plan Structure
           </h2>
 
-          {plan.nodes && plan.nodes.length > 0 ? (
+          {structure && structure.children && structure.children.length > 0 ? (
             <div className="space-y-2">
-              {plan.nodes
-                .filter(node => !node.parent_id)
-                .sort((a, b) => a.order_index - b.order_index)
-                .map(node => (
-                  <NodeItem key={node.id} node={node} depth={0} />
-                ))}
+              {structure.children.map(node => (
+                <NodeItem key={node.id} node={node} depth={0} />
+              ))}
             </div>
           ) : (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">

@@ -149,9 +149,11 @@ const Register: React.FC = () => {
       }, 2000);
       
     } catch (error: any) {
-      console.error('Registration error:', error);
-      setErrors({ 
-        general: error.message || 'Registration failed. Please try again.' 
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Registration error:', error.message);
+      }
+      setErrors({
+        general: error.message || 'Registration failed. Please try again.'
       });
     } finally {
       setLoading(false);

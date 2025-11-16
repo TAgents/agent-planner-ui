@@ -1,10 +1,29 @@
 import React from 'react';
+import { usePlatformStats } from '../../hooks/usePlatformStats';
+
+const formatNumber = (num: number): string => {
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k+`;
+  }
+  return `${num}+`;
+};
 
 export const SocialProofSection: React.FC = () => {
+  const { data: statsData, isLoading } = usePlatformStats();
+
   const stats = [
-    { number: '1,200+', label: 'Active Users' },
-    { number: '3,500+', label: 'Plans Created' },
-    { number: '15+', label: 'OSS Projects' }
+    {
+      number: isLoading ? '...' : formatNumber(statsData?.users || 0),
+      label: 'Active Users'
+    },
+    {
+      number: isLoading ? '...' : formatNumber(statsData?.plans || 0),
+      label: 'Plans Created'
+    },
+    {
+      number: isLoading ? '...' : formatNumber(statsData?.publicPlans || 0),
+      label: 'Public Plans'
+    }
   ];
 
   return (

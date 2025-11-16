@@ -14,20 +14,26 @@ const Callback: React.FC = () => {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Session error:', sessionError.message);
+          }
           setError(sessionError.message);
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
         if (!session) {
-          console.error('No session found');
+          if (process.env.NODE_ENV === 'development') {
+            console.error('No session found');
+          }
           setError('No session found. Please try logging in again.');
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
-        console.log('GitHub OAuth successful, session:', session);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('GitHub OAuth successful, user:', session.user?.email);
+        }
 
         // Store the session in localStorage for API requests
         localStorage.setItem('auth_session', JSON.stringify({
@@ -42,7 +48,9 @@ const Callback: React.FC = () => {
         // Navigate to plans page
         navigate('/app/plans', { replace: true });
       } catch (err: any) {
-        console.error('Callback error:', err);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Callback error:', err.message);
+        }
         setError(err.message || 'An error occurred during authentication');
         setTimeout(() => navigate('/login'), 3000);
       }
