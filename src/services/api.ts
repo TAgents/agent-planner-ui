@@ -579,6 +579,57 @@ export const planService = {
       params: { page, limit },
     });
   },
+
+  // AI Plan Generation - Uses Planner Agent via A2A protocol
+  generateWithAI: async (prompt: string, options?: { visibility?: string; timeout?: number }) => {
+    const PLANNER_AGENT_URL = process.env.REACT_APP_PLANNER_AGENT_URL || 'http://localhost:4001';
+    const PLANNER_AGENT_ID = '99c02fd3-7c9e-4d31-8bb5-01b0d837d771'; // Get from /health endpoint
+
+    // Generate A2A request ID
+    const requestId = `ui-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Build A2A message
+    const a2aMessage = {
+      id: requestId,
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      type: 'request',
+      from: 'agent-planner-ui',
+      to: PLANNER_AGENT_ID,
+      capability: 'create_plan',
+      payload: {
+        prompt,
+        visibility: options?.visibility || 'private'
+      },
+      context: {}
+    };
+
+    console.log('Sending A2A request to Planner Agent:', PLANNER_AGENT_URL);
+
+    // Send A2A message directly to Planner Agent
+    const response = await axios.post(`${PLANNER_AGENT_URL}/a2a/message`, a2aMessage, {
+      timeout: options?.timeout || 300000, // 5 minutes default
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Extract result from A2A response
+    const a2aResponse = response.data;
+
+    if (!a2aResponse.success) {
+      throw new Error(a2aResponse.error?.message || 'Plan generation failed');
+    }
+
+    // Return in the expected format
+    return {
+      success: true,
+      planId: a2aResponse.result.planId,
+      title: a2aResponse.result.title,
+      message: `Plan created successfully with ${a2aResponse.result.phaseCount} phases`,
+      phaseCount: a2aResponse.result.phaseCount
+    };
+  },
 };
 
 // Helper function to flatten hierarchical node structure

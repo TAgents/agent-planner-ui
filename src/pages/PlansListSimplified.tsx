@@ -43,7 +43,24 @@ const EmptyPlansGuide: React.FC = () => {
       </p>
 
       {/* Quick Start Options */}
-      <div className="flex justify-center mb-8">
+      <div className="flex flex-col md:flex-row justify-center gap-4 mb-8">
+        <Link
+          to="/app/plans/ai-create"
+          className="group p-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:shadow-xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200 hover:-translate-y-1 max-w-md"
+        >
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 rounded-lg group-hover:from-purple-200 group-hover:to-blue-200 dark:group-hover:from-purple-800 dark:group-hover:to-blue-800 transition-colors">
+              <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Create with AI ✨</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Describe your project and let AI generate a detailed plan for you
+              </p>
+            </div>
+          </div>
+        </Link>
+
         <Link
           to="/app/plans/new"
           className="group p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 hover:-translate-y-1 max-w-md"
@@ -53,7 +70,7 @@ const EmptyPlansGuide: React.FC = () => {
               <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Create Your First Plan</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Create Manually</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Build your plan from scratch with full control over every detail
               </p>
@@ -583,13 +600,22 @@ const PlansListSimplified: React.FC = () => {
             </div>
 
             {plans.length > 0 && (
-              <Link
-                to="/app/plans/new"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
-              >
-                <Plus className="w-5 h-5" />
-                Create Plan
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  to="/app/plans/ai-create"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Create with AI
+                </Link>
+                <Link
+                  to="/app/plans/new"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Plan
+                </Link>
+              </div>
             )}
           </div>
 

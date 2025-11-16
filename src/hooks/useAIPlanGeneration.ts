@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import aiPlanService from '../services/aiPlanService';
-import { usePlans } from './usePlans';
+import api from '../services/api';
 
 interface GenerationStep {
   label: string;
@@ -12,13 +11,12 @@ interface GenerationStep {
 
 export const useAIPlanGeneration = () => {
   const navigate = useNavigate();
-  const { createPlan } = usePlans();
   const [currentStep, setCurrentStep] = useState(0);
   const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>([
-    { label: "Understanding your requirements", completed: false, active: false },
-    { label: "Structuring project phases", completed: false, active: false },
-    { label: "Creating tasks and milestones", completed: false, active: false },
-    { label: "Setting up timeline", completed: false, active: false },
+    { label: "Analyzing your requirements", completed: false, active: false },
+    { label: "Generating plan structure", completed: false, active: false },
+    { label: "Creating phases and tasks", completed: false, active: false },
+    { label: "Setting up dependencies", completed: false, active: false },
     { label: "Finalizing your plan", completed: false, active: false }
   ]);
 
@@ -27,7 +25,7 @@ export const useAIPlanGeneration = () => {
       // Update steps during generation
       const updateStep = (stepIndex: number) => {
         setCurrentStep(stepIndex);
-        setGenerationSteps(steps => 
+        setGenerationSteps(steps =>
           steps.map((step, index) => ({
             ...step,
             completed: index < stepIndex,
@@ -36,36 +34,37 @@ export const useAIPlanGeneration = () => {
         );
       };
 
-      // Step 1: Understanding requirements
+      // Step 1: Analyzing requirements
       updateStep(0);
-      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 2: Structuring phases
+      // Step 2: Generating plan structure (send to backend)
       updateStep(1);
-      const aiResponse = await aiPlanService.generatePlan({ prompt, options });
-      
-      // Step 3: Creating tasks
-      updateStep(2);
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Step 4: Setting timeline
+      // Call the new backend endpoint that triggers headless Claude Code
+      const response = await api.plans.generateWithAI(prompt, {
+        visibility: options.visibility || 'private',
+        timeout: 300000 // 5 minutes
+      });
+
+      // Step 3: Creating phases and tasks
+      updateStep(2);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 4: Setting up dependencies
       updateStep(3);
-      const planData = await aiPlanService.createPlanFromAI(aiResponse);
-      
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Step 5: Finalizing
       updateStep(4);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Create the plan using existing mutation
-      const result = await createPlan.mutateAsync(planData);
-      
-      return result;
+      return response;
     },
     {
       onSuccess: (data) => {
-        const planId = data?.data?.id || data?.id;
-        if (planId) {
-          navigate(`/plans/${planId}`);
+        // Backend returns { success: true, planId: "...", title: "...", message: "..." }
+        if (data?.planId) {
+          navigate(`/app/plans/${data.planId}`);
         }
       },
       onError: (error) => {

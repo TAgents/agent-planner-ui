@@ -30,6 +30,9 @@ export const Navigation: React.FC = () => {
           >
             <span className="text-xl sm:text-2xl">📋</span>
             <span className="hidden xs:inline sm:inline">Agent Planner</span>
+            <span className="text-xs font-semibold px-2 py-0.5 bg-blue-500 text-white rounded uppercase ml-2">
+              Alpha
+            </span>
           </Link>
 
           {/* Navigation Links and Auth */}
