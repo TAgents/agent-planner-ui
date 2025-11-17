@@ -23,7 +23,7 @@ export interface DemoPlan {
   id: string;
   title: string;
   description: string;
-  githubRepo: GitHubRepo;
+  githubRepo?: GitHubRepo;
   lastUpdated: Date;
   lastUpdatedBy: string; // GitHub username
   progress: number; // 0-100

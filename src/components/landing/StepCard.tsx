@@ -26,7 +26,7 @@ export const StepCard: React.FC<StepCardProps> = ({
         </div>
 
         {/* Content */}
-        <div className={`flex-1 ${isLast ? '' : 'pb-8 md:pb-12'}`}>
+        <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-8 md:pb-12'}`}>
           <h3 className="text-xl md:text-2xl font-bold mb-2 text-gray-900 leading-tight">
             {title}
           </h3>
@@ -35,7 +35,9 @@ export const StepCard: React.FC<StepCardProps> = ({
           </p>
 
           {/* Code Block or Additional Content */}
-          {children}
+          <div className="overflow-hidden">
+            {children}
+          </div>
         </div>
       </div>
 

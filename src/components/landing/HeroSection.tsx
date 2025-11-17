@@ -40,14 +40,12 @@ const convertPlanToDemoFormat = (apiPlan: any, structure: any): DemoPlan => {
     id: plan.id,
     title: plan.title,
     description: plan.description,
-    githubRepo: {
-      owner: plan.github_repo_owner || 'agentplanner',
-      name: plan.github_repo_name || 'community',
-      stars: 0,
-      url: plan.github_repo_owner && plan.github_repo_name
-        ? `https://github.com/${plan.github_repo_owner}/${plan.github_repo_name}`
-        : 'https://github.com/talkingagents/agent-planner'
-    },
+    githubRepo: plan.github_repo_owner && plan.github_repo_name ? {
+      owner: plan.github_repo_owner,
+      name: plan.github_repo_name,
+      stars: plan.github_repo_stars || 0,
+      url: `https://github.com/${plan.github_repo_owner}/${plan.github_repo_name}`
+    } : undefined,
     lastUpdated: new Date(plan.updated_at),
     lastUpdatedBy: plan.owner?.name || plan.owner?.email?.split('@')[0] || 'user',
     progress: plan.progress || 0,

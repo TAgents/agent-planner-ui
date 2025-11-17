@@ -181,7 +181,7 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <p className="mt-4">
               For data protection inquiries, you may contact:<br />
-              Email: privacy@agentplanner.io
+              Email: contact@talkingagents.com
             </p>
             <p className="mt-4">
               You also have the right to lodge a complaint with a supervisory authority, in particular in the EU member state of your habitual residence, place of work, or place of the alleged infringement.
@@ -230,8 +230,7 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <p className="ml-4 mt-2">
               <strong>Talking Agents Oy</strong><br />
-              Email: privacy@agentplanner.io<br />
-              Support: support@agentplanner.io<br />
+              Email: contact@talkingagents.com<br />
               GitHub: <a href="https://github.com/tagents" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">github.com/tagents</a>
             </p>
           </section>

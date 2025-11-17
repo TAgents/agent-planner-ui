@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiGithub, FiTwitter, FiLinkedin, FiMail } from 'react-icons/fi';
+import { FiGithub, FiMail } from 'react-icons/fi';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -36,25 +36,18 @@ const Footer: React.FC = () => {
                 {React.createElement(FiGithub as any, { className: "w-5 h-5" })}
               </a>
               <a
-                href="https://twitter.com/tagents"
+                href="https://x.com/agentplanner_ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Twitter"
+                aria-label="X (Twitter)"
               >
-                {React.createElement(FiTwitter as any, { className: "w-5 h-5" })}
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
               </a>
               <a
-                href="https://linkedin.com/company/tagents"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="LinkedIn"
-              >
-                {React.createElement(FiLinkedin as any, { className: "w-5 h-5" })}
-              </a>
-              <a
-                href="mailto:hello@agentplanner.io"
+                href="mailto:contact@talkingagents.com"
                 className="text-gray-400 hover:text-white transition-colors"
                 aria-label="Email"
               >
@@ -110,33 +103,13 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-semibold mb-4">Resources</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/blog" className="hover:text-white transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link to="/guides" className="hover:text-white transition-colors">
-                  Guides & Tutorials
-                </Link>
-              </li>
-              <li>
-                <Link to="/community" className="hover:text-white transition-colors">
-                  Community
-                </Link>
-              </li>
-              <li>
-                <Link to="/support" className="hover:text-white transition-colors">
-                  Support
-                </Link>
-              </li>
-              <li>
                 <a
-                  href="https://status.agentplanner.io"
+                  href="https://github.com/tagents/agent-planner-mcp#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors"
                 >
-                  Status
+                  Guides & Tutorials
                 </a>
               </li>
             </ul>
@@ -147,19 +120,22 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-semibold mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/about" className="hover:text-white transition-colors">
+                <a
+                  href="https://talkingagents.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
                   About Us
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/careers" className="hover:text-white transition-colors">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:text-white transition-colors">
+                <a
+                  href="mailto:contact@talkingagents.com"
+                  className="hover:text-white transition-colors"
+                >
                   Contact
-                </Link>
+                </a>
               </li>
               <li>
                 <Link to="/privacy" className="hover:text-white transition-colors">

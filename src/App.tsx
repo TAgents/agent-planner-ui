@@ -22,6 +22,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
+import AgentsPage from './pages/AgentsPage';
 import Settings from './pages/Settings';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
                   <Route path="plans/new" element={<CreatePlan />} />
                   <Route path="plans/ai-create" element={<AICreatePlan />} />
                   <Route path="plans/:planId" element={<PlanVisualization />} />
+                  <Route path="agents" element={<AgentsPage />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="settings" element={<Settings />} />
                   <Route path="profile" element={<UserProfile />} />

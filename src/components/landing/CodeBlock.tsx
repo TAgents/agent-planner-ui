@@ -22,6 +22,43 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // For plain text, render as a simple pre element with proper wrapping
+  if (language === 'text') {
+    return (
+      <div className="relative group">
+        {/* Copy Button */}
+        <button
+          onClick={handleCopy}
+          className="absolute top-3 right-3 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-all duration-200 z-10 opacity-80 hover:opacity-100 shadow-md"
+          aria-label="Copy code"
+          title={copied ? 'Copied!' : 'Copy code'}
+        >
+          {copied ? (
+            <Check className="w-4 h-4 text-green-400" />
+          ) : (
+            <Copy className="w-4 h-4" />
+          )}
+        </button>
+
+        {/* Plain Text with Proper Wrapping */}
+        <pre
+          className="rounded-xl p-6 text-sm m-0 border"
+          style={{
+            backgroundColor: '#1e1e1e',
+            color: '#d4d4d4',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            overflowWrap: 'break-word',
+            wordWrap: 'break-word',
+            whiteSpace: 'pre-wrap',
+            maxWidth: '100%'
+          }}
+        >
+          {code}
+        </pre>
+      </div>
+    );
+  }
+
   return (
     <div className="relative group">
       {/* Copy Button */}
@@ -49,11 +86,14 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
           fontSize: '0.875rem',
           margin: 0,
           maxWidth: '100%',
-          overflow: 'auto',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          overflowWrap: 'break-word',
+          wordWrap: 'break-word'
         }}
-        wrapLines
-        wrapLongLines
+        wrapLines={true}
+        wrapLongLines={true}
       >
         {code}
       </SyntaxHighlighter>

@@ -150,7 +150,7 @@ const TermsOfService: React.FC = () => {
               VAT registered (if applicable)
             </p>
             <p className="mt-4">
-              Email: support@agentplanner.io<br />
+              Email: contact@talkingagents.com<br />
               Website: <a href="https://agentplanner.io" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">agentplanner.io</a>
             </p>
           </section>
@@ -164,8 +164,7 @@ const TermsOfService: React.FC = () => {
             </p>
             <p className="ml-4 mt-2">
               <strong>Talking Agents Oy</strong><br />
-              Email: support@agentplanner.io<br />
-              Legal inquiries: legal@agentplanner.io<br />
+              Email: contact@talkingagents.com<br />
               GitHub: <a href="https://github.com/tagents" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">github.com/tagents</a>
             </p>
           </section>

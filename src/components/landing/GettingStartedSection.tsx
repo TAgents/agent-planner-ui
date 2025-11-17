@@ -144,29 +144,6 @@ export const GettingStartedSection: React.FC = () => {
             </StepCard>
           ))}
         </div>
-
-        {/* Footer CTA */}
-        <div className="mt-12 md:mt-16 p-6 md:p-8 bg-blue-50 border-2 border-blue-200 rounded-xl text-center">
-          <p className="text-base md:text-lg text-gray-700 mb-4 leading-relaxed">
-            Need help? Check out our documentation or join our community.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="/docs"
-              className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-            >
-              View Documentation
-            </a>
-            <a
-              href="https://github.com/talkingagents/agent-planner"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              Star on GitHub
-            </a>
-          </div>
-        </div>
       </div>
     </section>
   );

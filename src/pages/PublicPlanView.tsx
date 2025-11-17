@@ -527,29 +527,6 @@ const PublicPlanView: React.FC = () => {
           )}
         </div>
 
-        {/* CTA Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 border-2 border-blue-200 dark:border-gray-600 rounded-xl shadow-lg p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Want to create your own plans?
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Sign up for free and start planning with AI-powered collaboration tools.
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <Link
-              to="/register"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg"
-            >
-              Sign Up Free
-            </Link>
-            <Link
-              to="/login"
-              className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors font-medium"
-            >
-              Log In
-            </Link>
-          </div>
-        </div>
       </main>
 
       {/* Footer */}
