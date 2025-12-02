@@ -112,11 +112,20 @@ const PlanVisualizationEnhanced: React.FC = () => {
     uiState.nodeDetails.selectedNodeId || ''
   );
 
-  // Get the selected node from planNodes which should be more up-to-date
+  // Get the selected node - prefer selectedNodeFromAPI which has full details (description, acceptance_criteria, etc.)
+  // The planNodes list only has basic fields (id, title, status, etc.)
   const selectedNode = useMemo(() => {
     if (!uiState.nodeDetails.selectedNodeId) return null;
     const nodeFromList = planNodes.find(n => n.id === uiState.nodeDetails.selectedNodeId);
-    return nodeFromList || selectedNodeFromAPI;
+    // Merge: use API response for detailed fields, but nodeFromList for real-time status updates
+    if (selectedNodeFromAPI && nodeFromList) {
+      return {
+        ...selectedNodeFromAPI,
+        // Keep status from nodeFromList as it may be more up-to-date from WebSocket updates
+        status: nodeFromList.status,
+      };
+    }
+    return selectedNodeFromAPI || nodeFromList;
   }, [planNodes, selectedNodeFromAPI, uiState.nodeDetails.selectedNodeId]);
   const { activities: recentActivities, isLoading: isActivityLoading } = usePlanActivity(planId || '', 1, 5);
 

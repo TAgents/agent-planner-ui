@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTokens } from '../hooks/useTokens';
 import { TokenPermission } from '../types';
-import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode } from 'lucide-react';
+import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles, RefreshCw } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const { 
@@ -22,7 +22,7 @@ const Settings: React.FC = () => {
   console.log('New token:', newToken);
   
   // Ensure tokens are fetched when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('Settings component mounted, fetching tokens...');
     fetchTokens();
   }, [fetchTokens]);
@@ -35,7 +35,9 @@ const Settings: React.FC = () => {
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [tokenCopied, setTokenCopied] = useState(false);
   const [mcpConfigCopied, setMcpConfigCopied] = useState(false);
-  const [activeAITab, setActiveAITab] = useState<'claude-desktop' | 'claude-code' | 'chatgpt' | 'code-editors'>('claude-desktop');
+  const [activeAITab, setActiveAITab] = useState<'claude-desktop' | 'claude-code' | 'chatgpt' | 'code-editors' | 'gemini-cli'>('claude-desktop');
+  const [refreshingAgents, setRefreshingAgents] = useState(false);
+  const [agentStatus, setAgentStatus] = useState<{planner: boolean, executor: boolean, reviewer: boolean} | null>(null);
 
   // Available permissions
   const availablePermissions: TokenPermission[] = ['read', 'write', 'admin'];
@@ -97,6 +99,49 @@ const Settings: React.FC = () => {
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
+  };
+
+  // Refresh Cloud Run agents
+  const handleRefreshAgents = async () => {
+    setRefreshingAgents(true);
+
+    const AGENTS = [
+      { name: 'Planner', url: 'https://planner-agent-824163368271.europe-north1.run.app' },
+      { name: 'Executor', url: 'https://executor-agent-824163368271.europe-north1.run.app' },
+      { name: 'Reviewer', url: 'https://reviewer-agent-824163368271.europe-north1.run.app' }
+    ];
+
+    try {
+      const results = await Promise.all(
+        AGENTS.map(async (agent) => {
+          try {
+            const response = await fetch(`${agent.url}/health`, {
+              method: 'GET',
+              signal: AbortSignal.timeout(30000), // 30 second timeout
+            });
+            return { agent: agent.name, success: response.ok };
+          } catch (error) {
+            console.error(`Failed to wake up ${agent.name}:`, error);
+            return { agent: agent.name, success: false };
+          }
+        })
+      );
+
+      const status = {
+        planner: results.find(r => r.agent === 'Planner')?.success || false,
+        executor: results.find(r => r.agent === 'Executor')?.success || false,
+        reviewer: results.find(r => r.agent === 'Reviewer')?.success || false,
+      };
+
+      setAgentStatus(status);
+
+      const successCount = results.filter(r => r.success).length;
+      showNotification(`Refreshed ${successCount}/${AGENTS.length} agents successfully`, 'success');
+    } catch (error: any) {
+      showNotification(`Failed to refresh agents: ${error.message}`, 'error');
+    } finally {
+      setRefreshingAgents(false);
+    }
   };
 
   // Copy token to clipboard
@@ -191,6 +236,39 @@ const Settings: React.FC = () => {
             </p>
           </div>
 
+          {/* Refresh Agents Button */}
+          <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Cloud Run Agents</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Wake up agents if they've been scaled down by Cloud Run
+                </p>
+              </div>
+              <button
+                onClick={handleRefreshAgents}
+                disabled={refreshingAgents}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshingAgents ? 'animate-spin' : ''}`} />
+                {refreshingAgents ? 'Refreshing...' : 'Refresh Agents'}
+              </button>
+            </div>
+            {agentStatus && (
+              <div className="mt-3 flex gap-2 text-xs">
+                <span className={`px-2 py-1 rounded ${agentStatus.planner ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                  Planner: {agentStatus.planner ? '✓' : '✗'}
+                </span>
+                <span className={`px-2 py-1 rounded ${agentStatus.executor ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                  Executor: {agentStatus.executor ? '✓' : '✗'}
+                </span>
+                <span className={`px-2 py-1 rounded ${agentStatus.reviewer ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                  Reviewer: {agentStatus.reviewer ? '✓' : '✗'}
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* AI Client Tabs */}
           <div className="flex flex-wrap gap-2 mb-6 border-b border-blue-200 dark:border-blue-700 pb-2">
             <button
@@ -236,6 +314,17 @@ const Settings: React.FC = () => {
             >
               <FileCode className="w-4 h-4" />
               AI Code Editors
+            </button>
+            <button
+              onClick={() => setActiveAITab('gemini-cli')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+                activeAITab === 'gemini-cli'
+                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Gemini CLI
             </button>
           </div>
 
@@ -609,6 +698,99 @@ const Settings: React.FC = () => {
                     className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
                     MCP Documentation
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Gemini CLI Tab */}
+          {activeAITab === 'gemini-cli' && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-blue-200 dark:border-blue-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                Google Gemini CLI Integration
+              </h3>
+
+              <div className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Quick Setup (2 Steps)
+                  </h4>
+                  <ol className="list-decimal list-inside space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                    <li>
+                      <span className="font-medium">Create an API token below</span>
+                    </li>
+                    <li>
+                      <span className="font-medium">Run this command in your terminal:</span>
+                      <div className="mt-2 ml-5 bg-gray-900 rounded-lg p-3">
+                        <pre className="text-xs font-mono text-green-400 overflow-x-auto">
+{`gemini mcp add planning-system npx agent-planner-mcp \\
+  -e API_URL=${(() => {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost') return 'http://localhost:3000';
+    if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+    return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
+  })()} \\
+  -e USER_API_TOKEN=YOUR_TOKEN_HERE`}
+                        </pre>
+                      </div>
+                      <p className="mt-2 ml-5 text-xs text-gray-600 dark:text-gray-400">
+                        Replace <code className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono">YOUR_TOKEN_HERE</code> with your actual token
+                      </p>
+                    </li>
+                  </ol>
+                </div>
+
+                <div className="space-y-2">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white">Available Tools in Gemini CLI</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">search</span> - Search plans and nodes
+                    </div>
+                    <div className="bg-white dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">create_plan</span> - Create new plans
+                    </div>
+                    <div className="bg-white dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">create_node</span> - Add tasks/phases
+                    </div>
+                    <div className="bg-white dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">update_node</span> - Update progress
+                    </div>
+                    <div className="bg-white dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">add_log</span> - Add progress logs
+                    </div>
+                    <div className="bg-white dark:bg-gray-700 rounded p-2 border border-gray-200 dark:border-gray-600">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">get_plan_summary</span> - View plan details
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setOpenCreateDialog(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <Key className="w-4 h-4" />
+                    Create API Token
+                  </button>
+                  <a
+                    href="https://ai.google.dev/gemini-api/docs/cli"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                  >
+                    Gemini CLI Documentation
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                  <a
+                    href="https://pypi.org/project/fastmcp/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                  >
+                    FastMCP Documentation
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>

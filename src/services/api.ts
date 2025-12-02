@@ -702,35 +702,19 @@ export const nodeService = {
   getNode: async (planId: string, nodeId: string) => {
     console.log(`[api.ts] getNode: fetching node ${nodeId} from plan ${planId}`);
     try {
-      // Instead of using the dedicated endpoint, let's fetch all nodes and filter
-      const allNodesResponse = await request<any>({
+      // Call the individual node endpoint to get full details (description, acceptance_criteria, etc.)
+      const response = await request<PlanNode>({
         method: 'GET',
-        url: `/plans/${planId}/nodes`,
+        url: `/plans/${planId}/nodes/${nodeId}`,
       });
-      
-      console.log('[api.ts] getNode: Got all nodes response', allNodesResponse);
-      
-      // Process the response based on its structure
-      let nodes: PlanNode[] = [];
-      
-      if (Array.isArray(allNodesResponse)) {
-        // Direct array response
-        nodes = flattenNodes(allNodesResponse);
-      } else if (allNodesResponse && allNodesResponse.data) {
-        // Response with data property
-        nodes = Array.isArray(allNodesResponse.data) 
-          ? flattenNodes(allNodesResponse.data)
-          : [];
-      }
-      
-      // Find the specific node
-      const targetNode = nodes.find((node: PlanNode) => node.id === nodeId);
-      
-      if (targetNode) {
-        console.log('[api.ts] getNode: Found node:', targetNode.id);
-        return { data: targetNode, status: 200 };
+
+      console.log('[api.ts] getNode: Got individual node response', response);
+
+      // The response should be the node object directly
+      if (response) {
+        return { data: response, status: 200 };
       } else {
-        console.error('[api.ts] getNode: Node not found among', nodes.length, 'nodes');
+        console.error('[api.ts] getNode: No node data in response');
         throw new Error('Node not found');
       }
     } catch (error: any) {
