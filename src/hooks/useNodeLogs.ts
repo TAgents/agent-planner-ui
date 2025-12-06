@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { logService } from '../services/api';
-import { Log, ApiResponse } from '../types';
+import { Log } from '../types';
 
 export const useNodeLogs = (planId: string, nodeId: string, options = {}) => {
   const queryClient = useQueryClient();

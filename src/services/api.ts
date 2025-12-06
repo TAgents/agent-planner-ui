@@ -939,11 +939,11 @@ export const logService = {
     console.log(`[api.ts] Getting logs for plan=${planId}, node=${nodeId}`);
     try {
       // First check if the node exists by getting node details
-      const nodeResp = await request<any>({
+      await request<any>({
         method: 'GET',
         url: `/plans/${planId}/nodes/${nodeId}`,
       });
-      
+
       console.log('[api.ts] Node exists, fetching logs');
       
       // Now get the logs
@@ -1178,7 +1178,7 @@ export const tokenService = {
   },
 };
 
-export default {
+const apiServices = {
   auth: authService,
   plans: planService,
   nodes: nodeService,
@@ -1193,3 +1193,5 @@ export default {
   tokens: tokenService,
   debug: debugService,
 };
+
+export default apiServices;

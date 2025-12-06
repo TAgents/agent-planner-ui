@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Lock, ArrowLeft, CheckCircle } from 'lucide-react';
 import PasswordInput from '../../components/forms/PasswordInput';
-import api from '../../services/api';
 
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();

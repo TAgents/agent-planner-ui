@@ -42,7 +42,7 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.auth.login(email, password);
+      await api.auth.login(email, password);
       if (process.env.NODE_ENV === 'development') {
         console.log('Login successful');
       }
@@ -78,40 +78,12 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Use the demo account credentials
-      const response = await api.auth.login('demo@example.com', 'Demo123456!');
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Demo login successful');
-      }
-
-      // Clear all React Query cache to ensure fresh data for new user
-      queryClient.clear();
-
-      // Trigger a custom event to notify ProtectedRoute
-      window.dispatchEvent(new Event('auth-change'));
-
-      navigate('/app/plans');
-    } catch (err: any) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Demo login error:', err.message);
-      }
-      setError(err.message || 'Failed to login with demo account. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleGitHubLogin = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,

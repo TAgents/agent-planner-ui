@@ -31,7 +31,7 @@ export const InteractiveDashboard: React.FC<InteractiveDashboardProps> = ({
       }
     });
     setExpandedNodes(newExpanded);
-  }, [plan.id]);
+  }, [plan.id, plan.nodes]);
 
   const toggleNode = (nodeId: string) => {
     setExpandedNodes((prev) => {

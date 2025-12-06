@@ -1,31 +1,19 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from 'react-query';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Maximize,
   Minimize,
-  Save,
-  Plus,
-  Filter,
   Sidebar as SidebarIcon,
   HelpCircle,
-  Settings2,
   X,
-  GitBranch,
-  Layers,
-  List,
-  Grid3x3,
 } from 'lucide-react';
 
 // Import new components
-import ViewControls, { ViewMode } from '../components/visualization/ViewControls';
 import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
-import CompactSidebar from '../components/visualization/CompactSidebar';
 import OnboardingTour from '../components/visualization/OnboardingTour';
 import ShareButton from '../components/sharing/ShareButton';
-import PlanProgress from '../components/plans/PlanProgress';
-import ActivityTimeline from '../components/activity/ActivityTimeline';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
 import VisibilityToggle from '../components/plans/VisibilityToggle';
 
@@ -35,8 +23,7 @@ import { usePlan } from '../hooks/usePlans';
 import { useNodes, useNode } from '../hooks/useNodes';
 import { usePlanActivity } from '../hooks/usePlanActivity';
 import { usePlanEvents } from '../hooks/useWebSocket';
-import { formatDate, getStatusColor, getStatusLabel, getNodeTypeLabel } from '../utils/planUtils';
-import { NodeType, NodeStatus, PlanNode } from '../types';
+import { NodeType, NodeStatus } from '../types';
 
 // Import detail components
 import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
@@ -107,7 +94,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     moveNode,
     refetch: refetchNodes,
   } = useNodes(planId || '');
-  const { node: selectedNodeFromAPI, isLoading: isSelectedNodeLoading, refetch: refetchSelectedNode } = useNode(
+  const { node: selectedNodeFromAPI, refetch: refetchSelectedNode } = useNode(
     planId || '',
     uiState.nodeDetails.selectedNodeId || ''
   );
@@ -127,7 +114,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     }
     return selectedNodeFromAPI || nodeFromList;
   }, [planNodes, selectedNodeFromAPI, uiState.nodeDetails.selectedNodeId]);
-  const { activities: recentActivities, isLoading: isActivityLoading } = usePlanActivity(planId || '', 1, 5);
+  usePlanActivity(planId || '', 1, 5);
 
   // Get user ID for query keys (matching useNodes implementation)
   const getUserId = useCallback(() => {
@@ -212,7 +199,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
+  const [, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
@@ -379,14 +366,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
       }
     );
   }, [planId, updateNodeStatus, refetchNodes, refetchSelectedNode, uiState.nodeDetails.selectedNodeId, queryClient]);
-
-  // Handle node deletion
-  const handleNodeDelete = (nodeId: string) => {
-    if (!planId) return;
-    deleteNode.mutate(nodeId, {
-      onSuccess: () => closeNodeDetails()
-    });
-  };
 
   // Handle node move (drag & drop)
   const handleNodeMove = useCallback((nodeId: string, newParentId: string | null, newOrderIndex?: number) => {

@@ -1,12 +1,11 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { usePublicPlans } from '../hooks/usePublicPlans';
 import { PublicPlanCard } from '../components/explore/PublicPlanCard';
 import Navigation from '../components/navigation/Navigation';
 
 export const ExplorePlansPage = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const search = searchParams.get('search') || '';

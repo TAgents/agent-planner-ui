@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   Plus,
   Search,
-  Filter as FilterIcon,
   LayoutGrid,
   List,
   Sparkles,
@@ -22,7 +21,7 @@ import {
 import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
 import { formatDate } from '../utils/planUtils';
-import { Plan, PlanNode } from '../types';
+import { Plan } from '../types';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { PLAN_EVENTS } from '../types/websocket';
 
@@ -524,7 +523,7 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
 };
 
 const PlansListSimplified: React.FC = () => {
-  const { plans, isLoading, updatePlan, refetch } = usePlans(1, 100);
+  const { plans, isLoading, refetch } = usePlans(1, 100);
   const { subscribe } = useWebSocket();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'completed' | 'archived'>('all');

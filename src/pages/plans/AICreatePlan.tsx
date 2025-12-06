@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Sparkles, Loader2, Keyboard, Brain, CheckCircle, Circle,
-  Smartphone, Rocket, GraduationCap, Target, ChevronRight, ChevronDown,
+import {
+  ArrowLeft, Sparkles, ChevronRight, ChevronDown,
   Layers, Clock
 } from 'lucide-react';
 import { useAIPlanGeneration } from '../../hooks/useAIPlanGeneration';

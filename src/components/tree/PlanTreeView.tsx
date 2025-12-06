@@ -7,7 +7,6 @@ import {
   ChevronUp,
   X,
   Plus,
-  MoreVertical
 } from 'lucide-react';
 import {
   DndContext,
@@ -132,7 +131,8 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
       let currentNode: PlanNode | null = targetNode;
       while (currentNode) {
         if (currentNode.id === draggedNodeId) return false;
-        currentNode = nodes.find(n => n.id === currentNode?.parent_id) || null;
+        const parentId: string | undefined = currentNode.parent_id;
+        currentNode = nodes.find((n): n is PlanNode => n.id === parentId) || null;
       }
     }
 
@@ -220,11 +220,12 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
   useEffect(() => {
     if (selectedNodeId) {
       const nodesToExpand = new Set<string>();
-      let currentNode = nodes.find(n => n.id === selectedNodeId);
+      let currentNode: PlanNode | undefined = nodes.find(n => n.id === selectedNodeId);
 
       while (currentNode?.parent_id) {
         nodesToExpand.add(currentNode.parent_id);
-        currentNode = nodes.find(n => n.id === currentNode?.parent_id);
+        const parentId: string = currentNode.parent_id;
+        currentNode = nodes.find((n): n is PlanNode => n.id === parentId);
       }
 
       if (nodesToExpand.size > 0) {

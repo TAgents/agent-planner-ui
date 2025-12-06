@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useMemo } from 'react';
 import { nodeService } from '../services/api';
-import { PlanNode, FlowNode, FlowEdge } from '../types';
+import { PlanNode } from '../types';
 import { transformToFlowNodes, createFlowEdges } from '../utils/planUtils';
 
 /**
@@ -74,7 +74,7 @@ export const useNodes = (planId: string) => {
   const nodesTree = useMemo(() => data?.data || [], [data?.data]);
   
   // Memoize flattened nodes
-  const nodes = useMemo(() => flattenNodes(nodesTree), [nodesTree]);
+  const nodes = useMemo(() => flattenNodes(nodesTree), [nodesTree, flattenNodes]);
   
   // Add debugging for node data only when explicitly enabled
   if (process.env.NODE_ENV === 'development' && window.DEBUG_ENABLED) {

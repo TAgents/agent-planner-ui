@@ -59,7 +59,7 @@ export const HeroSection: React.FC = () => {
   const [plans, setPlans] = useState(DEMO_PLANS);
   const [selectedPlanId, setSelectedPlanId] = useState(DEMO_PLANS[0].id);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   // Fetch real public plans on mount
   useEffect(() => {
