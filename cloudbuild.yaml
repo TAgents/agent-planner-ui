@@ -1,0 +1,72 @@
+# Cloud Build configuration for agent-planner-ui
+# Triggered automatically on push to main branch
+
+steps:
+  # Get secrets for build args
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --secret=supabase-url > /workspace/supabase_url
+        gcloud secrets versions access latest --secret=supabase-anon-key > /workspace/supabase_anon_key
+
+  # Build the container image with environment variables
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg REACT_APP_API_URL=https://api.agentplanner.io \
+          --build-arg REACT_APP_SUPABASE_URL=$(cat /workspace/supabase_url) \
+          --build-arg REACT_APP_SUPABASE_ANON_KEY=$(cat /workspace/supabase_anon_key) \
+          --build-arg REACT_APP_AGENT_REGISTRY_URL=https://agent-registry-824163368271.europe-north1.run.app \
+          --build-arg REACT_APP_PLANNER_AGENT_URL=https://planner-agent-75rp6ehpra-lz.a.run.app \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/agent-planner/ui:${SHORT_SHA} \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/agent-planner/ui:latest \
+          -f Dockerfile.prod \
+          .
+
+  # Push the container images
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/agent-planner/ui'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'agent-planner-ui'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/agent-planner/ui:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '5'
+
+substitutions:
+  _REGION: europe-north1
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
+
+tags:
+  - 'agent-planner-ui'
+  - 'auto-deploy'
