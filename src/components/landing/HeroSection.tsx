@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DEMO_PLANS, DemoPlan, DemoNode } from './demoPlansData';
+import { DemoPlan, DemoNode } from './demoPlansData';
 import { PlanSelectorDropdown } from './PlanSelectorDropdown';
 import { InteractiveDashboard } from './InteractiveDashboard';
 import { planService } from '../../services/api';
@@ -56,10 +56,10 @@ const convertPlanToDemoFormat = (apiPlan: any, structure: any): DemoPlan => {
 };
 
 export const HeroSection: React.FC = () => {
-  const [plans, setPlans] = useState(DEMO_PLANS);
-  const [selectedPlanId, setSelectedPlanId] = useState(DEMO_PLANS[0].id);
+  const [plans, setPlans] = useState<DemoPlan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch real public plans on mount
   useEffect(() => {
@@ -89,18 +89,10 @@ export const HeroSection: React.FC = () => {
           if (validPlans.length > 0) {
             setPlans(validPlans);
             setSelectedPlanId(validPlans[0].id);
-          } else {
-            // Fallback to demo plans if all fetches failed
-            setPlans(DEMO_PLANS);
           }
-        } else {
-          // No public plans available, use demo data
-          setPlans(DEMO_PLANS);
         }
       } catch (error) {
         console.error('Failed to fetch public plans:', error);
-        // Fallback to demo plans
-        setPlans(DEMO_PLANS);
       } finally {
         setIsLoading(false);
       }
@@ -134,21 +126,32 @@ export const HeroSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Plan Selector */}
-        <PlanSelectorDropdown
-          plans={plans}
-          selectedPlanId={selectedPlanId}
-          onSelectPlan={handlePlanChange}
-        />
+        {/* Plan Selector and Dashboard - only show when we have plans */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : plans.length > 0 && selectedPlan ? (
+          <>
+            <PlanSelectorDropdown
+              plans={plans}
+              selectedPlanId={selectedPlanId}
+              onSelectPlan={handlePlanChange}
+            />
 
-        {/* Interactive Dashboard */}
-        <div
-          className={`transition-opacity duration-300 ${
-            isTransitioning ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
-          <InteractiveDashboard plan={selectedPlan} />
-        </div>
+            <div
+              className={`transition-opacity duration-300 ${
+                isTransitioning ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              <InteractiveDashboard plan={selectedPlan} />
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No public plans available yet.</p>
+          </div>
+        )}
 
         {/* CTAs */}
         <div className="mt-8 md:mt-10 flex flex-col sm:flex-row justify-center gap-4">
