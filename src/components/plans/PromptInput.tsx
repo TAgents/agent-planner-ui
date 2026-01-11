@@ -7,6 +7,9 @@ interface PromptInputProps {
   onGenerate: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   isGenerating: boolean;
+  buttonText?: string;
+  buttonIcon?: React.ReactNode;
+  loadingText?: string;
 }
 
 const PromptInput: React.FC<PromptInputProps> = ({
@@ -14,8 +17,13 @@ const PromptInput: React.FC<PromptInputProps> = ({
   setPrompt,
   onGenerate,
   onKeyDown,
-  isGenerating
+  isGenerating,
+  buttonText = 'Generate Plan',
+  buttonIcon,
+  loadingText
 }) => {
+  const DefaultIcon = <Sparkles className="w-5 h-5 mr-2" />;
+  const displayIcon = buttonIcon !== undefined ? (buttonIcon ? <span className="mr-2">{buttonIcon}</span> : null) : DefaultIcon;
   return (
     <div className="mt-8">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
@@ -47,12 +55,12 @@ const PromptInput: React.FC<PromptInputProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Generating plan...
+                {loadingText || `${buttonText}...`}
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                Generate Plan
+                {displayIcon}
+                {buttonText}
               </>
             )}
           </button>

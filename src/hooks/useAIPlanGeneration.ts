@@ -21,7 +21,7 @@ export const useAIPlanGeneration = () => {
   ]);
 
   const generatePlanMutation = useMutation(
-    async ({ prompt, options }: { prompt: string; options: any }) => {
+    async ({ prompt, options }: { prompt: string; options: { complexity?: string; timeline?: string; visibility?: string; questionAnswers?: Array<{ question: string; answer: string }> } }) => {
       // Update steps during generation
       const updateStep = (stepIndex: number) => {
         setCurrentStep(stepIndex);
@@ -43,7 +43,8 @@ export const useAIPlanGeneration = () => {
       // Call the new backend endpoint that triggers headless Claude Code
       const response = await api.plans.generateWithAI(prompt, {
         visibility: options.visibility || 'private',
-        timeout: 300000 // 5 minutes
+        timeout: 300000, // 5 minutes
+        questionAnswers: options.questionAnswers
       });
 
       // Step 3: Creating phases and tasks

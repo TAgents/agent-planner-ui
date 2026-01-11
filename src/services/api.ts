@@ -593,12 +593,25 @@ export const planService = {
   },
 
   // AI Plan Generation - Uses Planner Agent via A2A protocol
-  generateWithAI: async (prompt: string, options?: { visibility?: string; timeout?: number }) => {
+  generateWithAI: async (prompt: string, options?: { visibility?: string; timeout?: number; questionAnswers?: Array<{ question: string; answer: string }> }) => {
     const PLANNER_AGENT_URL = process.env.REACT_APP_PLANNER_AGENT_URL || 'http://localhost:4001';
     const PLANNER_AGENT_ID = '99c02fd3-7c9e-4d31-8bb5-01b0d837d771'; // Get from /health endpoint
 
     // Generate A2A request ID
     const requestId = `ui-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Build enhanced prompt with Q&A context if available
+    let enhancedPrompt = prompt;
+    if (options?.questionAnswers && options.questionAnswers.length > 0) {
+      const clarifications = options.questionAnswers
+        .filter(qa => qa.answer.trim().length > 0)
+        .map(qa => `Q: ${qa.question}\nA: ${qa.answer}`)
+        .join('\n\n');
+
+      if (clarifications) {
+        enhancedPrompt = `${prompt}\n\n--- Additional Context ---\n${clarifications}`;
+      }
+    }
 
     // Build A2A message
     const a2aMessage = {
@@ -610,10 +623,12 @@ export const planService = {
       to: PLANNER_AGENT_ID,
       capability: 'create_plan',
       payload: {
-        prompt,
+        prompt: enhancedPrompt,
         visibility: options?.visibility || 'private'
       },
-      context: {}
+      context: {
+        hasUserClarifications: !!(options?.questionAnswers && options.questionAnswers.length > 0)
+      }
     };
 
     console.log('Sending A2A request to Planner Agent:', PLANNER_AGENT_URL);
@@ -1346,6 +1361,39 @@ export const tokenService = {
   },
 };
 
+// AI Service - for prompt analysis and AI-assisted features
+export interface SmartQuestion {
+  id: string;
+  category: 'scope' | 'constraints' | 'context';
+  question: string;
+  placeholder: string;
+}
+
+export const aiService = {
+  // Analyze a prompt and return clarifying questions
+  analyzePrompt: async (prompt: string): Promise<{ success: boolean; questions: SmartQuestion[]; usage?: { inputTokens: number; outputTokens: number } }> => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('aiService.analyzePrompt called with prompt length:', prompt.length);
+    }
+    try {
+      const result = await request<{ success: boolean; questions: SmartQuestion[]; usage?: { inputTokens: number; outputTokens: number } }>({
+        method: 'POST',
+        url: '/ai/analyze-prompt',
+        data: { prompt },
+      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('analyzePrompt result:', result);
+      }
+      return result;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in aiService.analyzePrompt:', error);
+      }
+      throw error;
+    }
+  },
+};
+
 const apiServices = {
   auth: authService,
   plans: planService,
@@ -1361,6 +1409,7 @@ const apiServices = {
   collaboration: collaborationService,
   tokens: tokenService,
   debug: debugService,
+  ai: aiService,
 };
 
 export default apiServices;

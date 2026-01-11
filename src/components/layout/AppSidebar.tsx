@@ -8,6 +8,7 @@ import {
   LogOut,
   ChevronRight,
   LogIn,
+  FolderKanban,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
@@ -170,6 +171,21 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ className = '', variant = 'full
       {/* Bottom Navigation */}
       <div className="border-t border-gray-200 dark:border-gray-800">
         <nav className="p-2 space-y-1">
+          {/* My Plans - only for authenticated users */}
+          {isAuthenticated && (
+            <Link
+              to="/app/plans"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                isActive('/app/plans')
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <FolderKanban className="w-5 h-5" />
+              <span className="text-sm">My Plans</span>
+            </Link>
+          )}
+
           <Link
             to="/explore"
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ChevronRight, ChevronDown,
-  Layers, Clock
+  Layers, Clock, Sparkles
 } from 'lucide-react';
 import { useAIPlanGeneration } from '../../hooks/useAIPlanGeneration';
 import GenerationModal from '../../components/plans/GenerationModal';
@@ -10,6 +10,13 @@ import PromptInput from '../../components/plans/PromptInput';
 import SuggestedPrompts from '../../components/plans/SuggestedPrompts';
 import PlanCreationTabs, { PlanCreationTab } from '../../components/plans/PlanCreationTabs';
 import MCPSetupGuide from '../../components/plans/MCPSetupGuide';
+import SmartQuestions from '../../components/plans/SmartQuestions';
+import { aiService, SmartQuestion } from '../../services/api';
+
+interface QuestionAnswer {
+  questionId: string;
+  answer: string;
+}
 
 const AICreatePlan: React.FC = () => {
   const navigate = useNavigate();
@@ -18,21 +25,79 @@ const AICreatePlan: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [complexity, setComplexity] = useState<'simple' | 'detailed' | 'comprehensive'>('detailed');
   const [timeline, setTimeline] = useState('auto');
-  
+
+  // Smart questions state
+  const [questions, setQuestions] = useState<SmartQuestion[]>([]);
+  const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+
   const { generatePlan, isGenerating, currentStep, generationSteps, error } = useAIPlanGeneration();
+
+  const handleAnalyze = async () => {
+    if (!prompt.trim()) return;
+
+    setIsAnalyzing(true);
+    setAnalyzeError(null);
+
+    try {
+      const result = await aiService.analyzePrompt(prompt);
+      if (result.success && result.questions) {
+        setQuestions(result.questions);
+        setAnswers(result.questions.map(q => ({ questionId: q.id, answer: '' })));
+        setHasAnalyzed(true);
+      }
+    } catch (err) {
+      console.error('Failed to analyze prompt:', err);
+      setAnalyzeError('Failed to analyze your prompt. You can still generate a plan.');
+      // Allow user to proceed anyway
+      setHasAnalyzed(true);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAnswerChange = (questionId: string, answer: string) => {
+    setAnswers(prev =>
+      prev.map(a => (a.questionId === questionId ? { ...a, answer } : a))
+    );
+  };
+
+  const handlePromptChange = (newPrompt: string) => {
+    setPrompt(newPrompt);
+    // Reset analysis when prompt changes significantly
+    if (hasAnalyzed && newPrompt !== prompt) {
+      setHasAnalyzed(false);
+      setQuestions([]);
+      setAnswers([]);
+    }
+  };
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    
+
+    // Build question answers for context
+    const questionAnswers = questions.length > 0
+      ? questions.map(q => ({
+          question: q.question,
+          answer: answers.find(a => a.questionId === q.id)?.answer || ''
+        })).filter(qa => qa.answer.trim().length > 0)
+      : [];
+
     generatePlan({
       prompt,
-      options: { complexity, timeline }
+      options: { complexity, timeline, questionAnswers }
     });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && prompt.trim()) {
-      handleGenerate();
+      if (hasAnalyzed) {
+        handleGenerate();
+      } else {
+        handleAnalyze();
+      }
     }
   };
 
@@ -73,11 +138,31 @@ const AICreatePlan: React.FC = () => {
 
                 <PromptInput
                   prompt={prompt}
-                  setPrompt={setPrompt}
-                  onGenerate={handleGenerate}
+                  setPrompt={handlePromptChange}
+                  onGenerate={hasAnalyzed ? handleGenerate : handleAnalyze}
                   onKeyDown={handleKeyDown}
-                  isGenerating={isGenerating}
+                  isGenerating={isGenerating || isAnalyzing}
+                  buttonText={hasAnalyzed ? 'Generate Plan' : 'Analyze'}
+                  buttonIcon={hasAnalyzed ? undefined : <Sparkles className="w-4 h-4" />}
+                  loadingText={isAnalyzing ? 'Analyzing...' : undefined}
                 />
+
+                {analyzeError && (
+                  <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-amber-800 dark:text-amber-200 text-sm">
+                      {analyzeError}
+                    </p>
+                  </div>
+                )}
+
+                {(isAnalyzing || (hasAnalyzed && questions.length > 0)) && (
+                  <SmartQuestions
+                    questions={questions}
+                    answers={answers}
+                    onAnswerChange={handleAnswerChange}
+                    isLoading={isAnalyzing}
+                  />
+                )}
 
                 <div className="mt-6">
                   <button
@@ -137,7 +222,9 @@ const AICreatePlan: React.FC = () => {
                   )}
                 </div>
 
-                <SuggestedPrompts onSelectPrompt={setPrompt} />
+                {!hasAnalyzed && (
+                  <SuggestedPrompts onSelectPrompt={handlePromptChange} />
+                )}
               </>
             ) : (
               <MCPSetupGuide />
