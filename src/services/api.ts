@@ -96,18 +96,30 @@ const debugApiCall = (method: string, url: string, data?: any) => {
   }
 };
 
+// Custom error class to preserve error code from API
+class ApiError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+    this.name = 'ApiError';
+  }
+}
+
 // Generic request function
 const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
   try {
     // Debug API call
     debugApiCall(config.method?.toUpperCase() || 'GET', config.url || '', config.data);
-    
+
     const response: AxiosResponse<T> = await api(config);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      throw new Error(message);
+      const code = error.response?.data?.code;
+      throw new ApiError(message, code);
     }
     throw error;
   }

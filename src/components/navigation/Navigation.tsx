@@ -48,10 +48,6 @@ export const Navigation: React.FC = () => {
                   My Plans
                 </Link>
 
-                <Link to="/app/agents" className={navLinkClass('/app/agents')}>
-                  Agents
-                </Link>
-
                 <Link to="/app/profile" className={navLinkClass('/app/profile')}>
                   Profile
                 </Link>

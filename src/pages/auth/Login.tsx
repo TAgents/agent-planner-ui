@@ -15,7 +15,10 @@ const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -32,7 +35,9 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+    setErrorCode(null);
+    setResendSuccess(false);
+
     // Basic validation
     if (!email || !password) {
       setError('Please enter both email and password');
@@ -70,11 +75,29 @@ const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('Login error:', err.message);
+        console.error('Login error:', err.message, err.code);
       }
+      // Check if the error response contains a code
+      const code = err.code || err.response?.data?.code;
+      setErrorCode(code || null);
       setError(err.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendingEmail(true);
+    setResendSuccess(false);
+    try {
+      await api.auth.resendVerification(email);
+      setResendSuccess(true);
+      setError(null);
+      setErrorCode(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email. Please try again.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -129,10 +152,35 @@ const Login: React.FC = () => {
 
         {/* Main Login Card */}
         <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl">
+          {/* Success message for resent verification email */}
+          {resendSuccess && (
+            <div className="mb-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg" role="alert">
+              <p className="text-sm font-medium">Verification email sent!</p>
+              <p className="text-sm mt-1">Please check your inbox and click the verification link to activate your account.</p>
+            </div>
+          )}
+
+          {/* Error message with special handling for unconfirmed email */}
           {error && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-start" role="alert">
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <span className="text-sm">{error}</span>
+            <div className="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg" role="alert">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="text-sm">{error}</span>
+                  {errorCode === 'EMAIL_NOT_CONFIRMED' && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendingEmail}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resendingEmail ? 'Sending...' : 'Resend verification email'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           
