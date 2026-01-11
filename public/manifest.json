@@ -1,6 +1,6 @@
 {
   "short_name": "Agent Planner",
-  "name": "Agent Planner - Modern Planning System UI",
+  "name": "Agent Planner - AI-Powered Planning for Your Ideas",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,18 +8,24 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "favicon-48x48.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "48x48"
     },
     {
-      "src": "logo512.png",
+      "src": "apple-touch-icon.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "180x180"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#0ea5e9",
+  "theme_color": "#3b82f6",
   "background_color": "#ffffff"
 }

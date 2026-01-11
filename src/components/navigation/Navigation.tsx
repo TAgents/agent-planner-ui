@@ -28,7 +28,11 @@ export const Navigation: React.FC = () => {
             to="/"
             className="flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
           >
-            <span className="text-xl sm:text-2xl">📋</span>
+            <img
+              src="/logo.png"
+              alt="Agent Planner"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
+            />
             <span className="hidden xs:inline sm:inline">Agent Planner</span>
             <span className="text-xs font-semibold px-2 py-0.5 bg-blue-500 text-white rounded uppercase ml-2">
               Alpha

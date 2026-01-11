@@ -11,10 +11,12 @@ const Footer: React.FC = () => {
         <div className="grid md:grid-cols-4 gap-8 md:gap-12 mb-8 md:mb-12">
           {/* Brand */}
           <div className="col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">AP</span>
-              </div>
+            <div className="flex items-center space-x-3 mb-4">
+              <img
+                src="/logo.png"
+                alt="Agent Planner IO"
+                className="w-10 h-10 rounded-lg object-contain"
+              />
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold text-white">Agent Planner IO</span>
                 <span className="text-xs font-semibold px-2 py-0.5 bg-amber-500 text-white rounded uppercase">
