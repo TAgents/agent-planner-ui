@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { planService } from '../services/api';
 import { formatDate } from '../utils/planUtils';
-import Navigation from '../components/navigation/Navigation';
 import { useAuth } from '../hooks/useAuth';
 
 interface PublicPlanNode {
@@ -346,9 +345,6 @@ const PublicPlanView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Top Navigation */}
-      <Navigation />
-
       {/* Secondary Header with Plan Actions */}
       <header className="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

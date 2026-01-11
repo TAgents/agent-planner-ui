@@ -1,8 +1,9 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { SidebarState, NodeDetailsState } from '../types';
+import { SidebarState, NodeDetailsState, AppSidebarState } from '../types';
 
 interface UIState {
   sidebar: SidebarState;
+  appSidebar: AppSidebarState;
   nodeDetails: NodeDetailsState;
   darkMode: boolean;
 }
@@ -11,6 +12,8 @@ type UIAction =
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_SIDEBAR_OPEN'; payload: boolean }
   | { type: 'SET_SIDEBAR_TAB'; payload: SidebarState['activeTab'] }
+  | { type: 'TOGGLE_APP_SIDEBAR' }
+  | { type: 'SET_APP_SIDEBAR_COLLAPSED'; payload: boolean }
   | { type: 'TOGGLE_NODE_DETAILS' }
   | { type: 'OPEN_NODE_DETAILS'; payload: string }
   | { type: 'CLOSE_NODE_DETAILS' }
@@ -22,6 +25,8 @@ interface UIContextProps {
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   setSidebarTab: (tab: SidebarState['activeTab']) => void;
+  toggleAppSidebar: () => void;
+  setAppSidebarCollapsed: (collapsed: boolean) => void;
   toggleNodeDetails: () => void;
   openNodeDetails: (nodeId: string) => void;
   closeNodeDetails: () => void;
@@ -33,6 +38,9 @@ const defaultState: UIState = {
   sidebar: {
     isOpen: true,
     activeTab: 'overview',
+  },
+  appSidebar: {
+    isCollapsed: false,
   },
   nodeDetails: {
     isOpen: false,
@@ -67,6 +75,22 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         sidebar: {
           ...state.sidebar,
           activeTab: action.payload,
+        },
+      };
+    case 'TOGGLE_APP_SIDEBAR':
+      return {
+        ...state,
+        appSidebar: {
+          ...state.appSidebar,
+          isCollapsed: !state.appSidebar.isCollapsed,
+        },
+      };
+    case 'SET_APP_SIDEBAR_COLLAPSED':
+      return {
+        ...state,
+        appSidebar: {
+          ...state.appSidebar,
+          isCollapsed: action.payload,
         },
       };
     case 'TOGGLE_NODE_DETAILS':
@@ -139,9 +163,13 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   // Context actions
   const toggleSidebar = () => dispatch({ type: 'TOGGLE_SIDEBAR' });
   const setSidebarOpen = (open: boolean) => dispatch({ type: 'SET_SIDEBAR_OPEN', payload: open });
-  const setSidebarTab = (tab: SidebarState['activeTab']) => 
+  const setSidebarTab = (tab: SidebarState['activeTab']) =>
     dispatch({ type: 'SET_SIDEBAR_TAB', payload: tab });
-  
+
+  const toggleAppSidebar = () => dispatch({ type: 'TOGGLE_APP_SIDEBAR' });
+  const setAppSidebarCollapsed = (collapsed: boolean) =>
+    dispatch({ type: 'SET_APP_SIDEBAR_COLLAPSED', payload: collapsed });
+
   const toggleNodeDetails = () => dispatch({ type: 'TOGGLE_NODE_DETAILS' });
   const openNodeDetails = (nodeId: string) => 
     dispatch({ type: 'OPEN_NODE_DETAILS', payload: nodeId });
@@ -168,6 +196,8 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
         toggleSidebar,
         setSidebarOpen,
         setSidebarTab,
+        toggleAppSidebar,
+        setAppSidebarCollapsed,
         toggleNodeDetails,
         openNodeDetails,
         closeNodeDetails,

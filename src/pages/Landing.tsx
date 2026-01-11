@@ -5,7 +5,6 @@ import SocialProofSection from '../components/landing/SocialProofSection';
 import FeaturesSection from '../components/landing/FeaturesSection';
 import GettingStartedSection from '../components/landing/GettingStartedSection';
 import Footer from '../components/landing/Footer';
-import Navigation from '../components/navigation/Navigation';
 
 const Landing: React.FC = () => {
   // Enable smooth scrolling for the entire page
@@ -42,9 +41,6 @@ const Landing: React.FC = () => {
 
         <link rel="canonical" href="https://agentplanner.io/" />
       </Helmet>
-
-      {/* Top Navigation Bar */}
-      <Navigation />
 
       <div className="min-h-screen bg-white overflow-x-hidden">
         <HeroSection />

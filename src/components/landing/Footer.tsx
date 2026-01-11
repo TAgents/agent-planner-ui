@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiGithub, FiMail } from 'react-icons/fi';
+import { Github, Mail } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-t border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid md:grid-cols-4 gap-8 md:gap-12 mb-8 md:mb-12">
           {/* Brand */}
@@ -18,13 +18,13 @@ const Footer: React.FC = () => {
                 className="w-10 h-10 rounded-lg object-contain"
               />
               <div className="flex items-center gap-2">
-                <span className="text-xl font-bold text-white">Agent Planner IO</span>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Agent Planner IO</span>
                 <span className="text-xs font-semibold px-2 py-0.5 bg-amber-500 text-white rounded uppercase">
                   Alpha
                 </span>
               </div>
             </div>
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               Collaborative planning for humans and AI agents.
             </p>
             <div className="flex space-x-4">
@@ -32,16 +32,16 @@ const Footer: React.FC = () => {
                 href="https://github.com/tagents"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 aria-label="GitHub"
               >
-                {React.createElement(FiGithub as any, { className: "w-5 h-5" })}
+                <Github className="w-5 h-5" />
               </a>
               <a
                 href="https://x.com/agentplanner_ai"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 aria-label="X (Twitter)"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -50,25 +50,25 @@ const Footer: React.FC = () => {
               </a>
               <a
                 href="mailto:contact@talkingagents.com"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 aria-label="Email"
               >
-                {React.createElement(FiMail as any, { className: "w-5 h-5" })}
+                <Mail className="w-5 h-5" />
               </a>
             </div>
           </div>
 
           {/* Product */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Product</h3>
+            <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Product</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#features" className="hover:text-white transition-colors">
+                <a href="#features" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Features
                 </a>
               </li>
               <li>
-                <a href="#setup" className="hover:text-white transition-colors">
+                <a href="#setup" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Setup Guide
                 </a>
               </li>
@@ -77,7 +77,7 @@ const Footer: React.FC = () => {
                   href="https://github.com/tagents/agent-planner-mcp"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   MCP Server
                 </a>
@@ -87,13 +87,13 @@ const Footer: React.FC = () => {
                   href="https://www.npmjs.com/package/agent-planner-mcp"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   npm Package
                 </a>
               </li>
               <li>
-                <Link to="/app/plans" className="hover:text-white transition-colors">
+                <Link to="/app/plans" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Web App
                 </Link>
               </li>
@@ -102,14 +102,14 @@ const Footer: React.FC = () => {
 
           {/* Resources */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Resources</h3>
+            <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Resources</h3>
             <ul className="space-y-2">
               <li>
                 <a
                   href="https://github.com/tagents/agent-planner-mcp#readme"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   Guides & Tutorials
                 </a>
@@ -119,14 +119,14 @@ const Footer: React.FC = () => {
 
           {/* Company */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Company</h3>
+            <h3 className="text-gray-900 dark:text-white font-semibold mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
                 <a
                   href="https://talkingagents.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   About Us
                 </a>
@@ -134,18 +134,18 @@ const Footer: React.FC = () => {
               <li>
                 <a
                   href="mailto:contact@talkingagents.com"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   Contact
                 </a>
               </li>
               <li>
-                <Link to="/privacy" className="hover:text-white transition-colors">
+                <Link to="/privacy" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-white transition-colors">
+                <Link to="/terms" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Terms of Service
                 </Link>
               </li>
@@ -154,18 +154,18 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-400 text-sm">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             © {currentYear} Agent Planner IO. All rights reserved.
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-sm">
-            <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors duration-200">
+            <Link to="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
               Privacy
             </Link>
-            <Link to="/terms" className="text-gray-400 hover:text-white transition-colors duration-200">
+            <Link to="/terms" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
               Terms
             </Link>
-            <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors duration-200">
+            <Link to="/cookies" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
               Cookies
             </Link>
           </div>

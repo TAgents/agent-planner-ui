@@ -6,6 +6,7 @@ import { WebSocketProvider } from './contexts/WebSocketContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
+import PublicLayout from './components/layout/PublicLayout';
 
 // Pages
 import Landing from './pages/Landing';
@@ -46,14 +47,12 @@ const App: React.FC = () => {
         <UIProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public Landing Page */}
-              <Route path="/" element={<Landing />} />
-
-              {/* Explore Public Plans */}
-              <Route path="/explore" element={<ExplorePlansPage />} />
-
-              {/* Public Plan Viewing */}
-              <Route path="/public/plans/:planId" element={<PublicPlanView />} />
+              {/* Public Pages with sidebar for logged-in users, top nav for logged-out */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<Landing />} />
+                <Route path="/explore" element={<ExplorePlansPage />} />
+                <Route path="/public/plans/:planId" element={<PublicPlanView />} />
+              </Route>
 
               {/* Legal Pages */}
               <Route path="/terms" element={<TermsOfService />} />

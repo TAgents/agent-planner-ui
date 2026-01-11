@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import { usePublicPlans } from '../hooks/usePublicPlans';
 import { PublicPlanCard } from '../components/explore/PublicPlanCard';
-import Navigation from '../components/navigation/Navigation';
 
 export const ExplorePlansPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -271,9 +270,6 @@ export const ExplorePlansPage = () => {
       </Helmet>
 
       <div className="min-h-screen bg-white">
-        {/* Top Navigation Bar */}
-        <Navigation />
-
         {/* Header Section */}
         <section className="py-12 md:py-16 bg-gradient-to-b from-blue-50 to-white border-b border-gray-200">
           <div className="container mx-auto px-4 max-w-7xl">

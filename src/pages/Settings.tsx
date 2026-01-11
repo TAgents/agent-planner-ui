@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTokens } from '../hooks/useTokens';
 import { TokenPermission } from '../types';
-import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles, RefreshCw } from 'lucide-react';
+import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const { 
@@ -36,8 +36,6 @@ const Settings: React.FC = () => {
   const [tokenCopied, setTokenCopied] = useState(false);
   const [mcpConfigCopied, setMcpConfigCopied] = useState(false);
   const [activeAITab, setActiveAITab] = useState<'claude-desktop' | 'claude-code' | 'chatgpt' | 'code-editors' | 'gemini-cli'>('claude-desktop');
-  const [refreshingAgents, setRefreshingAgents] = useState(false);
-  const [agentStatus, setAgentStatus] = useState<{planner: boolean, executor: boolean, reviewer: boolean} | null>(null);
 
   // Available permissions
   const availablePermissions: TokenPermission[] = ['read', 'write', 'admin'];
@@ -99,49 +97,6 @@ const Settings: React.FC = () => {
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
-  };
-
-  // Refresh Cloud Run agents
-  const handleRefreshAgents = async () => {
-    setRefreshingAgents(true);
-
-    const AGENTS = [
-      { name: 'Planner', url: 'https://planner-agent-824163368271.europe-north1.run.app' },
-      { name: 'Executor', url: 'https://executor-agent-824163368271.europe-north1.run.app' },
-      { name: 'Reviewer', url: 'https://reviewer-agent-824163368271.europe-north1.run.app' }
-    ];
-
-    try {
-      const results = await Promise.all(
-        AGENTS.map(async (agent) => {
-          try {
-            const response = await fetch(`${agent.url}/health`, {
-              method: 'GET',
-              signal: AbortSignal.timeout(30000), // 30 second timeout
-            });
-            return { agent: agent.name, success: response.ok };
-          } catch (error) {
-            console.error(`Failed to wake up ${agent.name}:`, error);
-            return { agent: agent.name, success: false };
-          }
-        })
-      );
-
-      const status = {
-        planner: results.find(r => r.agent === 'Planner')?.success || false,
-        executor: results.find(r => r.agent === 'Executor')?.success || false,
-        reviewer: results.find(r => r.agent === 'Reviewer')?.success || false,
-      };
-
-      setAgentStatus(status);
-
-      const successCount = results.filter(r => r.success).length;
-      showNotification(`Refreshed ${successCount}/${AGENTS.length} agents successfully`, 'success');
-    } catch (error: any) {
-      showNotification(`Failed to refresh agents: ${error.message}`, 'error');
-    } finally {
-      setRefreshingAgents(false);
-    }
   };
 
   // Copy token to clipboard
@@ -220,63 +175,36 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Manage your API tokens and AI integrations
+          </p>
+        </div>
 
         {/* AI Integration Section */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-800 mb-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-              <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               AI Integration Setup
             </h2>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Connect your planning system with AI assistants using the Model Context Protocol (MCP)
             </p>
           </div>
 
-          {/* Refresh Agents Button */}
-          <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Cloud Run Agents</h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Wake up agents if they've been scaled down by Cloud Run
-                </p>
-              </div>
-              <button
-                onClick={handleRefreshAgents}
-                disabled={refreshingAgents}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshingAgents ? 'animate-spin' : ''}`} />
-                {refreshingAgents ? 'Refreshing...' : 'Refresh Agents'}
-              </button>
-            </div>
-            {agentStatus && (
-              <div className="mt-3 flex gap-2 text-xs">
-                <span className={`px-2 py-1 rounded ${agentStatus.planner ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-                  Planner: {agentStatus.planner ? '✓' : '✗'}
-                </span>
-                <span className={`px-2 py-1 rounded ${agentStatus.executor ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-                  Executor: {agentStatus.executor ? '✓' : '✗'}
-                </span>
-                <span className={`px-2 py-1 rounded ${agentStatus.reviewer ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-                  Reviewer: {agentStatus.reviewer ? '✓' : '✗'}
-                </span>
-              </div>
-            )}
-          </div>
-
           {/* AI Client Tabs */}
-          <div className="flex flex-wrap gap-2 mb-6 border-b border-blue-200 dark:border-blue-700 pb-2">
+          <div className="flex overflow-x-auto">
             <button
               onClick={() => setActiveAITab('claude-desktop')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeAITab === 'claude-desktop'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
               }`}
             >
               <Terminal className="w-4 h-4" />
@@ -284,10 +212,10 @@ const Settings: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveAITab('claude-code')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeAITab === 'claude-code'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
               }`}
             >
               <Code className="w-4 h-4" />
@@ -295,10 +223,10 @@ const Settings: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveAITab('chatgpt')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeAITab === 'chatgpt'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
               }`}
             >
               <Bot className="w-4 h-4" />
@@ -306,21 +234,21 @@ const Settings: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveAITab('code-editors')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeAITab === 'code-editors'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
               }`}
             >
               <FileCode className="w-4 h-4" />
-              AI Code Editors
+              Code Editors
             </button>
             <button
               onClick={() => setActiveAITab('gemini-cli')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeAITab === 'gemini-cli'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -330,21 +258,21 @@ const Settings: React.FC = () => {
 
           {/* Claude Desktop Tab */}
           {activeAITab === 'claude-desktop' && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-blue-200 dark:border-blue-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            <div className="p-6">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
                 Claude Desktop Integration
               </h3>
 
               <div className="space-y-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                    <Terminal className="w-4 h-4" />
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-gray-500" />
                     Quick Setup (3 Steps)
                   </h4>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-300">
                     <li>Create an API token below</li>
                     <li>Click "Copy Config" and paste into:
-                      <code className="block mt-1 ml-5 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs">
+                      <code className="block mt-1 ml-5 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs border border-gray-200 dark:border-gray-600">
                         ~/Library/Application Support/Claude/claude_desktop_config.json
                       </code>
                     </li>
@@ -800,27 +728,26 @@ const Settings: React.FC = () => {
         </div>
 
         {/* API Tokens Section */}
-        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
-          <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-            <div className="flex items-center">
-              <Key className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-2" />
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white">API Tokens</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Key className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                API Tokens
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Tokens for external applications to access the planning system
+              </p>
             </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => fetchTokens()}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Refresh List
-              </button>
-            </div>
+            <button
+              onClick={() => fetchTokens()}
+              className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              Refresh
+            </button>
           </div>
-          
-          <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:px-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              API tokens allow external applications like Claude Desktop to access the planning system on your behalf.
-              These tokens don't expire unless revoked, making them perfect for long-running applications.
-            </p>
+
+          <div className="p-6">
 
             {error && (
               <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-md flex items-center">

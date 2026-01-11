@@ -41,33 +41,36 @@ export const Navigation: React.FC = () => {
 
           {/* Navigation Links and Auth */}
           <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-            {/* Main Navigation Links */}
-            <Link to="/explore" className={navLinkClass('/explore')}>
-              Explore
-            </Link>
-
             {isAuthenticated ? (
               <>
-                <Link to="/app/plans" className={navLinkClass('/app/plans')}>
-                  My Plans
+                {/* Main Navigation Links - New Plan, My Plans, Settings, Explore */}
+                <Link to="/app/plans/ai-create" className={navLinkClass('/app/plans/ai-create')}>
+                  New Plan
                 </Link>
 
-                <Link to="/app/profile" className={navLinkClass('/app/profile')}>
-                  Profile
+                <Link to="/app/plans" className={navLinkClass('/app/plans')}>
+                  My Plans
                 </Link>
 
                 <Link to="/app/settings" className={navLinkClass('/app/settings')}>
                   Settings
                 </Link>
 
-                {/* User Info and Sign Out */}
+                <Link to="/explore" className={navLinkClass('/explore')}>
+                  Explore
+                </Link>
+
+                {/* User Info (links to profile) and Sign Out */}
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                  <Link
+                    to="/app/profile"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                  >
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-xs sm:text-sm font-medium text-gray-900 max-w-[80px] sm:max-w-none truncate">
                       {userName || userEmail || 'User'}
                     </span>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => signOut()}
                     className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900 transition-colors"
@@ -78,6 +81,9 @@ export const Navigation: React.FC = () => {
               </>
             ) : (
               <div className="flex items-center gap-2 sm:gap-3">
+                <Link to="/explore" className={navLinkClass('/explore')}>
+                  Explore
+                </Link>
                 <Link
                   to="/login"
                   className="text-xs sm:text-sm text-gray-700 hover:text-gray-900 font-medium transition-colors"

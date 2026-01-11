@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Maximize,
   Minimize,
-  Sidebar as SidebarIcon,
   HelpCircle,
   X,
 } from 'lucide-react';
@@ -16,6 +15,7 @@ import OnboardingTour from '../components/visualization/OnboardingTour';
 import ShareButton from '../components/sharing/ShareButton';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
 import VisibilityToggle from '../components/plans/VisibilityToggle';
+import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -90,7 +90,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
     isLoading: isNodesLoading,
     createNode,
     updateNodeStatus,
-    deleteNode,
     moveNode,
     refetch: refetchNodes,
   } = useNodes(planId || '');
@@ -430,11 +429,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
             </h1>
           </div>
 
-          {/* Center section */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Tree View</span>
-          </div>
-
           {/* Right section */}
           <div className="flex items-center gap-2">
             {/* Visibility Toggle - only shown to owner */}
@@ -443,6 +437,19 @@ const PlanVisualizationEnhanced: React.FC = () => {
               currentVisibility={plan.visibility || 'private'}
               isOwner={isOwner}
               onVisibilityChange={handleVisibilityChange}
+            />
+
+            {/* GitHub Repository Badge */}
+            <GitHubRepoBadge
+              planId={planId || ''}
+              owner={plan.github_repo_owner}
+              name={plan.github_repo_name}
+              isOwner={isOwner}
+              onLinked={() => {
+                const userId = getUserId();
+                queryClient.invalidateQueries(['plan', userId, planId]);
+              }}
+              variant="compact"
             />
 
             <div data-tour="share-button">
@@ -466,24 +473,12 @@ const PlanVisualizationEnhanced: React.FC = () => {
               {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
             </button>
             
-            <button 
+            <button
               onClick={() => setShowHelp(true)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Help (?)"
             >
               <HelpCircle className="w-5 h-5" />
-            </button>
-            
-            <button 
-              onClick={toggleSidebar}
-              className={`p-2 rounded-lg transition-colors ${
-                uiState.sidebar.isOpen 
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' 
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-              title="Toggle Sidebar (S)"
-            >
-              <SidebarIcon className="w-5 h-5" />
             </button>
           </div>
         </div>

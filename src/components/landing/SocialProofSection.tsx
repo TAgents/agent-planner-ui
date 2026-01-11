@@ -31,11 +31,8 @@ export const SocialProofSection: React.FC = () => {
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Planning in public with trusted teams
-          </h2>
           <p className="text-base text-gray-600">
-            Join developers and project managers using Agent Planner
+            Connect to an LLM to do AI driven planning and Agent driven implementation.
           </p>
         </div>
 
@@ -53,12 +50,6 @@ export const SocialProofSection: React.FC = () => {
           ))}
         </div>
 
-        {/* Featured Projects Note */}
-        <div className="text-center">
-          <p className="text-sm text-gray-500">
-            Used by open source teams and growing fast
-          </p>
-        </div>
       </div>
     </section>
   );

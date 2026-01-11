@@ -19,10 +19,17 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
   const [visibility, setVisibility] = useState<PlanVisibility>(currentVisibility);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const handleVisibilityToggle = async () => {
+  const handleVisibilityClick = () => {
     if (!isOwner || isUpdating) return;
+    setShowTooltip(false);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmVisibilityChange = async () => {
+    setShowConfirmDialog(false);
 
     const newVisibility: PlanVisibility = visibility === 'public' ? 'private' : 'public';
     const previousVisibility = visibility;
@@ -89,7 +96,7 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
     <div className="relative">
       {/* Toggle Button */}
       <button
-        onClick={handleVisibilityToggle}
+        onClick={handleVisibilityClick}
         disabled={isUpdating}
         className={`
           flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200
@@ -171,6 +178,62 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
               </svg>
             )}
             <span className="text-sm font-medium whitespace-nowrap">{notification.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowConfirmDialog(false)}
+          />
+
+          {/* Dialog */}
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-6 max-w-md mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              {visibility === 'public' ? (
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full">
+                  <Lock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+              ) : (
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                  <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              )}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {visibility === 'public' ? 'Make Plan Private?' : 'Make Plan Public?'}
+              </h3>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              {visibility === 'public' ? (
+                'This plan will no longer be visible to others. Only you and your collaborators will be able to access it.'
+              ) : (
+                'This plan will be visible to anyone with the link. Others will be able to view and explore your plan.'
+              )}
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmVisibilityChange}
+                className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
+                  visibility === 'public'
+                    ? 'bg-gray-600 hover:bg-gray-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {visibility === 'public' ? 'Make Private' : 'Make Public'}
+              </button>
+            </div>
           </div>
         </div>
       )}

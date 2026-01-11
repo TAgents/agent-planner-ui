@@ -571,15 +571,6 @@ const PlansListSimplified: React.FC = () => {
               </p>
             </div>
 
-            {plans.length > 0 && (
-              <Link
-                to="/app/plans/ai-create"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all"
-              >
-                <Sparkles className="w-4 h-4" />
-                Create with AI
-              </Link>
-            )}
           </div>
 
           {/* Search and Filters */}

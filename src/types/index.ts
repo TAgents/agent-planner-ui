@@ -13,6 +13,9 @@ export interface Plan {
   updated_at: string;
   metadata?: Record<string, any>;
   progress?: number; // Calculated client-side
+  // GitHub integration fields
+  github_repo_owner?: string | null;
+  github_repo_name?: string | null;
 }
 
 // Node Types
@@ -178,6 +181,10 @@ export interface PaginatedResponse<T> {
 export interface SidebarState {
   isOpen: boolean;
   activeTab: 'overview' | 'activity' | 'search';
+}
+
+export interface AppSidebarState {
+  isCollapsed: boolean;
 }
 
 export interface NodeDetailsState {

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { nodeService } from '../services/api';
 import { PlanNode } from '../types';
 import { transformToFlowNodes, createFlowEdges } from '../utils/planUtils';
@@ -49,30 +49,34 @@ export const useNodes = (planId: string) => {
   );
 
   // Flatten the hierarchical tree structure
-  const flattenNodes = (nodesTree: any[]): PlanNode[] => {
+  const flattenNodes = useCallback((nodesTree: any[]): PlanNode[] => {
     if (!nodesTree || !Array.isArray(nodesTree)) return [];
-    
-    return nodesTree.reduce<PlanNode[]>((acc, node) => {
-      if (!node) return acc;
-      
-      // Extract the children and create a copy of the node without the children
-      const { children, ...nodeWithoutChildren } = node;
-      
-      // Add the current node to the flattened list
-      acc.push(nodeWithoutChildren as PlanNode);
-      
-      // Recursively add children
-      if (children && Array.isArray(children) && children.length > 0) {
-        acc.push(...flattenNodes(children));
-      }
-      
-      return acc;
-    }, []);
-  };
+
+    const flatten = (tree: any[]): PlanNode[] => {
+      return tree.reduce<PlanNode[]>((acc, node) => {
+        if (!node) return acc;
+
+        // Extract the children and create a copy of the node without the children
+        const { children, ...nodeWithoutChildren } = node;
+
+        // Add the current node to the flattened list
+        acc.push(nodeWithoutChildren as PlanNode);
+
+        // Recursively add children
+        if (children && Array.isArray(children) && children.length > 0) {
+          acc.push(...flatten(children));
+        }
+
+        return acc;
+      }, []);
+    };
+
+    return flatten(nodesTree);
+  }, []);
 
   // Memoize the nodes tree
   const nodesTree = useMemo(() => data?.data || [], [data?.data]);
-  
+
   // Memoize flattened nodes
   const nodes = useMemo(() => flattenNodes(nodesTree), [nodesTree, flattenNodes]);
   
