@@ -40,6 +40,7 @@ import { useNodeArtifacts } from '../../hooks/useNodeArtifacts';
 import { useCollaborators } from '../../hooks/useCollaborators';
 import { useNodeAssignments } from '../../hooks/useNodeAssignments';
 import { useNodeInstructions } from '../../hooks/useNodeInstructions';
+import { ReferencesList, filterReferences, filterFiles } from '../references';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -1021,7 +1022,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
   // Fetch logs and artifacts from API
   const { logs, isLoading: logsLoading, addLogEntry, refetch: refetchLogs } = useNodeLogs(node.plan_id || planId, node.id);
-  const { artifacts, isLoading: artifactsLoading, refetch: refetchArtifacts } = useNodeArtifacts(node.plan_id || planId, node.id);
+  const { artifacts, isLoading: artifactsLoading, refetch: refetchArtifacts, deleteArtifact } = useNodeArtifacts(node.plan_id || planId, node.id);
 
   // Refetch logs and artifacts when node changes or status updates
   React.useEffect(() => {
@@ -1093,7 +1094,10 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
       }
     }));
 
-    const artifactActivities: UnifiedActivity[] = artifacts.map(artifact => ({
+    // Filter out references from artifacts (they're shown separately)
+    const fileArtifacts = filterFiles(artifacts);
+    
+    const artifactActivities: UnifiedActivity[] = fileArtifacts.map(artifact => ({
       id: artifact.id,
       nodeId: node.id,
       type: 'file_upload' as const,
@@ -1347,6 +1351,20 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                   {node.context}
                 </p>
               </CollapsibleSection>
+            )}
+
+            {/* References - shown if any exist */}
+            {artifacts && filterReferences(artifacts).length > 0 && (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <ReferencesList 
+                  artifacts={artifacts}
+                  onDeleteReference={(id) => {
+                    // Delete through artifact API
+                    deleteArtifact(id);
+                  }}
+                  readOnly={false}
+                />
+              </div>
             )}
 
             {/* Quick Actions */}
