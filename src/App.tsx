@@ -23,6 +23,7 @@ import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
 import Settings from './pages/Settings';
+import OrganizationSettings from './pages/settings/OrganizationSettings';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
                   <Route path="plans/:planId" element={<PlanVisualization />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="settings" element={<Settings />} />
+                  <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="profile" element={<UserProfile />} />
                 </Route>
               </Route>
