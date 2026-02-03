@@ -5,7 +5,11 @@ import {
   Github,          // GitHub Integration
   Bot,             // MCP-Native
   Zap,             // Real-time Sync
-  Plug             // REST API
+  Plug,            // REST API
+  Bell,            // Notifications
+  Building2,       // Organizations
+  Target,          // Goals
+  BookOpen         // Knowledge
 } from 'lucide-react';
 import { FeatureCard } from './FeatureCard';
 
@@ -14,6 +18,7 @@ interface Feature {
   description: string;
   icon: any;
   color: string;
+  badge?: string;
 }
 
 const features: Feature[] = [
@@ -48,10 +53,30 @@ const features: Feature[] = [
     color: 'amber'
   },
   {
+    title: 'Webhook Notifications',
+    description: 'Get notified when tasks are blocked, assigned, or completed. Webhooks integrate with OpenClaw, Slack, Discord, or any automation platform.',
+    icon: Bell,
+    color: 'red'
+  },
+  {
     title: 'REST API',
     description: 'Complete REST API with authentication, RLS policies, and OpenAPI documentation. Query plans, nodes, logs, and artifacts programmatically from any platform.',
     icon: Plug,
     color: 'indigo'
+  },
+  {
+    title: 'Organizations',
+    description: 'Group users and agents into organizations with shared plans, permissions, and billing. Perfect for teams and enterprises.',
+    icon: Building2,
+    color: 'cyan',
+    badge: 'Coming Soon'
+  },
+  {
+    title: 'Goals & Knowledge',
+    description: 'Define high-level goals that drive plans. Build knowledge stores that agents can reference for context-aware planning and execution.',
+    icon: Target,
+    color: 'emerald',
+    badge: 'Coming Soon'
   }
 ];
 
@@ -78,6 +103,7 @@ export const FeaturesSection: React.FC = () => {
               description={feature.description}
               icon={feature.icon}
               color={feature.color}
+              badge={feature.badge}
             />
           ))}
         </div>

@@ -3,7 +3,7 @@ import { CodeBlock } from './CodeBlock';
 import { StepCard } from './StepCard';
 
 export const GettingStartedSection: React.FC = () => {
-  const [configTab, setConfigTab] = useState<'desktop' | 'code'>('desktop');
+  const [configTab, setConfigTab] = useState<'desktop' | 'code' | 'openclaw'>('desktop');
 
   const claudeDesktopConfig = `{
   "mcpServers": {
@@ -21,6 +21,16 @@ export const GettingStartedSection: React.FC = () => {
   const claudeCodeConfig = `claude mcp add planning-system npx agent-planner-mcp \\
   -e API_URL=https://api.agentplanner.io \\
   -e USER_API_TOKEN=your_api_token_here`;
+
+  const openclawConfig = `# Add to your openclaw.yaml or run:
+openclaw config set env.AGENTPLANNER_TOKEN "your_api_token_here"
+
+# Add the AgentPlanner skill to your workspace:
+# Copy the skill from: https://github.com/TAgents/agent-planner-mcp/tree/main/skills/agent-planner
+
+# Enable webhook notifications in AgentPlanner Settings:
+# URL: https://your-gateway.openclaw.ai/webhook/agentplanner
+# Events: task.blocked, task.assigned, task.completed`;
 
   const steps = [
     {
@@ -108,15 +118,27 @@ export const GettingStartedSection: React.FC = () => {
                     >
                       Claude Code
                     </button>
+                    <button
+                      onClick={() => setConfigTab('openclaw')}
+                      className={`px-4 py-2 font-medium transition-colors ${
+                        configTab === 'openclaw'
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      OpenClaw
+                    </button>
                   </div>
                   <CodeBlock
-                    code={configTab === 'desktop' ? claudeDesktopConfig : claudeCodeConfig}
+                    code={configTab === 'desktop' ? claudeDesktopConfig : configTab === 'code' ? claudeCodeConfig : openclawConfig}
                     language={configTab === 'desktop' ? 'json' : 'bash'}
                   />
                   <p className="mt-3 text-sm text-gray-600">
                     {configTab === 'desktop'
                       ? 'Add to ~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%/Claude/claude_desktop_config.json (Windows)'
-                      : 'Run this command in your project directory to configure Claude Code'
+                      : configTab === 'code'
+                      ? 'Run this command in your project directory to configure Claude Code'
+                      : 'Configure OpenClaw with your API token and enable webhook notifications for real-time task updates'
                     }
                   </p>
                 </>

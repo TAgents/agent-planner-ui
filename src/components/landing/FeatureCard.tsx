@@ -6,13 +6,15 @@ interface FeatureCardProps {
   description: string;
   icon: LucideIcon;
   color: string;
+  badge?: string;
 }
 
 export const FeatureCard: React.FC<FeatureCardProps> = ({
   title,
   description,
   icon: Icon,
-  color
+  color,
+  badge
 }) => {
   // Color mappings for Tailwind classes
   const colorClasses = {
@@ -51,6 +53,24 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       bg: 'bg-indigo-100',
       text: 'text-indigo-600',
       hover: 'group-hover:text-indigo-600'
+    },
+    red: {
+      border: 'border-red-300',
+      bg: 'bg-red-100',
+      text: 'text-red-600',
+      hover: 'group-hover:text-red-600'
+    },
+    cyan: {
+      border: 'border-cyan-300',
+      bg: 'bg-cyan-100',
+      text: 'text-cyan-600',
+      hover: 'group-hover:text-cyan-600'
+    },
+    emerald: {
+      border: 'border-emerald-300',
+      bg: 'bg-emerald-100',
+      text: 'text-emerald-600',
+      hover: 'group-hover:text-emerald-600'
     }
   };
 
@@ -58,6 +78,13 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 
   return (
     <div className="group relative p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+      {/* Badge */}
+      {badge && (
+        <span className="absolute top-4 right-4 px-2 py-1 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+          {badge}
+        </span>
+      )}
+
       {/* Icon with colored background */}
       <div className={`inline-flex items-center justify-center w-12 h-12 mb-4 rounded-lg ${colors.bg} ${colors.text} group-hover:scale-110 transition-transform duration-300`}>
         <Icon className="w-6 h-6" />
