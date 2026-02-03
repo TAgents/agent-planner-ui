@@ -1485,3 +1485,82 @@ export const organizationService = {
     });
   },
 };
+
+// Goals service
+export const goalsService = {
+  list: async (filters?: { organization_id?: string; status?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.organization_id) params.append('organization_id', filters.organization_id);
+    if (filters?.status) params.append('status', filters.status);
+    const response = await request<any>({
+      method: 'GET',
+      url: `/goals?${params.toString()}`,
+    });
+    return response.goals || response;
+  },
+
+  get: async (goalId: string) => {
+    return request<any>({
+      method: 'GET',
+      url: `/goals/${goalId}`,
+    });
+  },
+
+  create: async (data: {
+    organization_id: string;
+    title: string;
+    description?: string;
+    success_metrics?: Array<{ metric: string; target: number; current: number; unit: string }>;
+    time_horizon?: string;
+    github_repo_url?: string;
+  }) => {
+    return request<any>({
+      method: 'POST',
+      url: '/goals',
+      data,
+    });
+  },
+
+  update: async (goalId: string, data: {
+    title?: string;
+    description?: string;
+    status?: string;
+    success_metrics?: Array<{ metric: string; target: number; current: number; unit: string }>;
+    time_horizon?: string;
+  }) => {
+    return request<any>({
+      method: 'PUT',
+      url: `/goals/${goalId}`,
+      data,
+    });
+  },
+
+  updateMetrics: async (goalId: string, metrics: Array<{ metric: string; target: number; current: number; unit: string }>) => {
+    return request<any>({
+      method: 'PUT',
+      url: `/goals/${goalId}/metrics`,
+      data: { metrics },
+    });
+  },
+
+  delete: async (goalId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/goals/${goalId}`,
+    });
+  },
+
+  linkPlan: async (goalId: string, planId: string) => {
+    return request<any>({
+      method: 'POST',
+      url: `/goals/${goalId}/plans/${planId}`,
+    });
+  },
+
+  unlinkPlan: async (goalId: string, planId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/goals/${goalId}/plans/${planId}`,
+    });
+  },
+};

@@ -24,6 +24,7 @@ import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
 import Settings from './pages/Settings';
 import OrganizationSettings from './pages/settings/OrganizationSettings';
+import Goals from './pages/Goals';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
                   <Route path="plans/ai-create" element={<AICreatePlan />} />
                   <Route path="plans/:planId" element={<PlanVisualization />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
+                  <Route path="goals" element={<Goals />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="profile" element={<UserProfile />} />
