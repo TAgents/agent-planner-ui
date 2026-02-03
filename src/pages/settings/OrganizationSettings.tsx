@@ -20,7 +20,7 @@ import {
 const OrganizationSettings: React.FC = () => {
   const { organizations, loading: orgsLoading, error: orgsError, createOrganization, deleteOrganization } = useOrganizations();
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const { organization, members, loading: orgLoading, addMember, removeMember, updateMemberRole } = useOrganization(selectedOrgId);
+  const { organization, members, loading: orgLoading, error, addMember, removeMember, updateMemberRole } = useOrganization(selectedOrgId);
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -214,6 +214,17 @@ const OrganizationSettings: React.FC = () => {
             ) : orgLoading ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+              </div>
+            ) : error ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+                <button
+                  onClick={() => setSelectedOrgId(null)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Go back
+                </button>
               </div>
             ) : organization ? (
               <div className="space-y-6">
