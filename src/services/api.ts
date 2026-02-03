@@ -1413,3 +1413,75 @@ const apiServices = {
 };
 
 export default apiServices;
+
+// Organization service
+export const organizationService = {
+  list: async () => {
+    const response = await request<any>({
+      method: 'GET',
+      url: '/organizations',
+    });
+    return response.organizations || response;
+  },
+
+  get: async (orgId: string) => {
+    return request<any>({
+      method: 'GET',
+      url: `/organizations/${orgId}`,
+    });
+  },
+
+  create: async (data: { name: string; description?: string; slug?: string }) => {
+    return request<any>({
+      method: 'POST',
+      url: '/organizations',
+      data,
+    });
+  },
+
+  update: async (orgId: string, data: { name?: string; description?: string }) => {
+    return request<any>({
+      method: 'PUT',
+      url: `/organizations/${orgId}`,
+      data,
+    });
+  },
+
+  delete: async (orgId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/organizations/${orgId}`,
+    });
+  },
+
+  listMembers: async (orgId: string) => {
+    const response = await request<any>({
+      method: 'GET',
+      url: `/organizations/${orgId}/members`,
+    });
+    return response.members || response;
+  },
+
+  addMember: async (orgId: string, data: { email?: string; user_id?: string; role?: string }) => {
+    return request<any>({
+      method: 'POST',
+      url: `/organizations/${orgId}/members`,
+      data,
+    });
+  },
+
+  removeMember: async (orgId: string, memberId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/organizations/${orgId}/members/${memberId}`,
+    });
+  },
+
+  updateMemberRole: async (orgId: string, memberId: string, role: string) => {
+    return request<any>({
+      method: 'PUT',
+      url: `/organizations/${orgId}/members/${memberId}/role`,
+      data: { role },
+    });
+  },
+};
