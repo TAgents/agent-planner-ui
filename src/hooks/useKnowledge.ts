@@ -4,16 +4,24 @@ import type { KnowledgeStore, KnowledgeEntry } from '../services/api';
 
 export type EntryType = 'decision' | 'context' | 'constraint' | 'learning' | 'reference' | 'note';
 
-export const ENTRY_TYPES: { value: EntryType; label: string; icon: string; color: string }[] = [
-  { value: 'decision', label: 'Decision', icon: '⚖️', color: 'blue' },
-  { value: 'context', label: 'Context', icon: '📋', color: 'purple' },
-  { value: 'constraint', label: 'Constraint', icon: '🚧', color: 'orange' },
-  { value: 'learning', label: 'Learning', icon: '💡', color: 'green' },
-  { value: 'reference', label: 'Reference', icon: '🔗', color: 'gray' },
-  { value: 'note', label: 'Note', icon: '📝', color: 'yellow' },
+export interface EntryTypeConfig {
+  value: EntryType;
+  label: string;
+  icon: string;
+  // Explicit Tailwind classes to avoid purging
+  badgeClasses: string;
+}
+
+export const ENTRY_TYPES: EntryTypeConfig[] = [
+  { value: 'decision', label: 'Decision', icon: '⚖️', badgeClasses: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  { value: 'context', label: 'Context', icon: '📋', badgeClasses: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+  { value: 'constraint', label: 'Constraint', icon: '🚧', badgeClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+  { value: 'learning', label: 'Learning', icon: '💡', badgeClasses: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+  { value: 'reference', label: 'Reference', icon: '🔗', badgeClasses: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+  { value: 'note', label: 'Note', icon: '📝', badgeClasses: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
 ];
 
-export function getEntryTypeConfig(type: EntryType) {
+export function getEntryTypeConfig(type: EntryType): EntryTypeConfig {
   return ENTRY_TYPES.find(t => t.value === type) || ENTRY_TYPES[5];
 }
 
@@ -159,10 +167,14 @@ export function useKnowledgeStore(storeId: string | null): UseKnowledgeStoreResu
       ...data,
     });
     
-    setEntries(prev => [entry, ...prev]);
+    // Only add to list if no filter active or entry matches filter
+    if (!currentFilter || entry.entry_type === currentFilter) {
+      setEntries(prev => [entry, ...prev]);
+    }
+    // Always increment total (actual total, not filtered count)
     setTotalEntries(prev => prev + 1);
     return entry;
-  }, [storeId]);
+  }, [storeId, currentFilter]);
 
   const updateEntry = useCallback(async (entryId: string, data: {
     entry_type?: string;

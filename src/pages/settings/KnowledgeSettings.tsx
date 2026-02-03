@@ -417,7 +417,7 @@ const KnowledgeSettings: React.FC = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
                                 <span
-                                  className={`px-2 py-0.5 rounded text-xs font-medium bg-${typeConfig.color}-100 text-${typeConfig.color}-800 dark:bg-${typeConfig.color}-900 dark:text-${typeConfig.color}-200`}
+                                  className={`px-2 py-0.5 rounded text-xs font-medium ${typeConfig.badgeClasses}`}
                                 >
                                   {typeConfig.icon} {typeConfig.label}
                                 </span>
