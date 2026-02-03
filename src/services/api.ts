@@ -1485,3 +1485,152 @@ export const organizationService = {
     });
   },
 };
+
+// Knowledge Store Types
+export interface KnowledgeStore {
+  id: string;
+  scope: 'organization' | 'goal' | 'plan';
+  scope_id: string;
+  storage_mode: string;
+  created_at: string;
+  updated_at: string;
+  entry_count?: number;
+  entries_by_type?: Record<string, number>;
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  store_id: string;
+  entry_type: 'decision' | 'context' | 'constraint' | 'learning' | 'reference' | 'note';
+  title: string;
+  content: string;
+  source_url?: string;
+  tags: string[];
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  created_by_user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+// Knowledge Service
+export const knowledgeService = {
+  // Get stores accessible to the user, optionally filtered by scope
+  getStores: async (scope?: string, scopeId?: string) => {
+    const params: Record<string, string> = {};
+    if (scope) params.scope = scope;
+    if (scopeId) params.scope_id = scopeId;
+
+    const response = await request<{ stores: KnowledgeStore[] }>({
+      method: 'GET',
+      url: '/knowledge/stores',
+      params,
+    });
+    return response.stores || [];
+  },
+
+  // Get a single store by ID
+  getStore: async (storeId: string) => {
+    return request<KnowledgeStore>({
+      method: 'GET',
+      url: `/knowledge/stores/${storeId}`,
+    });
+  },
+
+  // Get entries from a store
+  getEntries: async (storeId: string, options?: {
+    entry_type?: string;
+    tags?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const response = await request<{
+      entries: KnowledgeEntry[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>({
+      method: 'GET',
+      url: '/knowledge/entries',
+      params: { store_id: storeId, ...options },
+    });
+    return response;
+  },
+
+  // Get a single entry
+  getEntry: async (entryId: string) => {
+    return request<KnowledgeEntry>({
+      method: 'GET',
+      url: `/knowledge/entries/${entryId}`,
+    });
+  },
+
+  // Create a new entry
+  createEntry: async (data: {
+    store_id?: string;
+    scope?: string;
+    scope_id?: string;
+    entry_type: string;
+    title: string;
+    content: string;
+    source_url?: string;
+    tags?: string[];
+    metadata?: Record<string, any>;
+  }) => {
+    return request<KnowledgeEntry>({
+      method: 'POST',
+      url: '/knowledge/entries',
+      data,
+    });
+  },
+
+  // Update an entry
+  updateEntry: async (entryId: string, data: {
+    entry_type?: string;
+    title?: string;
+    content?: string;
+    source_url?: string;
+    tags?: string[];
+    metadata?: Record<string, any>;
+  }) => {
+    return request<KnowledgeEntry>({
+      method: 'PUT',
+      url: `/knowledge/entries/${entryId}`,
+      data,
+    });
+  },
+
+  // Delete an entry
+  deleteEntry: async (entryId: string) => {
+    return request<{ success: boolean; message: string }>({
+      method: 'DELETE',
+      url: `/knowledge/entries/${entryId}`,
+    });
+  },
+
+  // Search entries
+  search: async (data: {
+    query?: string;
+    embedding?: number[];
+    store_ids?: string[];
+    scope?: string;
+    scope_id?: string;
+    entry_types?: string[];
+    threshold?: number;
+    limit?: number;
+  }) => {
+    return request<{
+      results: KnowledgeEntry[];
+      search_type: 'semantic' | 'text';
+      message?: string;
+    }>({
+      method: 'POST',
+      url: '/knowledge/search',
+      data,
+    });
+  },
+};
