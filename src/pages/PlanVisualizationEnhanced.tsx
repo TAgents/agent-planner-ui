@@ -316,6 +316,28 @@ const PlanVisualizationEnhanced: React.FC = () => {
     });
   };
 
+  // Inline node creation (for quick add from tree view)
+  const handleInlineNodeCreate = useCallback(async (parentId: string, title: string, nodeType: NodeType) => {
+    if (!planId) return;
+    
+    return new Promise<void>((resolve, reject) => {
+      createNode.mutate({
+        plan_id: planId,
+        parent_id: parentId,
+        title,
+        node_type: nodeType,
+        status: 'not_started',
+      }, {
+        onSuccess: () => {
+          resolve();
+        },
+        onError: (error) => {
+          reject(error);
+        }
+      });
+    });
+  }, [planId, createNode]);
+
   // Handle status change
   const handleStatusChange = useCallback((nodeId: string, newStatus: NodeStatus) => {
     if (!planId) return;
@@ -496,6 +518,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
               onNodeSelect={handleNodeSelect}
               onNodeStatusChange={handleStatusChange}
               onNodeCreate={() => handleCreateNode()}
+              onNodeCreateInline={handleInlineNodeCreate}
               onNodeMove={handleNodeMove}
               className="h-full"
             />
