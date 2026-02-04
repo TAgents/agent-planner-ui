@@ -436,7 +436,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
             <Link to="/app/plans" className="p-2 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0">
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </Link>
-            <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
+            <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
               {plan.title}
             </h1>
           </div>
