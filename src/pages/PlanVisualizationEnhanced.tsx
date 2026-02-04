@@ -98,7 +98,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     uiState.nodeDetails.selectedNodeId || ''
   );
 
-  // Get the selected node - prefer selectedNodeFromAPI which has full details (description, acceptance_criteria, etc.)
+  // Get the selected node - prefer selectedNodeFromAPI which has full details (description, context, etc.)
   // The planNodes list only has basic fields (id, title, status, etc.)
   const selectedNode = useMemo(() => {
     if (!uiState.nodeDetails.selectedNodeId) return null;
@@ -187,18 +187,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
       queryClient.invalidateQueries(['planActivity', planId]);
       console.log('[WebSocket] Log added - refreshing activity');
     }, [planId, queryClient]),
-
-    onArtifactAdded: useCallback(() => {
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Artifact added - refreshing activity');
-    }, [planId, queryClient]),
   });
 
   // UI state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
+  const [, setActiveDetailTab] = useState<'details' | 'comments' | 'logs'>('details');
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
@@ -207,11 +202,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
     console.log('Adding log:', content, 'Type:', logType, 'Tags:', tags);
     // The hook will handle the API call
-  }, []);
-
-  const handleFileUpload = useCallback((files: File[]) => {
-    console.log('Uploading files:', files);
-    // TODO: Add API call to upload files
   }, []);
 
   // Handle visibility change
@@ -584,7 +574,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
               activeUsers={[]}
               onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
               onLogAdd={handleLogAdd}
-              onFileUpload={handleFileUpload}
               onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
               onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
               onClose={closeNodeDetails}
@@ -610,7 +599,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 activeUsers={[]}
                 onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
                 onLogAdd={handleLogAdd}
-                onFileUpload={handleFileUpload}
                 onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
                 onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}

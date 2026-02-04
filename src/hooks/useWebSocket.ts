@@ -103,7 +103,6 @@ export function usePlanEvents(
     onNodeStatusChanged?: (message: WebSocketMessage) => void;
     onCommentAdded?: (message: WebSocketMessage) => void;
     onLogAdded?: (message: WebSocketMessage) => void;
-    onArtifactAdded?: (message: WebSocketMessage) => void;
     onCollaboratorAdded?: (message: WebSocketMessage) => void;
     onUserAssigned?: (message: WebSocketMessage) => void;
   }
@@ -182,11 +181,6 @@ export function usePlanEvents(
     if (handlers.onLogAdded) {
       unsubscribers.push(
         subscribe(COLLABORATION_EVENTS.LOG_ADDED, createFilteredHandler(handlers.onLogAdded))
-      );
-    }
-    if (handlers.onArtifactAdded) {
-      unsubscribers.push(
-        subscribe(COLLABORATION_EVENTS.ARTIFACT_ADDED, createFilteredHandler(handlers.onArtifactAdded))
       );
     }
     if (handlers.onUserAssigned) {

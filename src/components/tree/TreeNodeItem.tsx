@@ -209,18 +209,11 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       )}
 
       {/* Activity indicators */}
-      {((node.comment_count ?? 0) > 0 || (node.artifact_count ?? 0) > 0) && (
+      {(node.comment_count ?? 0) > 0 && (
         <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-          {(node.comment_count ?? 0) > 0 && (
-            <span className="flex items-center gap-0.5" title={`${node.comment_count} comments`}>
-              💬 {node.comment_count}
-            </span>
-          )}
-          {(node.artifact_count ?? 0) > 0 && (
-            <span className="flex items-center gap-0.5" title={`${node.artifact_count} attachments`}>
-              📎 {node.artifact_count}
-            </span>
-          )}
+          <span className="flex items-center gap-0.5" title={`${node.comment_count} comments`}>
+            💬 {node.comment_count}
+          </span>
         </div>
       )}
     </motion.div>
