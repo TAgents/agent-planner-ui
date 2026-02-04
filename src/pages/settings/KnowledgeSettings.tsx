@@ -113,6 +113,7 @@ const KnowledgeSettings: React.FC = () => {
   const { stores, loading: storesLoading, error: storesError } = useKnowledgeStores();
   
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [selectedScope, setSelectedScope] = useState<{ scope: 'organization' | 'goal' | 'plan'; scope_id: string; name: string } | null>(null);
   const [expandedScopes, setExpandedScopes] = useState<Record<string, boolean>>({
     organization: true,
     goal: false,
@@ -222,15 +223,37 @@ const KnowledgeSettings: React.FC = () => {
 
   const handleCreate = async () => {
     if (!formData.title.trim() || !formData.content.trim()) return;
+    if (!selectedScope) {
+      showNotification('Please select an organization, goal, or plan first', 'error');
+      return;
+    }
 
     try {
-      await createEntry({
-        entry_type: formData.entry_type,
-        title: formData.title.trim(),
-        content: formData.content.trim(),
-        source_url: formData.source_url.trim() || undefined,
-        tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
-      });
+      if (selectedStoreId) {
+        // Use existing store
+        await createEntry({
+          entry_type: formData.entry_type,
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          source_url: formData.source_url.trim() || undefined,
+          tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
+        });
+      } else {
+        // No store yet - create entry with scope (API will auto-create store)
+        const { knowledgeService } = await import('../../services/api');
+        const newEntry = await knowledgeService.createEntry({
+          scope: selectedScope.scope,
+          scope_id: selectedScope.scope_id,
+          entry_type: formData.entry_type,
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          source_url: formData.source_url.trim() || undefined,
+          tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
+        });
+        // Refresh stores to get the newly created store
+        setSelectedStoreId(newEntry.store_id);
+        window.location.reload(); // Simple refresh to update stores list
+      }
       setShowCreateDialog(false);
       resetForm();
       showNotification('Entry created successfully', 'success');
@@ -396,13 +419,15 @@ const KnowledgeSettings: React.FC = () => {
                           storesByScope.organization.map((item) => (
                             <button
                               key={item.id}
-                              onClick={() => item.store && setSelectedStoreId(item.store.id)}
-                              disabled={!item.store}
+                              onClick={() => {
+                                setSelectedStoreId(item.store?.id || null);
+                                setSelectedScope({ scope: 'organization', scope_id: item.id, name: item.name });
+                              }}
                               className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
-                                selectedStoreId === item.store?.id
+                                selectedScope?.scope_id === item.id
                                   ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
                                   : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-2 border-transparent'
-                              } ${!item.store ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              }`}
                             >
                               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getScopeColor('organization')} flex items-center justify-center text-white text-sm font-medium`}>
                                 {item.name.charAt(0).toUpperCase()}
@@ -451,13 +476,15 @@ const KnowledgeSettings: React.FC = () => {
                           storesByScope.goal.map((item) => (
                             <button
                               key={item.id}
-                              onClick={() => item.store && setSelectedStoreId(item.store.id)}
-                              disabled={!item.store}
+                              onClick={() => {
+                                setSelectedStoreId(item.store?.id || null);
+                                setSelectedScope({ scope: 'goal', scope_id: item.id, name: item.name });
+                              }}
                               className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
-                                selectedStoreId === item.store?.id
+                                selectedScope?.scope_id === item.id
                                   ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
                                   : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-2 border-transparent'
-                              } ${!item.store ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              }`}
                             >
                               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getScopeColor('goal')} flex items-center justify-center text-white`}>
                                 <Target className="w-4 h-4" />
@@ -506,9 +533,12 @@ const KnowledgeSettings: React.FC = () => {
                           storesByScope.plan.map((item) => (
                             <button
                               key={item.id}
-                              onClick={() => item.store && setSelectedStoreId(item.store.id)}
+                              onClick={() => {
+                                setSelectedStoreId(item.store?.id || null);
+                                setSelectedScope({ scope: 'plan', scope_id: item.id, name: item.name });
+                              }}
                               className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
-                                selectedStoreId === item.store?.id
+                                selectedScope?.scope_id === item.id
                                   ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
                                   : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-2 border-transparent'
                               }`}
@@ -537,13 +567,46 @@ const KnowledgeSettings: React.FC = () => {
 
           {/* Right Panel: Entries */}
           <div className="lg:col-span-3">
-            {!selectedStoreId ? (
+            {!selectedScope ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
                 <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                 <p className="text-gray-500 dark:text-gray-400">Select a knowledge store from the left panel</p>
                 <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                   Browse by organization, goal, or plan to view knowledge entries
                 </p>
+              </div>
+            ) : !selectedStoreId ? (
+              /* Scope selected but no store exists yet */
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3">
+                      {getScopeIcon(selectedScope.scope)}
+                      <div>
+                        <h2 className="font-semibold text-gray-900 dark:text-white">
+                          {selectedScope.name}
+                        </h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          No knowledge entries yet
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowCreateDialog(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Entry
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+                  <Database className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                  <p className="text-gray-500 dark:text-gray-400">No knowledge store yet</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                    Add your first entry to create a knowledge store for this {selectedScope.scope}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
