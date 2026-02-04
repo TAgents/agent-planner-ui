@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { PlanNode, NodeStatus } from '../../types';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge, getNextStatus } from './StatusBadge';
 import { GripVertical, Plus } from 'lucide-react';
 
 interface TreeNodeItemProps {
@@ -184,8 +184,12 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         {getNodeTypeIcon()}
       </span>
 
-      {/* Status Badge */}
-      <StatusBadge status={node.status} compact />
+      {/* Status Badge - clickable when onStatusChange is provided */}
+      <StatusBadge 
+        status={node.status} 
+        compact 
+        onClick={onStatusChange ? () => onStatusChange(node.id, getNextStatus(node.status)) : undefined}
+      />
 
       {/* Title */}
       <span className={`${getNodeTypeStyle()} flex-grow truncate`} title={node.title}>
