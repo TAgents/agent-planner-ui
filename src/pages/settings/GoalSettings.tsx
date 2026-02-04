@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOrganizations } from '../../hooks/useOrganizations';
 import { useGoals, Goal, SuccessMetric } from '../../hooks/useGoals';
@@ -100,6 +100,13 @@ const GoalSettings: React.FC = () => {
     goals.find(g => g.id === selectedGoalId) || null, 
     [goals, selectedGoalId]
   );
+
+  // Clear selection when filtered goal disappears (e.g., status filter changed)
+  useEffect(() => {
+    if (selectedGoalId && !goalsLoading && !selectedGoal) {
+      setSelectedGoalId(null);
+    }
+  }, [selectedGoalId, selectedGoal, goalsLoading]);
 
   // Group goals by organization
   const goalsByOrg = useMemo(() => {
