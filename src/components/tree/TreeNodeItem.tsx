@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { PlanNode, NodeStatus } from '../../types';
 import { StatusBadge } from './StatusBadge';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Plus } from 'lucide-react';
 
 interface TreeNodeItemProps {
   node: PlanNode;
@@ -14,6 +14,7 @@ interface TreeNodeItemProps {
   isSelected: boolean;
   onSelect: (nodeId: string) => void;
   onStatusChange?: (nodeId: string, status: NodeStatus) => void;
+  onAddChild?: (parentId: string) => void;
   isDragging?: boolean;
   isDropTarget?: boolean;
   canDrag?: boolean;
@@ -28,10 +29,13 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   isSelected,
   onSelect,
   onStatusChange,
+  onAddChild,
   isDragging = false,
   isDropTarget = false,
   canDrag = true
 }) => {
+  // Check if this node type can have children added
+  const canAddChildren = node.node_type === 'phase' || node.node_type === 'root';
   const [isHovered, setIsHovered] = useState(false);
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -215,6 +219,25 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             💬 {node.comment_count}
           </span>
         </div>
+      )}
+
+      {/* Add Child Button - only show for phases/root on hover */}
+      {canAddChildren && onAddChild && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddChild(node.id);
+          }}
+          className={`
+            p-1 rounded transition-all flex-shrink-0
+            text-gray-400 hover:text-blue-600 hover:bg-blue-50 
+            dark:hover:text-blue-400 dark:hover:bg-blue-900/30
+            ${isHovered ? 'opacity-100' : 'opacity-0'}
+          `}
+          title="Add task"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
       )}
     </motion.div>
   );

@@ -19,8 +19,9 @@ import {
   closestCenter,
   DragOverEvent,
 } from '@dnd-kit/core';
-import { PlanNode, NodeStatus } from '../../types';
+import { PlanNode, NodeStatus, NodeType } from '../../types';
 import { TreeNodeItem } from './TreeNodeItem';
+import { InlineTaskInput } from './InlineTaskInput';
 
 interface PlanTreeViewProps {
   nodes: PlanNode[];
@@ -28,6 +29,7 @@ interface PlanTreeViewProps {
   onNodeSelect: (nodeId: string) => void;
   onNodeStatusChange?: (nodeId: string, status: NodeStatus) => void;
   onNodeCreate?: (parentId: string | null) => void;
+  onNodeCreateInline?: (parentId: string, title: string, nodeType: NodeType) => Promise<void>;
   onNodeMove?: (nodeId: string, newParentId: string | null, newOrderIndex?: number) => void;
   className?: string;
 }
@@ -38,6 +40,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
   onNodeSelect,
   onNodeStatusChange,
   onNodeCreate,
+  onNodeCreateInline,
   onNodeMove,
   className = ''
 }) => {
@@ -57,6 +60,9 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Inline task creation state
+  const [addingToNodeId, setAddingToNodeId] = useState<string | null>(null);
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -270,21 +276,53 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
       return null;
     }
 
+    // Check if this node can have children (phases and root can)
+    const canHaveChildren = node.node_type === 'phase' || node.node_type === 'root';
+    const isAddingHere = addingToNodeId === node.id;
+
+    // Handler for starting inline add
+    const handleAddChild = canHaveChildren && onNodeCreateInline 
+      ? (parentId: string) => {
+          setAddingToNodeId(parentId);
+          // Ensure the node is expanded so we can see the input
+          if (!expandedNodes.has(parentId)) {
+            setExpandedNodes(prev => new Set([...prev, parentId]));
+          }
+        }
+      : undefined;
+
+    // Handler for submitting inline task
+    const handleInlineSubmit = async (title: string) => {
+      if (onNodeCreateInline && addingToNodeId) {
+        await onNodeCreateInline(addingToNodeId, title, 'task');
+      }
+    };
+
     return (
       <div key={node.id}>
         <TreeNodeItem
           node={node}
-          hasChildren={hasChildren}
-          isExpanded={isExpanded}
+          hasChildren={hasChildren || isAddingHere}
+          isExpanded={isExpanded || isAddingHere}
           onToggle={handleToggleExpand}
           depth={depth}
           isSelected={isSelected}
           onSelect={onNodeSelect}
           onStatusChange={onNodeStatusChange}
+          onAddChild={handleAddChild}
           isDragging={isDragging}
           isDropTarget={isDropTarget}
           canDrag={!!onNodeMove}
         />
+        {/* Inline task input - shown when adding to this node */}
+        {isAddingHere && (
+          <InlineTaskInput
+            onSubmit={handleInlineSubmit}
+            onCancel={() => setAddingToNodeId(null)}
+            placeholder="New task title... (Enter to add, Esc to cancel)"
+            depth={depth + 1}
+          />
+        )}
         {/* Render children recursively with animation */}
         {hasChildren && isExpanded && (
           <motion.div
@@ -299,7 +337,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
         )}
       </div>
     );
-  }, [expandedNodes, selectedNodeId, getChildren, filterNode, handleToggleExpand, onNodeSelect, onNodeStatusChange, activeId, overId, canDrop, onNodeMove]);
+  }, [expandedNodes, selectedNodeId, getChildren, filterNode, handleToggleExpand, onNodeSelect, onNodeStatusChange, activeId, overId, canDrop, onNodeMove, addingToNodeId, onNodeCreateInline]);
 
   // Get active node for drag overlay
   const activeNode = activeId ? nodes.find(n => n.id === activeId) : null;
