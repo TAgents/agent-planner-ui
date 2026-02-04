@@ -408,39 +408,43 @@ const PlanVisualizationEnhanced: React.FC = () => {
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Enhanced Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm z-10 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
           {/* Left section */}
-          <div className="flex items-center gap-3">
-            <Link to="/app/plans" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <Link to="/app/plans" className="p-2 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0">
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </Link>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-2xl">
+            <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
               {plan.title}
             </h1>
           </div>
 
           {/* Right section */}
-          <div className="flex items-center gap-2">
-            {/* Visibility Toggle - only shown to owner */}
-            <VisibilityToggle
-              planId={planId || ''}
-              currentVisibility={plan.visibility || 'private'}
-              isOwner={isOwner}
-              onVisibilityChange={handleVisibilityChange}
-            />
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Visibility Toggle - hidden on mobile */}
+            <div className="hidden sm:block">
+              <VisibilityToggle
+                planId={planId || ''}
+                currentVisibility={plan.visibility || 'private'}
+                isOwner={isOwner}
+                onVisibilityChange={handleVisibilityChange}
+              />
+            </div>
 
-            {/* GitHub Repository Badge */}
-            <GitHubRepoBadge
-              planId={planId || ''}
-              owner={plan.github_repo_owner}
-              name={plan.github_repo_name}
-              isOwner={isOwner}
-              onLinked={() => {
-                const userId = getUserId();
-                queryClient.invalidateQueries(['plan', userId, planId]);
-              }}
-              variant="compact"
-            />
+            {/* GitHub Repository Badge - hidden on mobile */}
+            <div className="hidden md:block">
+              <GitHubRepoBadge
+                planId={planId || ''}
+                owner={plan.github_repo_owner}
+                name={plan.github_repo_name}
+                isOwner={isOwner}
+                onLinked={() => {
+                  const userId = getUserId();
+                  queryClient.invalidateQueries(['plan', userId, planId]);
+                }}
+                variant="compact"
+              />
+            </div>
 
             <div data-tour="share-button">
               <ShareButton
@@ -450,22 +454,24 @@ const PlanVisualizationEnhanced: React.FC = () => {
               />
             </div>
 
-            {/* WebSocket connection status indicator */}
-            <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
+            {/* WebSocket connection status indicator - hidden on mobile */}
+            <div className="hidden sm:flex px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
               <WebSocketStatus showDetails={false} />
             </div>
 
+            {/* Fullscreen button - hidden on mobile (most mobile browsers don't support it well) */}
             <button
               onClick={toggleFullScreen}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Fullscreen"
             >
               {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
             </button>
             
+            {/* Help button - hidden on mobile (keyboard shortcuts aren't relevant) */}
             <button
               onClick={() => setShowHelp(true)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Help (?)"
             >
               <HelpCircle className="w-5 h-5" />
