@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOrganizations } from '../../hooks/useOrganizations';
-import { useGoals, Goal, SuccessMetric } from '../../hooks/useGoals';
+import { useGoals, useGoal, Goal, SuccessMetric } from '../../hooks/useGoals';
 import { 
   Target, 
   Plus, 
@@ -96,17 +96,15 @@ const GoalSettings: React.FC = () => {
     success_metrics: [] as SuccessMetric[],
   });
 
-  const selectedGoal = useMemo(() => 
-    goals.find(g => g.id === selectedGoalId) || null, 
-    [goals, selectedGoalId]
-  );
+  // Fetch full goal detail (including linked_plans) when a goal is selected
+  const { goal: selectedGoal, loading: selectedGoalLoading, fetchGoal: refetchSelectedGoal } = useGoal(selectedGoalId);
 
   // Clear selection when filtered goal disappears (e.g., status filter changed)
   useEffect(() => {
-    if (selectedGoalId && !goalsLoading && !selectedGoal) {
+    if (selectedGoalId && !goalsLoading && !selectedGoalLoading && !selectedGoal) {
       setSelectedGoalId(null);
     }
-  }, [selectedGoalId, selectedGoal, goalsLoading]);
+  }, [selectedGoalId, selectedGoal, goalsLoading, selectedGoalLoading]);
 
   // Group goals by organization
   const goalsByOrg = useMemo(() => {
@@ -189,6 +187,7 @@ const GoalSettings: React.FC = () => {
         time_horizon: editForm.time_horizon || undefined,
         success_metrics: editForm.success_metrics,
       });
+      await refetchSelectedGoal(); // Refresh selected goal detail
       setEditMode(false);
       showNotification('Goal updated', 'success');
     } catch (err: any) {
