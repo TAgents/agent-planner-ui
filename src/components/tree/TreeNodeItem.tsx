@@ -188,7 +188,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       <StatusBadge status={node.status} compact />
 
       {/* Title */}
-      <span className={`${getNodeTypeStyle()} flex-grow truncate`}>
+      <span className={`${getNodeTypeStyle()} flex-grow truncate`} title={node.title}>
         {node.title}
       </span>
 

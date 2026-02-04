@@ -189,7 +189,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                         statusColors[plan.status]
                       }`}
                     />
-                    <span className="text-sm truncate flex-1">{plan.title}</span>
+                    <span className="text-sm truncate flex-1" title={plan.title}>{plan.title}</span>
                   </Link>
                 ))
               )}

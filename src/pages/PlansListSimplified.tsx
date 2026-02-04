@@ -176,11 +176,11 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
 
               {/* Title and Description */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                <h3 className="font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
                   {plan.title}
                 </h3>
                 {plan.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mt-1" title={plan.description}>
                     {plan.description}
                   </p>
                 )}
@@ -377,12 +377,12 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
           </div>
         </div>
 
-        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 leading-tight">
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 leading-tight" title={plan.title}>
           {plan.title}
         </h3>
 
         {plan.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 leading-relaxed" title={plan.description}>
             {plan.description}
           </p>
         )}
