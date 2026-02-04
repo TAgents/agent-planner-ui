@@ -380,7 +380,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Loading state
   if (isPlanLoading || isNodesLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="spinner w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your plan...</p>
@@ -392,7 +392,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Error state
   if (!plan) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <h2 className="text-xl font-bold text-red-600 dark:text-red-400">Plan not found</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">The requested plan doesn't exist or you don't have access.</p>
@@ -405,7 +405,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Enhanced Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm z-10 border-b border-gray-200 dark:border-gray-700">
         <div className="px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
