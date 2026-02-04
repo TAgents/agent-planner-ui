@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   useKnowledgeStores,
   useKnowledgeStore,
   KnowledgeEntry,
+  KnowledgeStore,
   ENTRY_TYPES,
   getEntryTypeConfig,
   EntryType,
 } from '../../hooks/useKnowledge';
 import { useOrganizations } from '../../hooks/useOrganizations';
+import { useGoals } from '../../hooks/useGoals';
 import {
   BookOpen,
   Plus,
@@ -18,6 +20,7 @@ import {
   X,
   Check,
   ChevronRight,
+  ChevronDown,
   ExternalLink,
   Filter,
   AlertCircle,
@@ -29,7 +32,25 @@ import {
   Clock,
   User,
   Key,
+  // Entry type icons
+  Gavel,
+  Info,
+  Lock,
+  Lightbulb,
+  Link2,
+  StickyNote,
+  Database,
 } from 'lucide-react';
+
+// Map icon names to components
+const EntryTypeIcons: Record<string, React.FC<{ className?: string }>> = {
+  Gavel,
+  Info,
+  Lock,
+  Lightbulb,
+  Link: Link2,
+  StickyNote,
+};
 
 // Settings Navigation Tabs Component
 const SettingsNav: React.FC = () => {
@@ -68,21 +89,38 @@ const SettingsNav: React.FC = () => {
   );
 };
 
+// Helper component to render entry type icon
+const EntryTypeIcon: React.FC<{ iconName: string; className?: string }> = ({ iconName, className }) => {
+  const IconComponent = EntryTypeIcons[iconName];
+  if (!IconComponent) return null;
+  return <IconComponent className={className} />;
+};
+
+// Scope group item type
+interface ScopeItem {
+  id: string;
+  name: string;
+  scope: 'organization' | 'goal' | 'plan';
+  store?: KnowledgeStore;
+  parentName?: string;
+}
+
 const KnowledgeSettings: React.FC = () => {
   const { organizations, loading: orgsLoading } = useOrganizations();
-  const [selectedScope, setSelectedScope] = useState<{
-    type: 'organization' | 'goal' | 'plan';
-    id: string;
-    name: string;
-  } | null>(null);
+  const { goals, loading: goalsLoading } = useGoals();
+  
+  // Get all stores (without scope filter to group them ourselves)
+  const { stores, loading: storesLoading, error: storesError } = useKnowledgeStores();
+  
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [expandedScopes, setExpandedScopes] = useState<Record<string, boolean>>({
+    organization: true,
+    goal: false,
+    plan: false,
+  });
 
-  const { stores, loading: storesLoading, error: storesError } = useKnowledgeStores(
-    selectedScope?.type,
-    selectedScope?.id
-  );
-
-  const selectedStore = stores.length > 0 ? stores[0] : null;
   const {
+    store: selectedStore,
     entries,
     loading: entriesLoading,
     error: entriesError,
@@ -93,7 +131,7 @@ const KnowledgeSettings: React.FC = () => {
     deleteEntry,
     filterByType,
     currentFilter,
-  } = useKnowledgeStore(selectedStore?.id || null);
+  } = useKnowledgeStore(selectedStoreId);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState<KnowledgeEntry | null>(null);
@@ -109,6 +147,63 @@ const KnowledgeSettings: React.FC = () => {
     source_url: '',
     tags: '',
   });
+
+  // Group stores by scope type
+  const storesByScope = useMemo(() => {
+    const grouped: Record<string, ScopeItem[]> = {
+      organization: [],
+      goal: [],
+      plan: [],
+    };
+
+    // Create a map of store by scope_id for quick lookup
+    const storeByScope: Record<string, KnowledgeStore> = {};
+    stores.forEach(store => {
+      storeByScope[`${store.scope}-${store.scope_id}`] = store;
+    });
+
+    // Add organizations
+    organizations.forEach(org => {
+      const store = storeByScope[`organization-${org.id}`];
+      grouped.organization.push({
+        id: org.id,
+        name: org.name,
+        scope: 'organization',
+        store,
+      });
+    });
+
+    // Add goals
+    goals.forEach(goal => {
+      const store = storeByScope[`goal-${goal.id}`];
+      const org = organizations.find(o => o.id === goal.organization_id);
+      grouped.goal.push({
+        id: goal.id,
+        name: goal.title,
+        scope: 'goal',
+        store,
+        parentName: org?.name,
+      });
+    });
+
+    // Add plans from stores (we don't have a plans hook here, so use stores)
+    stores
+      .filter(s => s.scope === 'plan')
+      .forEach(store => {
+        grouped.plan.push({
+          id: store.scope_id,
+          name: `Plan ${store.scope_id.slice(0, 8)}...`,
+          scope: 'plan',
+          store,
+        });
+      });
+
+    return grouped;
+  }, [organizations, goals, stores]);
+
+  const toggleScope = (scope: string) => {
+    setExpandedScopes(prev => ({ ...prev, [scope]: !prev[scope] }));
+  };
 
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
@@ -197,12 +292,27 @@ const KnowledgeSettings: React.FC = () => {
     }
   };
 
+  const getScopeColor = (type: string) => {
+    switch (type) {
+      case 'organization':
+        return 'from-blue-500 to-purple-600';
+      case 'goal':
+        return 'from-orange-500 to-red-600';
+      case 'plan':
+        return 'from-green-500 to-teal-600';
+      default:
+        return 'from-gray-500 to-gray-600';
+    }
+  };
+
   const filteredEntries = entries.filter(entry =>
     searchQuery
       ? entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.content.toLowerCase().includes(searchQuery.toLowerCase())
       : true
   );
+
+  const isLoading = orgsLoading || goalsLoading || storesLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -233,64 +343,207 @@ const KnowledgeSettings: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Scope Selector */}
+          {/* Left Panel: Stores grouped by scope */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-white">Select Scope</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Database className="w-4 h-4" />
+                  Knowledge Stores
+                </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Choose an organization to view its knowledge
+                  Browse by organization, goal, or plan
                 </p>
               </div>
 
-              {orgsLoading ? (
+              {isLoading ? (
                 <div className="p-8 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
                 </div>
-              ) : organizations.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Building2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No organizations found</p>
-                  <p className="text-xs mt-1">Create an organization first</p>
+              ) : storesError ? (
+                <div className="p-4 text-center text-red-600 dark:text-red-400">
+                  <AlertCircle className="w-6 h-6 mx-auto mb-2" />
+                  {storesError}
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {organizations.map((org) => (
-                    <li key={org.id}>
-                      <button
-                        onClick={() => setSelectedScope({ type: 'organization', id: org.id, name: org.name })}
-                        className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center justify-between ${
-                          selectedScope?.id === org.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                            {org.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{org.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{org.role}</p>
-                          </div>
-                        </div>
-                        <ChevronRight
-                          className={`w-5 h-5 text-gray-400 transition-transform ${
-                            selectedScope?.id === org.id ? 'rotate-90' : ''
-                          }`}
-                        />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {/* Organization Scope */}
+                  <div>
+                    <button
+                      onClick={() => toggleScope('organization')}
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-blue-500" />
+                        <span className="font-medium text-gray-900 dark:text-white">Organizations</span>
+                        <span className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-400">
+                          {storesByScope.organization.length}
+                        </span>
+                      </div>
+                      {expandedScopes.organization ? (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                    {expandedScopes.organization && (
+                      <div className="bg-gray-50 dark:bg-gray-900/50">
+                        {storesByScope.organization.length === 0 ? (
+                          <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 italic">
+                            No organizations
+                          </p>
+                        ) : (
+                          storesByScope.organization.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => item.store && setSelectedStoreId(item.store.id)}
+                              disabled={!item.store}
+                              className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
+                                selectedStoreId === item.store?.id
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-2 border-transparent'
+                              } ${!item.store ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getScopeColor('organization')} flex items-center justify-center text-white text-sm font-medium`}>
+                                {item.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {item.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {item.store ? `${item.store.entry_count || 0} entries` : 'No store'}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Goal Scope */}
+                  <div>
+                    <button
+                      onClick={() => toggleScope('goal')}
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-orange-500" />
+                        <span className="font-medium text-gray-900 dark:text-white">Goals</span>
+                        <span className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-400">
+                          {storesByScope.goal.length}
+                        </span>
+                      </div>
+                      {expandedScopes.goal ? (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                    {expandedScopes.goal && (
+                      <div className="bg-gray-50 dark:bg-gray-900/50">
+                        {storesByScope.goal.length === 0 ? (
+                          <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 italic">
+                            No goals
+                          </p>
+                        ) : (
+                          storesByScope.goal.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => item.store && setSelectedStoreId(item.store.id)}
+                              disabled={!item.store}
+                              className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
+                                selectedStoreId === item.store?.id
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-2 border-transparent'
+                              } ${!item.store ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getScopeColor('goal')} flex items-center justify-center text-white`}>
+                                <Target className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {item.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {item.parentName || 'Unknown org'} • {item.store ? `${item.store.entry_count || 0} entries` : 'No store'}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Plan Scope */}
+                  <div>
+                    <button
+                      onClick={() => toggleScope('plan')}
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-green-500" />
+                        <span className="font-medium text-gray-900 dark:text-white">Plans</span>
+                        <span className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-400">
+                          {storesByScope.plan.length}
+                        </span>
+                      </div>
+                      {expandedScopes.plan ? (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                    {expandedScopes.plan && (
+                      <div className="bg-gray-50 dark:bg-gray-900/50">
+                        {storesByScope.plan.length === 0 ? (
+                          <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 italic">
+                            No plan knowledge stores
+                          </p>
+                        ) : (
+                          storesByScope.plan.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => item.store && setSelectedStoreId(item.store.id)}
+                              className={`w-full px-4 py-2 text-left flex items-center gap-3 transition-colors ${
+                                selectedStoreId === item.store?.id
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-2 border-transparent'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getScopeColor('plan')} flex items-center justify-center text-white`}>
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {item.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {item.store?.entry_count || 0} entries
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Knowledge Entries */}
+          {/* Right Panel: Entries */}
           <div className="lg:col-span-3">
-            {!selectedScope ? (
+            {!selectedStoreId ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
                 <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                <p className="text-gray-500 dark:text-gray-400">Select an organization to view its knowledge base</p>
+                <p className="text-gray-500 dark:text-gray-400">Select a knowledge store from the left panel</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                  Browse by organization, goal, or plan to view knowledge entries
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -298,10 +551,14 @@ const KnowledgeSettings: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-3">
-                      {getScopeIcon(selectedScope.type)}
+                      {selectedStore && getScopeIcon(selectedStore.scope)}
                       <div>
-                        <h2 className="font-semibold text-gray-900 dark:text-white">{selectedScope.name}</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{selectedScope.type} Knowledge</p>
+                        <h2 className="font-semibold text-gray-900 dark:text-white capitalize">
+                          {selectedStore?.scope} Knowledge
+                        </h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {entries.length} entries
+                        </p>
                       </div>
                     </div>
 
@@ -328,7 +585,7 @@ const KnowledgeSettings: React.FC = () => {
                           <option value="">All Types</option>
                           {ENTRY_TYPES.map((type) => (
                             <option key={type.value} value={type.value}>
-                              {type.icon} {type.label}
+                              {type.label}
                             </option>
                           ))}
                         </select>
@@ -351,7 +608,7 @@ const KnowledgeSettings: React.FC = () => {
                 </div>
 
                 {/* Entry type stats */}
-                {selectedStore && selectedStore.entries_by_type && (
+                {selectedStore && selectedStore.entries_by_type && Object.keys(selectedStore.entries_by_type).length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {ENTRY_TYPES.map((type) => {
                       const count = selectedStore.entries_by_type?.[type.value] || 0;
@@ -366,7 +623,7 @@ const KnowledgeSettings: React.FC = () => {
                               : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
-                          <span>{type.icon}</span>
+                          <EntryTypeIcon iconName={type.iconName} className="w-3 h-3" />
                           {type.label}
                           <span className="bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded-full text-xs">
                             {count}
@@ -378,14 +635,14 @@ const KnowledgeSettings: React.FC = () => {
                 )}
 
                 {/* Entries list */}
-                {storesLoading || entriesLoading ? (
+                {entriesLoading ? (
                   <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
                   </div>
-                ) : storesError || entriesError ? (
+                ) : entriesError ? (
                   <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                    <p className="text-red-600 dark:text-red-400">{storesError || entriesError}</p>
+                    <p className="text-red-600 dark:text-red-400">{entriesError}</p>
                   </div>
                 ) : filteredEntries.length === 0 ? (
                   <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
@@ -418,9 +675,10 @@ const KnowledgeSettings: React.FC = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
                                 <span
-                                  className={`px-2 py-0.5 rounded text-xs font-medium ${typeConfig.badgeClasses}`}
+                                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${typeConfig.badgeClasses}`}
                                 >
-                                  {typeConfig.icon} {typeConfig.label}
+                                  <EntryTypeIcon iconName={typeConfig.iconName} className="w-3 h-3" />
+                                  {typeConfig.label}
                                 </span>
                                 {entry.source_url && (
                                   <a
@@ -549,8 +807,8 @@ const KnowledgeSettings: React.FC = () => {
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                         }`}
                       >
-                        <span className="text-lg">{type.icon}</span>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{type.label}</p>
+                        <EntryTypeIcon iconName={type.iconName} className="w-5 h-5 mb-1 text-gray-600 dark:text-gray-400" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{type.label}</p>
                       </button>
                     ))}
                   </div>
