@@ -16,6 +16,7 @@ import ShareButton from '../components/sharing/ShareButton';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
 import VisibilityToggle from '../components/plans/VisibilityToggle';
 import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
+import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -501,6 +502,19 @@ const PlanVisualizationEnhanced: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Breadcrumb Navigation - shows when a node is selected */}
+      {uiState.nodeDetails.selectedNodeId && (
+        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <PlanBreadcrumb
+            planId={planId || ''}
+            planTitle={plan.title}
+            nodes={planNodes}
+            selectedNodeId={uiState.nodeDetails.selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
