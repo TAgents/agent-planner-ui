@@ -38,6 +38,7 @@ const SettingsNav: React.FC = () => {
   const tabs = [
     { path: '/app/settings', label: 'API Tokens', icon: Key },
     { path: '/app/settings/organization', label: 'Organizations', icon: Building2 },
+    { path: '/app/settings/goals', label: 'Goals', icon: Target },
     { path: '/app/settings/knowledge', label: 'Knowledge', icon: BookOpen },
   ];
 
