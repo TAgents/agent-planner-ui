@@ -178,18 +178,35 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                     key={plan.id}
                     to={`/app/plans/${plan.id}`}
                     onClick={handleNavClick}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    className={`flex flex-col gap-1 px-3 py-2 rounded-lg transition-colors ${
                       isPlanActive(plan.id)
                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                   >
-                    <div
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        statusColors[plan.status]
-                      }`}
-                    />
-                    <span className="text-sm truncate flex-1" title={plan.title}>{plan.title}</span>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          statusColors[plan.status]
+                        }`}
+                        title={plan.status}
+                      />
+                      <span className="text-sm truncate flex-1" title={plan.title}>{plan.title}</span>
+                      {typeof plan.progress === 'number' && plan.progress > 0 && (
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                          {plan.progress}%
+                        </span>
+                      )}
+                    </div>
+                    {/* Mini progress bar */}
+                    {typeof plan.progress === 'number' && plan.progress > 0 && (
+                      <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300"
+                          style={{ width: `${plan.progress}%` }}
+                        />
+                      </div>
+                    )}
                   </Link>
                 ))
               )}
