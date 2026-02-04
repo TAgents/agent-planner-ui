@@ -50,8 +50,6 @@ export const COLLABORATION_EVENTS = {
   COMMENT_UPDATED: 'collaboration.comment_updated',
   COMMENT_DELETED: 'collaboration.comment_deleted',
   LOG_ADDED: 'collaboration.log_added',
-  ARTIFACT_ADDED: 'collaboration.artifact_added',
-  ARTIFACT_DELETED: 'collaboration.artifact_deleted',
   LABEL_ADDED: 'collaboration.label_added',
   LABEL_REMOVED: 'collaboration.label_removed'
 } as const;

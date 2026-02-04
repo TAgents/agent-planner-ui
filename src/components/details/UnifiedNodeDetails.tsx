@@ -4,15 +4,12 @@ import {
   Calendar,
   ChevronRight,
   ChevronDown,
-  Paperclip,
   Edit3,
   Check,
   X,
   MoreHorizontal,
   Send,
   FileText,
-  Download,
-  Filter as FilterIcon,
   CheckCircle,
   XCircle,
   PlayCircle,
@@ -36,11 +33,9 @@ import {
 import { PlanNode, NodeStatus, User as UserType } from '../../types';
 import { formatDate } from '../../utils/planUtils';
 import { useNodeLogs } from '../../hooks/useNodeLogs';
-import { useNodeArtifacts } from '../../hooks/useNodeArtifacts';
 import { useCollaborators } from '../../hooks/useCollaborators';
 import { useNodeAssignments } from '../../hooks/useNodeAssignments';
 import { useNodeInstructions } from '../../hooks/useNodeInstructions';
-import { ReferencesList, filterReferences, filterFiles } from '../references';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -51,7 +46,6 @@ interface UnifiedNodeDetailsProps {
   typingUsers?: UserType[];
   onStatusChange: (status: NodeStatus) => void;
   onLogAdd: (content: string, logType: string, tags?: string[]) => void;
-  onFileUpload: (files: File[]) => void;
   onActivityReact?: (activityId: string, emoji: string) => void;
   onActivityReply?: (activityId: string, text: string) => void;
   onAssignUser?: (userId: string) => void;
@@ -63,14 +57,13 @@ type ActivityType =
   | 'log'
   | 'status_change'
   | 'assignment'
-  | 'file_upload'
   | 'edit'
   | 'dependency_added'
   | 'dependency_removed';
 
 type LogType = 'progress' | 'reasoning' | 'challenge' | 'decision';
 
-type ActivityFilter = 'all' | 'logs' | 'files';
+type ActivityFilter = 'all' | 'logs';
 
 interface UnifiedActivity {
   id: string;
@@ -524,30 +517,6 @@ const ActivityItem: React.FC<{
           </div>
         );
 
-      case 'file_upload':
-        return (
-          <div className="flex gap-3">
-            <Avatar user={activity.actor} size="sm" />
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm text-gray-900 dark:text-white">{activity.actor.name}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">uploaded a file</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 flex items-center gap-2 border border-gray-200 dark:border-gray-700">
-                <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <div className="flex-1">
-                  <div className="font-medium text-sm text-gray-900 dark:text-white">{activity.data.fileName}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{activity.data.fileSize}</div>
-                </div>
-                <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors">
-                  <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
       case 'assignment':
         return (
           <div className="flex items-center gap-3 py-2">
@@ -623,19 +592,10 @@ const ActivityItem: React.FC<{
 // Component: Log Composer
 const LogComposer: React.FC<{
   onLogAdd: (content: string, logType: string, tags?: string[]) => void;
-  onFileUpload: (files: File[]) => void;
-  initialMode?: 'log' | 'file';
-}> = ({ onLogAdd, onFileUpload, initialMode = 'log' }) => {
-  const [mode, setMode] = useState<'log' | 'file'>(initialMode);
+}> = ({ onLogAdd }) => {
   const [logContent, setLogContent] = useState('');
   const [logType, setLogType] = useState<LogType>('progress');
   const [tags, setTags] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Sync mode with initialMode prop
-  React.useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
 
   const handleSubmit = () => {
     if (logContent.trim()) {
@@ -649,100 +609,50 @@ const LogComposer: React.FC<{
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 bg-gray-50 dark:bg-gray-900">
-      <div className="flex gap-1 mb-3">
-        <button
-          onClick={() => setMode('log')}
-          className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 flex items-center gap-1 sm:gap-1.5 font-medium ${
-            mode === 'log'
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          <Edit3 className="w-3.5 h-3.5" />
-          Add Log
-        </button>
-        <button
-          onClick={() => setMode('file')}
-          className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 flex items-center gap-1 sm:gap-1.5 font-medium ${
-            mode === 'file'
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          <Paperclip className="w-3.5 h-3.5" />
-          Attach
-        </button>
-      </div>
-
-      {mode === 'log' ? (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <select
-              value={logType}
-              onChange={(e) => setLogType(e.target.value as LogType)}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 min-h-[44px]"
-            >
-              <option value="progress">Progress</option>
-              <option value="reasoning">Reasoning</option>
-              <option value="challenge">Challenge</option>
-              <option value="decision">Decision</option>
-            </select>
-            <input
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="Tags (comma separated)"
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200 min-h-[44px]"
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <textarea
-              value={logContent}
-              onChange={(e) => setLogContent(e.target.value)}
-              placeholder="Write a log entry... (Ctrl+Enter to submit)"
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-colors duration-200"
-              rows={3}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey) {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={!logContent.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium min-h-[44px] flex items-center justify-center"
-              aria-label="Send log entry"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select
+            value={logType}
+            onChange={(e) => setLogType(e.target.value as LogType)}
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 min-h-[44px]"
+          >
+            <option value="progress">Progress</option>
+            <option value="reasoning">Reasoning</option>
+            <option value="challenge">Challenge</option>
+            <option value="decision">Decision</option>
+          </select>
           <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files) {
-                onFileUpload(Array.from(e.target.files));
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="Tags (comma separated)"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200 min-h-[44px]"
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <textarea
+            value={logContent}
+            onChange={(e) => setLogContent(e.target.value)}
+            placeholder="Write a log entry... (Ctrl+Enter to submit)"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-colors duration-200"
+            rows={3}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                handleSubmit();
               }
             }}
           />
           <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200 min-h-[44px]"
+            onClick={handleSubmit}
+            disabled={!logContent.trim()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium min-h-[44px] flex items-center justify-center"
+            aria-label="Send log entry"
           >
-            <Paperclip className="w-6 h-6 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
-            <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-              Click to upload or drag files here
-            </div>
+            <Send className="w-4 h-4" />
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1004,7 +914,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   typingUsers = [],
   onStatusChange,
   onLogAdd,
-  onFileUpload,
   onActivityReact,
   onActivityReply,
   onAssignUser,
@@ -1020,17 +929,15 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
     setActiveTab('overview');
   }, [node.id]);
 
-  // Fetch logs and artifacts from API
+  // Fetch logs from API
   const { logs, isLoading: logsLoading, addLogEntry, refetch: refetchLogs } = useNodeLogs(node.plan_id || planId, node.id);
-  const { artifacts, isLoading: artifactsLoading, refetch: refetchArtifacts, deleteArtifact } = useNodeArtifacts(node.plan_id || planId, node.id);
 
-  // Refetch logs and artifacts when node changes or status updates
+  // Refetch logs when node changes or status updates
   React.useEffect(() => {
     if (node.id) {
       refetchLogs();
-      refetchArtifacts();
     }
-  }, [node.id, node.status, refetchLogs, refetchArtifacts]);
+  }, [node.id, node.status, refetchLogs]);
 
   // Fetch collaborators for assignment
   const { collaborators } = useCollaborators(planId);
@@ -1074,9 +981,9 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   const progress = node.status === 'completed' ? 100 :
                    node.status === 'in_progress' ? 50 : 0;
 
-  // Convert logs and artifacts to unified activities
+  // Convert logs to unified activities
   const activities: UnifiedActivity[] = React.useMemo(() => {
-    const logActivities: UnifiedActivity[] = logs.map(log => ({
+    return logs.map(log => ({
       id: log.id,
       nodeId: node.id,
       type: 'log' as const,
@@ -1092,41 +999,13 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
         logType: log.log_type,
         tags: log.tags
       }
-    }));
-
-    // Filter out references from artifacts (they're shown separately)
-    const fileArtifacts = filterFiles(artifacts);
-    
-    const artifactActivities: UnifiedActivity[] = fileArtifacts.map(artifact => ({
-      id: artifact.id,
-      nodeId: node.id,
-      type: 'file_upload' as const,
-      actor: {
-        id: artifact.user?.id || artifact.created_by,
-        name: artifact.user?.name || 'Unknown User',
-        email: artifact.user?.email,
-        avatar: undefined
-      },
-      timestamp: new Date(artifact.created_at),
-      data: {
-        fileName: artifact.name,
-        fileSize: 'Unknown size',
-        fileType: artifact.content_type,
-        url: artifact.url
-      }
-    }));
-
-    // Combine and sort by timestamp
-    return [...logActivities, ...artifactActivities].sort(
-      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
-    );
-  }, [logs, artifacts, node.id]);
+    })).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [logs, node.id]);
 
   // Filter activities based on current filter
   const filteredActivities = React.useMemo(() => {
     if (activityFilter === 'all') return activities;
     if (activityFilter === 'logs') return activities.filter(a => a.type === 'log');
-    if (activityFilter === 'files') return activities.filter(a => a.type === 'file_upload');
     return activities;
   }, [activities, activityFilter]);
 
@@ -1330,20 +1209,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               </CollapsibleSection>
             )}
 
-            {/* Acceptance Criteria */}
-            {node.acceptance_criteria && (
-              <CollapsibleSection title="ACCEPTANCE CRITERIA" defaultExpanded={true}>
-                <div className="space-y-1">
-                  {node.acceptance_criteria.split('\n').filter(c => c.trim()).map((criterion, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="w-3 h-3 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 dark:text-gray-300 break-words">{criterion}</span>
-                    </div>
-                  ))}
-                </div>
-              </CollapsibleSection>
-            )}
-
             {/* Context */}
             {node.context && (
               <CollapsibleSection title="CONTEXT" defaultExpanded={false}>
@@ -1351,20 +1216,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                   {node.context}
                 </p>
               </CollapsibleSection>
-            )}
-
-            {/* References - shown if any exist */}
-            {artifacts && filterReferences(artifacts).length > 0 && (
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <ReferencesList 
-                  artifacts={artifacts}
-                  onDeleteReference={(id) => {
-                    // Delete through artifact API
-                    deleteArtifact(id);
-                  }}
-                  readOnly={false}
-                />
-              </div>
             )}
 
             {/* Quick Actions */}
@@ -1380,16 +1231,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                 Add Log
               </button>
               <button
-                onClick={() => {
-                  setActivityFilter('files');
-                  setActiveTab('activity');
-                }}
-                className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-                Upload File
-              </button>
-              <button
                 onClick={handleEdit}
                 className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
               >
@@ -1403,48 +1244,9 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
         {activeTab === 'activity' && (
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
-            {/* Filter Bar */}
-            <div className="px-2 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                <FilterIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setActivityFilter('all')}
-                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 font-medium whitespace-nowrap ${
-                      activityFilter === 'all'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    All ({activities.length})
-                  </button>
-                  <button
-                    onClick={() => setActivityFilter('logs')}
-                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 font-medium whitespace-nowrap ${
-                      activityFilter === 'logs'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    Logs ({logs.length})
-                  </button>
-                  <button
-                    onClick={() => setActivityFilter('files')}
-                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors duration-200 font-medium whitespace-nowrap ${
-                      activityFilter === 'files'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    Files ({artifacts.length})
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Activity List */}
             <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 space-y-4">
-              {logsLoading || artifactsLoading ? (
+              {logsLoading ? (
                 <div className="text-center py-8">
                   <div className="w-8 h-8 border-3 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Loading activity...</p>
@@ -1460,9 +1262,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                 ))
               ) : (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-                  {activityFilter === 'logs' ? 'No logs yet. Add your first log entry!' :
-                   activityFilter === 'files' ? 'No files uploaded yet.' :
-                   'No activity yet. Start by adding a log entry or uploading a file.'}
+                  No logs yet. Add your first log entry!
                 </div>
               )}
             </div>
@@ -1471,8 +1271,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             <div className="flex-shrink-0">
               <LogComposer
                 onLogAdd={handleLogAdd}
-                onFileUpload={onFileUpload}
-                initialMode={activityFilter === 'files' ? 'file' : 'log'}
               />
             </div>
           </div>

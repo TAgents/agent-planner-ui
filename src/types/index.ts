@@ -36,11 +36,9 @@ export interface PlanNode {
   due_date?: string;
   context?: string;
   agent_instructions?: string;
-  acceptance_criteria?: string;
   metadata?: Record<string, any>;
   comment_count?: number;
   log_count?: number;
-  artifact_count?: number;
 }
 
 // Comment Types
@@ -65,23 +63,6 @@ export interface Log {
   created_at: string;
   metadata?: Record<string, any>;
   tags?: string[];
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
-// Artifact Types
-export interface Artifact {
-  id: string;
-  plan_node_id: string;
-  name: string;
-  content_type: string;
-  url: string;
-  created_at: string;
-  created_by: string;
-  metadata?: Record<string, any>;
   user?: {
     id: string;
     name: string;

@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact, ApiToken, TokenPermission } from '../types';
+import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission } from '../types';
 
 // API Configuration - only needs the API URL
 const API_CONFIG = {
@@ -729,7 +729,7 @@ export const nodeService = {
   getNode: async (planId: string, nodeId: string) => {
     console.log(`[api.ts] getNode: fetching node ${nodeId} from plan ${planId}`);
     try {
-      // Call the individual node endpoint to get full details (description, acceptance_criteria, etc.)
+      // Call the individual node endpoint to get full details (description, context, etc.)
       const response = await request<PlanNode>({
         method: 'GET',
         url: `/plans/${planId}/nodes/${nodeId}`,
@@ -833,7 +833,7 @@ export const nodeService = {
     });
   },
 
-  // Get all activities for a node (logs, artifacts, status changes)
+  // Get all activities for a node (logs, status changes)
   getNodeActivities: async (planId: string, nodeId: string) => {
     return request<any[]>({
       method: 'GET',
@@ -949,15 +949,6 @@ export const searchService = {
       params: { query },
     });
   },
-
-  // Search for artifacts across plans
-  searchArtifacts: async (query: string) => {
-    return request<ApiResponse<any>>({
-      method: 'GET',
-      url: '/artifacts/search',
-      params: { q: query },
-    });
-  },
 };
 
 // Logs endpoints
@@ -1001,46 +992,6 @@ export const logService = {
       console.error('[api.ts] Error adding log entry:', error);
       throw error;
     }
-  },
-};
-
-// Artifacts endpoints
-export const artifactService = {
-  getArtifacts: async (planId: string, nodeId: string) => {
-    return request<ApiResponse<Artifact[]>>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
-    });
-  },
-
-  addArtifact: async (planId: string, nodeId: string, artifactData: { name: string; content_type: string; url: string; metadata?: object }) => {
-    return request<ApiResponse<Artifact>>({
-      method: 'POST',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
-      data: artifactData,
-    });
-  },
-
-  getArtifact: async (planId: string, nodeId: string, artifactId: string) => {
-    return request<ApiResponse<Artifact>>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
-    });
-  },
-
-  updateArtifact: async (planId: string, nodeId: string, artifactId: string, artifactData: { name?: string; content_type?: string; url?: string; metadata?: object }) => {
-    return request<ApiResponse<Artifact>>({
-      method: 'PUT',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
-      data: artifactData,
-    });
-  },
-
-  deleteArtifact: async (planId: string, nodeId: string, artifactId: string) => {
-    return request<ApiResponse<null>>({
-      method: 'DELETE',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
-    });
   },
 };
 
@@ -1212,7 +1163,6 @@ export const githubService = {
       id: string;
       title: string;
       description?: string;
-      acceptance_criteria?: string;
       context?: string;
       node_type?: string;
       status?: string;
@@ -1402,7 +1352,6 @@ const apiServices = {
   activity: activityService,
   search: searchService,
   logs: logService,
-  artifacts: artifactService,
   upload: uploadService,
   users: userService,
   github: githubService,
