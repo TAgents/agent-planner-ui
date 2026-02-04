@@ -7,18 +7,19 @@ export type EntryType = 'decision' | 'context' | 'constraint' | 'learning' | 're
 export interface EntryTypeConfig {
   value: EntryType;
   label: string;
-  icon: string;
+  // Icon name for Lucide React - component renders the actual icon
+  iconName: 'Gavel' | 'Info' | 'Lock' | 'Lightbulb' | 'Link' | 'StickyNote';
   // Explicit Tailwind classes to avoid purging
   badgeClasses: string;
 }
 
 export const ENTRY_TYPES: EntryTypeConfig[] = [
-  { value: 'decision', label: 'Decision', icon: '⚖️', badgeClasses: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  { value: 'context', label: 'Context', icon: '📋', badgeClasses: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  { value: 'constraint', label: 'Constraint', icon: '🚧', badgeClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-  { value: 'learning', label: 'Learning', icon: '💡', badgeClasses: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  { value: 'reference', label: 'Reference', icon: '🔗', badgeClasses: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
-  { value: 'note', label: 'Note', icon: '📝', badgeClasses: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+  { value: 'decision', label: 'Decision', iconName: 'Gavel', badgeClasses: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  { value: 'context', label: 'Context', iconName: 'Info', badgeClasses: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+  { value: 'constraint', label: 'Constraint', iconName: 'Lock', badgeClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+  { value: 'learning', label: 'Learning', iconName: 'Lightbulb', badgeClasses: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+  { value: 'reference', label: 'Reference', iconName: 'Link', badgeClasses: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+  { value: 'note', label: 'Note', iconName: 'StickyNote', badgeClasses: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
 ];
 
 export function getEntryTypeConfig(type: EntryType): EntryTypeConfig {
