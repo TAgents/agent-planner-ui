@@ -81,6 +81,7 @@ const App: React.FC = () => {
                   <Route path="plans/:planId" element={<PlanVisualization />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<Goals />} />
+                  <Route path="knowledge" element={<KnowledgeSettings />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="settings/goals" element={<GoalSettings />} />
