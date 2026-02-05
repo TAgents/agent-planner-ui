@@ -22,6 +22,7 @@ import {
 import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
 import { formatDate } from '../utils/planUtils';
+import { formatDistanceToNow } from '../utils/dateUtils';
 import { Plan } from '../types';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { PLAN_EVENTS } from '../types/websocket';
@@ -248,6 +249,11 @@ const PlanCard: React.FC<{
                   ) : (
                     <span className="font-medium">{nodeCount} nodes</span>
                   )}
+                </div>
+
+                {/* Last Activity */}
+                <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[80px] hidden lg:block" title={`Updated ${formatDate(plan.updated_at)}`}>
+                  {formatDistanceToNow(plan.updated_at)}
                 </div>
 
                 {/* Progress Bar */}

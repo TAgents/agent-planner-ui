@@ -46,11 +46,17 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   // Fetch plans only for full variant when authenticated
   const { plans, isLoading } = usePlans(1, 20);
 
-  // Filter plans by search query
+  // Filter and sort plans (newest first by updated_at)
   const filteredPlans = useMemo((): Plan[] => {
     if (!plans) return [];
-    if (!searchQuery.trim()) return plans.slice(0, 10);
-    return plans
+    
+    // Sort by updated_at descending (newest first)
+    const sorted = [...plans].sort((a, b) => 
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+    
+    if (!searchQuery.trim()) return sorted.slice(0, 10);
+    return sorted
       .filter((plan: Plan) =>
         plan.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
