@@ -1,42 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, LayoutTemplate, Bot, ChevronRight, Sparkles, Search, X } from 'lucide-react';
-import { useTemplates } from '../../hooks/useTemplates';
+import { ArrowLeft, FileText, LayoutTemplate, Bot, ChevronRight, Sparkles, Search, X, AlertCircle } from 'lucide-react';
+import { useTemplates, Template } from '../../hooks/useTemplates';
 
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  category?: string;
-}
-
-// Template Selection Modal
+/**
+ * Modal for selecting a plan template from available options
+ */
 const TemplateModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   onSelect: (templateId: string) => void;
 }> = ({ isOpen, onClose, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: templates, isLoading } = useTemplates();
+  const { data: templates, isLoading, error } = useTemplates();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Memoized filtered templates
+  const filteredTemplates = useMemo(() => 
+    (templates || []).filter((t) =>
+      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [templates, searchQuery]
+  );
+
+  // Handle keyboard escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Focus the close button when modal opens
+      closeButtonRef.current?.focus();
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
+  // Trap focus within modal
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+    
+    const focusableElements = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement?.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement?.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const filteredTemplates = (templates || []).filter((t: Template) =>
-    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="template-modal-title">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div ref={modalRef} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 id="template-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
               Choose a Template
             </h2>
             <button
+              ref={closeButtonRef}
               onClick={onClose}
+              aria-label="Close template selection"
               className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X className="w-5 h-5" />
@@ -59,6 +105,12 @@ const TemplateModal: React.FC<{
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
             </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+              <p className="text-red-600 dark:text-red-400 font-medium">Failed to load templates</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Please try again later</p>
+            </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="text-center py-8">
               <LayoutTemplate className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
@@ -68,7 +120,7 @@ const TemplateModal: React.FC<{
             </div>
           ) : (
             <div className="grid gap-3">
-              {filteredTemplates.map((template: Template) => (
+              {filteredTemplates.map((template) => (
                 <button
                   key={template.id}
                   onClick={() => onSelect(template.id)}
@@ -102,19 +154,68 @@ const TemplateModal: React.FC<{
   );
 };
 
-// OpenClaw Agent Modal
+/**
+ * Modal explaining how to use OpenClaw agent for plan creation
+ */
 const OpenClawModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Handle keyboard escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      closeButtonRef.current?.focus();
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
+  // Trap focus within modal
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+    
+    const focusableElements = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement?.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement?.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="openclaw-modal-title">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div ref={modalRef} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-6">
         <button
+          ref={closeButtonRef}
           onClick={onClose}
+          aria-label="Close OpenClaw information"
           className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <X className="w-5 h-5" />
@@ -124,7 +225,7 @@ const OpenClawModal: React.FC<{
           <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <Bot className="w-8 h-8 text-purple-600 dark:text-purple-400" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 id="openclaw-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Ask Your OpenClaw Agent
           </h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
@@ -177,16 +278,27 @@ const OpenClawModal: React.FC<{
   );
 };
 
-// Main Create Plan Selector Page
+/**
+ * Create Plan Selector - Landing page for creating new plans
+ * Provides three options: Blank, Template, or OpenClaw Agent
+ */
 const CreatePlanSelector: React.FC = () => {
   const navigate = useNavigate();
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showOpenClawModal, setShowOpenClawModal] = useState(false);
 
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = useCallback((templateId: string) => {
     setShowTemplateModal(false);
     navigate(`/app/plans/new?template=${templateId}`);
-  };
+  }, [navigate]);
+
+  const handleCloseTemplateModal = useCallback(() => {
+    setShowTemplateModal(false);
+  }, []);
+
+  const handleCloseOpenClawModal = useCallback(() => {
+    setShowOpenClawModal(false);
+  }, []);
 
   const options = [
     {
@@ -304,12 +416,12 @@ const CreatePlanSelector: React.FC = () => {
       {/* Modals */}
       <TemplateModal
         isOpen={showTemplateModal}
-        onClose={() => setShowTemplateModal(false)}
+        onClose={handleCloseTemplateModal}
         onSelect={handleTemplateSelect}
       />
       <OpenClawModal
         isOpen={showOpenClawModal}
-        onClose={() => setShowOpenClawModal(false)}
+        onClose={handleCloseOpenClawModal}
       />
     </div>
   );
