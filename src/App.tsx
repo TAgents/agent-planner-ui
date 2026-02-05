@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { UIProvider } from './contexts/UIContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
+import { PresenceProvider } from './contexts/PresenceContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -48,6 +49,7 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <WebSocketProvider>
+        <PresenceProvider>
         <UIProvider>
           <BrowserRouter>
             <Routes>
@@ -89,6 +91,7 @@ const App: React.FC = () => {
             </Routes>
           </BrowserRouter>
         </UIProvider>
+        </PresenceProvider>
       </WebSocketProvider>
     </QueryClientProvider>
   );
