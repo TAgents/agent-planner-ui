@@ -18,6 +18,7 @@ import {
 import { planService } from '../services/api';
 import { formatDate } from '../utils/planUtils';
 import { useAuth } from '../hooks/useAuth';
+import ClonePlanModal from '../components/explore/ClonePlanModal';
 
 interface PublicPlanNode {
   id: string;
@@ -197,8 +198,7 @@ const PublicPlanView: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userId: currentUserId } = useAuth();
 
-  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
-  const [templateError, setTemplateError] = useState<string | null>(null);
+  const [showCloneModal, setShowCloneModal] = useState(false);
 
   const { data: response, isLoading, error } = useQuery<PublicPlanResponse>(
     ['publicPlan', planId],
@@ -275,36 +275,12 @@ const PublicPlanView: React.FC = () => {
     }
   };
 
-  const handleUseAsTemplate = async () => {
+  const handleUseAsTemplate = () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
-
-    if (!plan) return;
-
-    setIsCreatingTemplate(true);
-    setTemplateError(null);
-
-    try {
-      // Create new plan based on template
-      const newPlan = await planService.createPlan({
-        title: `${plan.title} (Copy)`,
-        description: plan.description || '',
-        status: 'draft',
-      });
-
-      // Note: Full node copying would require a backend endpoint
-      // For now, just create the plan and redirect
-      // TODO: Implement backend endpoint POST /plans/:id/duplicate to copy all nodes
-
-      navigate(`/app/plans/${newPlan.id}`);
-    } catch (err: any) {
-      console.error('Error creating template:', err);
-      setTemplateError('Failed to create template. Please try again.');
-    } finally {
-      setIsCreatingTemplate(false);
-    }
+    setShowCloneModal(true);
   };
 
   const isPlanOwner = plan?.owner?.id === currentUserId;
@@ -382,20 +358,15 @@ const PublicPlanView: React.FC = () => {
                 </button>
               )}
 
-              {/* Use as Template Button - visible only to non-owners */}
+              {/* Clone Plan Button - visible only to non-owners */}
               {isAuthenticated && !isPlanOwner && (
                 <button
                   onClick={handleUseAsTemplate}
-                  disabled={isCreatingTemplate}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Create a copy of this plan"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  title="Clone this plan to your workspace"
                 >
-                  {isCreatingTemplate ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                  <span>{isCreatingTemplate ? 'Creating...' : 'Use as Template'}</span>
+                  <Copy className="w-4 h-4" />
+                  <span>Clone Plan</span>
                 </button>
               )}
             </div>
@@ -405,23 +376,6 @@ const PublicPlanView: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message for Template Creation */}
-        {templateError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-red-800 dark:text-red-200 font-medium">Error</p>
-              <p className="text-red-700 dark:text-red-300 text-sm">{templateError}</p>
-            </div>
-            <button
-              onClick={() => setTemplateError(null)}
-              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
         {/* Plan Header */}
         <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-8 mb-6">
           <div className="flex items-start justify-between mb-4">
@@ -533,6 +487,15 @@ const PublicPlanView: React.FC = () => {
           </p>
         </div>
       </footer>
+
+      {/* Clone Plan Modal */}
+      {plan && (
+        <ClonePlanModal
+          plan={plan}
+          isOpen={showCloneModal}
+          onClose={() => setShowCloneModal(false)}
+        />
+      )}
     </div>
   );
 };
