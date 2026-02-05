@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
 import { Plan, PlanStatus } from '../../types';
 import NotificationBell from './NotificationBell';
+import ThemeToggle from '../common/ThemeToggle';
 
 interface AppSidebarProps {
   className?: string;
@@ -323,11 +324,14 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           {/* User Section - for authenticated users */}
           {isAuthenticated && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-800">
-              {/* Notification Bell - Desktop only (mobile has it in header) */}
+              {/* Theme Toggle & Notification Bell - Desktop only */}
               <div className="hidden md:flex items-center justify-between mb-2 px-2">
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Notifications
-                </span>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle size="sm" />
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Theme
+                  </span>
+                </div>
                 <NotificationBell />
               </div>
               
@@ -364,6 +368,13 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           {/* Sign In Section - for public/unauthenticated users */}
           {!isAuthenticated && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
+              {/* Theme Toggle for unauthenticated users */}
+              <div className="flex items-center justify-between px-2 mb-2">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Theme
+                </span>
+                <ThemeToggle size="sm" />
+              </div>
               <Link
                 to="/login"
                 onClick={handleNavClick}

@@ -27,10 +27,10 @@ export const StepCard: React.FC<StepCardProps> = ({
 
         {/* Content */}
         <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-8 md:pb-12'}`}>
-          <h3 className="text-xl md:text-2xl font-bold mb-2 text-gray-900 leading-tight">
+          <h3 className="text-xl md:text-2xl font-bold mb-2 text-gray-900 dark:text-white leading-tight">
             {title}
           </h3>
-          <p className="text-base text-gray-600 mb-4 leading-relaxed">
+          <p className="text-base text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
             {description}
           </p>
 
@@ -43,7 +43,7 @@ export const StepCard: React.FC<StepCardProps> = ({
 
       {/* Connector Line (except for last step) */}
       {!isLast && (
-        <div className="absolute left-6 top-14 w-0.5 h-full bg-gray-300 -z-10" />
+        <div className="absolute left-6 top-14 w-0.5 h-full bg-gray-300 dark:bg-gray-600 -z-10" />
       )}
     </div>
   );

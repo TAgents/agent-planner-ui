@@ -42,7 +42,7 @@ const Landing: React.FC = () => {
         <link rel="canonical" href="https://agentplanner.io/" />
       </Helmet>
 
-      <div className="min-h-screen bg-white overflow-x-hidden">
+      <div className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
         <HeroSection />
         <SocialProofSection />
         <FeaturesSection />

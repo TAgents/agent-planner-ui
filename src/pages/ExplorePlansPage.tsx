@@ -76,19 +76,19 @@ export const ExplorePlansPage = () => {
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="animate-pulse bg-gray-100 h-80 rounded-lg border border-gray-200"
+              className="animate-pulse bg-gray-100 dark:bg-gray-800 h-80 rounded-lg border border-gray-200 dark:border-gray-700"
             >
               <div className="p-6 space-y-4">
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded"></div>
-                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
                 </div>
-                <div className="h-2 bg-gray-200 rounded w-full"></div>
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
               </div>
             </div>
           ))}
@@ -99,13 +99,13 @@ export const ExplorePlansPage = () => {
     if (error) {
       return (
         <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+            <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load plans</h3>
-          <p className="text-gray-600 mb-4">We couldn't load the public plans. Please try again.</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Failed to load plans</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">We couldn't load the public plans. Please try again.</p>
           <button
             onClick={() => window.location.reload()}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -119,13 +119,13 @@ export const ExplorePlansPage = () => {
     if (!data || data.plans.length === 0) {
       return (
         <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+            <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No public plans found</h3>
-          <p className="text-gray-600 mb-4">Be the first to share your plan with the community!</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No public plans found</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Be the first to share your plan with the community!</p>
           <a
             href="/login"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -146,7 +146,7 @@ export const ExplorePlansPage = () => {
 
         {data.total_pages > 1 && (
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Showing {((page - 1) * data.limit) + 1} to {Math.min(page * data.limit, data.total)} of {data.total} plans
             </div>
 
@@ -154,7 +154,7 @@ export const ExplorePlansPage = () => {
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800"
                 aria-label="Previous page"
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +197,7 @@ export const ExplorePlansPage = () => {
                   return pages.map((pageNum, idx) => {
                     if (pageNum === '...') {
                       return (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">
+                        <span key={`ellipsis-${idx}`} className="px-2 text-gray-500 dark:text-gray-400">
                           ...
                         </span>
                       );
@@ -210,7 +210,7 @@ export const ExplorePlansPage = () => {
                         className={`px-3 py-2 text-sm font-medium rounded-md ${
                           page === pageNum
                             ? 'bg-blue-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                         aria-label={`Go to page ${pageNum}`}
                         aria-current={page === pageNum ? 'page' : undefined}
@@ -222,14 +222,14 @@ export const ExplorePlansPage = () => {
                 })()}
               </div>
 
-              <div className="sm:hidden px-3 py-2 text-sm text-gray-700">
+              <div className="sm:hidden px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                 Page {page} of {data.total_pages}
               </div>
 
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page >= data.total_pages}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800"
                 aria-label="Next page"
               >
                 Next
@@ -269,15 +269,15 @@ export const ExplorePlansPage = () => {
         <link rel="canonical" href="https://agentplanner.io/explore" />
       </Helmet>
 
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         {/* Header Section */}
-        <section className="py-12 md:py-16 bg-gradient-to-b from-blue-50 to-white border-b border-gray-200">
+        <section className="py-12 md:py-16 bg-gradient-to-b from-blue-50 dark:from-gray-800 to-white dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="container mx-auto px-4 max-w-7xl">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                 Explore Public Plans
               </h1>
-              <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                 Discover how teams are planning and building in public
               </p>
             </div>
@@ -294,14 +294,14 @@ export const ExplorePlansPage = () => {
                     placeholder="Search plans..."
                     value={search}
                     onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 <select
                   value={status || ''}
                   onChange={(e) => handleFilterChange('status', e.target.value || undefined)}
-                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">All Status</option>
                   <option value="draft">Draft</option>
@@ -313,7 +313,7 @@ export const ExplorePlansPage = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="recent">Most Recent</option>
                   <option value="alphabetical">Alphabetical</option>
@@ -328,22 +328,22 @@ export const ExplorePlansPage = () => {
                     type="checkbox"
                     checked={hasGithubLink === true}
                     onChange={(e) => handleFilterChange('hasGithubLink', e.target.checked || undefined)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
                   />
-                  <span className="text-sm text-gray-700">Has GitHub Link</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Has GitHub Link</span>
                 </label>
 
                 {(search || status || hasGithubLink !== undefined || sortBy !== 'recent') && (
                   <button
                     onClick={handleClearFilters}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
                     Clear Filters
                   </button>
                 )}
 
                 {data && (
-                  <span className="text-sm text-gray-600 ml-auto">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-auto">
                     {data.total} {data.total === 1 ? 'plan' : 'plans'} found
                   </span>
                 )}

@@ -88,7 +88,7 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
   return (
     <div
       onClick={handleClick}
-      className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer group"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg dark:hover:shadow-gray-900/50 transition-shadow cursor-pointer group"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -100,16 +100,16 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
     >
       {/* Header with Public Badge */}
       <div className="flex items-start justify-between mb-3">
-        <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors flex-1 pr-2">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex-1 pr-2">
           {plan.title}
         </h3>
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 flex-shrink-0">
           Public
         </span>
       </div>
 
       {/* Description */}
-      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
         {truncateDescription(plan.description)}
       </p>
 
@@ -131,11 +131,11 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">
+          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
             {plan.owner.name}
           </p>
           {plan.owner.github_username && (
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               @{plan.owner.github_username}
             </p>
           )}
@@ -149,7 +149,7 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
             href={`https://github.com/${plan.github_repo_owner}/${plan.github_repo_name}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
             <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
@@ -163,26 +163,26 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
       {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
             Progress
           </span>
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
             {plan.completion_percentage}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all"
+            className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all"
             style={{ width: `${plan.completion_percentage}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1.5">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
           {plan.completed_count} of {plan.task_count} tasks completed
         </p>
       </div>
 
       {/* Footer Stats */}
-      <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-4">
           {/* Star Button */}
           <button
@@ -191,7 +191,7 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
             className={`flex items-center transition-colors ${
               isStarred
                 ? 'text-yellow-500 hover:text-yellow-600'
-                : 'text-gray-400 hover:text-yellow-500'
+                : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500'
             } ${isStarring ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             title={isAuthenticated ? (isStarred ? 'Unstar plan' : 'Star plan') : 'Sign in to star'}
           >
