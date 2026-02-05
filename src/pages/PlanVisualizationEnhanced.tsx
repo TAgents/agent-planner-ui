@@ -24,6 +24,8 @@ import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useFocusNavigation } from '../hooks/useFocusNavigation';
+import { useViewPresence } from '../contexts/PresenceContext';
+import { PresenceIndicator } from '../components/presence/PresenceIndicator';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -158,6 +160,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
     return selectedNodeFromAPI || nodeFromList;
   }, [planNodes, selectedNodeFromAPI, uiState.nodeDetails.selectedNodeId]);
   usePlanActivity(planId || '', 1, 5);
+
+  // Track presence for this plan (shows who is viewing)
+  const { viewers: planViewers } = useViewPresence('plan', planId);
 
   // Get user ID for query keys (matching useNodes implementation)
   const getUserId = useCallback(() => {
@@ -576,6 +581,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
             <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
               {plan.title}
             </h1>
+            
+            {/* Show active viewers */}
+            {planViewers.length > 0 && (
+              <div className="hidden sm:block">
+                <PresenceIndicator viewers={planViewers} maxVisible={3} size="sm" />
+              </div>
+            )}
           </div>
 
           {/* Right section */}

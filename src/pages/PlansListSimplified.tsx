@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -15,7 +15,9 @@ import {
   Trash2,
   RotateCcw,
   Lock,
-  Unlock
+  Unlock,
+  HelpCircle,
+  ArrowUpDown
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
@@ -23,6 +25,39 @@ import { formatDate } from '../utils/planUtils';
 import { Plan } from '../types';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { PLAN_EVENTS } from '../types/websocket';
+import { decisionsApi } from '../services/api';
+
+// Sort options
+const SORT_OPTIONS = [
+  { value: 'updated_desc', label: 'Recently Active' },
+  { value: 'created_desc', label: 'Newest First' },
+  { value: 'created_asc', label: 'Oldest First' },
+  { value: 'title_asc', label: 'A-Z' },
+  { value: 'progress_desc', label: 'Most Progress' },
+];
+
+// Hook to fetch pending decision counts for a plan
+function usePendingDecisions(planId: string) {
+  const [count, setCount] = useState(0);
+  
+  useEffect(() => {
+    let mounted = true;
+    
+    decisionsApi.list(planId, { status: 'pending' })
+      .then(decisions => {
+        if (mounted && Array.isArray(decisions)) {
+          setCount(decisions.length);
+        }
+      })
+      .catch(() => {
+        // Silently fail - endpoint might not exist
+      });
+    
+    return () => { mounted = false; };
+  }, [planId]);
+  
+  return count;
+}
 
 // Empty state component for first-time users
 const EmptyPlansGuide: React.FC = () => {
@@ -76,13 +111,17 @@ const EmptyPlansGuide: React.FC = () => {
 };
 
 // Enhanced Plan card component that fetches its own node data
-const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, viewMode }) => {
+const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list'; highlight?: boolean }> = ({ plan, viewMode, highlight }) => {
   const { nodes, isLoading } = useNodes(plan.id);
   const { deletePlan, updatePlan } = usePlans();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  
+  // Fetch pending decision count for this plan
+  const pendingDecisionsCount = usePendingDecisions(plan.id);
 
   const isArchived = plan.status === 'archived';
+  const needsAttention = pendingDecisionsCount > 0;
 
   // Extract visibility information
   const isPublic = plan.visibility === 'public' || plan.metadata?.is_public === true;
@@ -163,7 +202,11 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
       <div className="relative group">
         <Link
           to={`/app/plans/${plan.id}`}
-          className="block bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 overflow-hidden"
+          className={`block bg-white dark:bg-gray-800 rounded-xl border-2 hover:shadow-lg transition-all duration-200 overflow-hidden ${
+            highlight || needsAttention
+              ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-400 dark:hover:border-amber-600'
+              : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
+          }`}
         >
           <div className="p-4">
             <div className="flex items-center gap-4">
@@ -231,6 +274,17 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list' }> = ({ plan, v
                     {isLoading ? '-' : `${progress}%`}
                   </span>
                 </div>
+
+                {/* Pending Decisions Indicator */}
+                {pendingDecisionsCount > 0 && (
+                  <span 
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    title={`${pendingDecisionsCount} pending decision${pendingDecisionsCount !== 1 ? 's' : ''}`}
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    {pendingDecisionsCount}
+                  </span>
+                )}
 
                 {/* Status Badge */}
                 <span className={`px-2.5 py-1 text-xs font-medium rounded whitespace-nowrap ${getStatusClasses(plan.status)}`}>
@@ -500,7 +554,8 @@ const PlansListSimplified: React.FC = () => {
   const { subscribe } = useWebSocket();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'completed' | 'archived'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Default to list view
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [sortBy, setSortBy] = useState('updated_desc'); // Default to recently active
 
   // Subscribe to WebSocket plan events for real-time updates
   useEffect(() => {
@@ -543,6 +598,33 @@ const PlansListSimplified: React.FC = () => {
 
     return matchesSearch && matchesStatus;
   });
+
+  // Sort plans based on selected sort option
+  const sortedPlans = useMemo(() => {
+    const sorted = [...filteredPlans];
+    
+    switch (sortBy) {
+      case 'updated_desc':
+        sorted.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        break;
+      case 'created_desc':
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'created_asc':
+        sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        break;
+      case 'title_asc':
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'progress_desc':
+        sorted.sort((a, b) => (b.progress || 0) - (a.progress || 0));
+        break;
+      default:
+        sorted.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    }
+    
+    return sorted;
+  }, [filteredPlans, sortBy]);
 
   if (isLoading) {
     return (
@@ -615,6 +697,22 @@ const PlansListSimplified: React.FC = () => {
                   })}
                 </div>
 
+                {/* Sort Dropdown */}
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                  >
+                    {SORT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ArrowUpDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+
                 {/* View Mode Toggle */}
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700">
                   <button
@@ -651,7 +749,7 @@ const PlansListSimplified: React.FC = () => {
         {/* Plans Grid/List or Empty State */}
         {plans.length === 0 ? (
           <EmptyPlansGuide />
-        ) : filteredPlans.length === 0 ? (
+        ) : sortedPlans.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
               <Search className="w-10 h-10 text-gray-400" />
@@ -668,7 +766,7 @@ const PlansListSimplified: React.FC = () => {
             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
             : 'space-y-3'
           }>
-            {filteredPlans.map((plan: Plan) => (
+            {sortedPlans.map((plan: Plan) => (
               <PlanCard key={plan.id} plan={plan} viewMode={viewMode} />
             ))}
           </div>
