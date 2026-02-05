@@ -10,6 +10,9 @@ import {
   LogIn,
   FolderKanban,
   X,
+  Home,
+  Target,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
@@ -252,6 +255,38 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               >
                 <FolderKanban className="w-5 h-5" />
                 <span className="text-sm">My Plans</span>
+              </Link>
+            )}
+
+            {/* Goals - only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                to="/app/goals"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive('/app/goals')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Target className="w-5 h-5" />
+                <span className="text-sm">Goals</span>
+              </Link>
+            )}
+
+            {/* Knowledge - only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                to="/app/knowledge"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive('/app/knowledge')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                <span className="text-sm">Knowledge</span>
               </Link>
             )}
 
