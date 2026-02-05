@@ -18,25 +18,25 @@ const Landing: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Agent Planner - AI-Powered Planning for Your Ideas</title>
+        <title>AgentPlanner - Structured Planning for OpenClaw Agents</title>
         <meta
           name="description"
-          content="Let AI create plans from your ideas. Implement the plan with your AI tools. Or let our Agents implement them."
+          content="Give your OpenClaw agent the power of structured planning. Create detailed plans, track progress, and execute projects through natural conversation."
         />
-        <meta name="keywords" content="AI planning, MCP, Model Context Protocol, collaborative planning, AI agents, Claude integration" />
+        <meta name="keywords" content="OpenClaw, AI agents, MCP, Model Context Protocol, AI planning, agent tools, Claude, structured planning" />
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://agentplanner.io/" />
-        <meta property="og:title" content="Agent Planner - AI-Powered Planning for Your Ideas" />
-        <meta property="og:description" content="Let AI create plans from your ideas. Implement the plan with your AI tools. Or let our Agents implement them." />
+        <meta property="og:title" content="AgentPlanner - Structured Planning for OpenClaw Agents" />
+        <meta property="og:description" content="Give your OpenClaw agent the power of structured planning. Create detailed plans, track progress, and execute projects through natural conversation." />
         <meta property="og:image" content="https://agentplanner.io/og-image.png" />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="https://agentplanner.io/" />
-        <meta property="twitter:title" content="Agent Planner - AI-Powered Planning for Your Ideas" />
-        <meta property="twitter:description" content="Let AI create plans from your ideas. Implement the plan with your AI tools. Or let our Agents implement them." />
+        <meta property="twitter:title" content="AgentPlanner - Structured Planning for OpenClaw Agents" />
+        <meta property="twitter:description" content="Give your OpenClaw agent the power of structured planning. Create detailed plans, track progress, and execute projects through natural conversation." />
         <meta property="twitter:image" content="https://agentplanner.io/og-image.png" />
 
         <link rel="canonical" href="https://agentplanner.io/" />

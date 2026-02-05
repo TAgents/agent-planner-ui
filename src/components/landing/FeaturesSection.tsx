@@ -1,11 +1,14 @@
 import React from 'react';
 import {
+  Bot,             // Agent-First
+  MessageSquare,   // Natural Language
   LayoutList,      // Hierarchical Planning
   Globe,           // Public Plans
-  Github,          // GitHub Integration
-  Bot,             // MCP-Native
-  Zap,             // Real-time Sync
-  Plug             // REST API
+  Zap,             // Real-time
+  Users,           // Human-in-the-Loop
+  BookOpen,        // Knowledge Store
+  Webhook,         // Webhooks
+  Github,          // GitHub
 } from 'lucide-react';
 import { FeatureCard } from './FeatureCard';
 
@@ -18,41 +21,59 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    title: 'Hierarchical Planning',
-    description: 'Organize work into plans, phases, tasks, and milestones. Each node supports metadata, acceptance criteria, and agent instructions for complete project structure.',
-    icon: LayoutList,
-    color: 'blue'
-  },
-  {
-    title: 'Public Plans & Collaboration',
-    description: 'Share plans publicly for transparency and community visibility. Control edit permissions with GitHub committer status. Perfect for open source projects.',
-    icon: Globe,
-    color: 'green'
-  },
-  {
-    title: 'GitHub Integration',
-    description: 'Sign in with GitHub OAuth for seamless authentication. Link plans to repositories with automatic permission detection based on commit history.',
-    icon: Github,
-    color: 'gray'
-  },
-  {
-    title: 'MCP-Native',
-    description: 'AI agents interact directly via Model Context Protocol. Tools for creating plans, updating nodes, searching, and batch operations without custom integration.',
+    title: 'Agent-First Design',
+    description: 'Built for OpenClaw agents from the ground up. MCP-native tools let your agent create, update, and track plans through natural conversation.',
     icon: Bot,
     color: 'purple'
   },
   {
-    title: 'Real-time Sync',
-    description: 'WebSocket connections sync changes instantly across all clients. See who\'s viewing nodes, typing indicators, and live updates from AI agents and team members.',
-    icon: Zap,
+    title: 'Natural Language Planning',
+    description: 'Just tell your agent what you want to build. It breaks down goals into phases, tasks, and milestones automatically.',
+    icon: MessageSquare,
+    color: 'blue'
+  },
+  {
+    title: 'Human-in-the-Loop',
+    description: 'Agents can request decisions when they need input. Get notified, review options, and guide your agent\'s work without constant oversight.',
+    icon: Users,
+    color: 'green'
+  },
+  {
+    title: 'Structured Execution',
+    description: 'Hierarchical plans with phases, tasks, and milestones. Each node has context, instructions, and acceptance criteria for clear agent guidance.',
+    icon: LayoutList,
     color: 'amber'
   },
   {
-    title: 'REST API',
-    description: 'Complete REST API with authentication, RLS policies, and OpenAPI documentation. Query plans, nodes, and logs programmatically from any platform.',
-    icon: Plug,
+    title: 'Persistent Knowledge',
+    description: 'Agents store decisions, context, and learnings in knowledge bases. Information persists across sessions for continuity.',
+    icon: BookOpen,
     color: 'indigo'
-  }
+  },
+  {
+    title: 'Real-time Sync',
+    description: 'WebSocket connections sync changes instantly. See agent activity live, track progress, and collaborate in real-time.',
+    icon: Zap,
+    color: 'rose'
+  },
+  {
+    title: 'Webhook Notifications',
+    description: 'Get notified when tasks are blocked, completed, or need attention. OpenClaw can ping you through your preferred channels.',
+    icon: Webhook,
+    color: 'cyan'
+  },
+  {
+    title: 'Public Plans',
+    description: 'Share plans publicly for transparency. Perfect for open source projects where community can see and contribute.',
+    icon: Globe,
+    color: 'emerald'
+  },
+  {
+    title: 'GitHub Integration',
+    description: 'Sign in with GitHub, link plans to repos, and control permissions based on commit history. Seamless for developers.',
+    icon: Github,
+    color: 'gray'
+  },
 ];
 
 export const FeaturesSection: React.FC = () => {
@@ -61,11 +82,14 @@ export const FeaturesSection: React.FC = () => {
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
+            Capabilities
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
-            Core Capabilities
+            Everything Your Agent Needs
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Everything you need to plan, collaborate, and execute with your team and AI agents
+            From planning to execution—give your OpenClaw agent the tools to work effectively
           </p>
         </div>
 
