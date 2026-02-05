@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTokens } from '../hooks/useTokens';
 import { TokenPermission } from '../types';
-import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles, Building2 } from 'lucide-react';
+import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles, Building2, Webhook } from 'lucide-react';
 
 // Settings Navigation Tabs Component
 const SettingsNav: React.FC = () => {
@@ -11,6 +11,7 @@ const SettingsNav: React.FC = () => {
   const tabs = [
     { path: '/app/settings', label: 'API Tokens', icon: Key },
     { path: '/app/settings/organization', label: 'Organizations', icon: Building2 },
+    { path: '/app/settings/integrations', label: 'Integrations', icon: Webhook },
   ];
 
   return (
