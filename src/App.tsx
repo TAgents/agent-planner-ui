@@ -23,6 +23,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
+import CreatePlanSelector from './pages/plans/CreatePlanSelector';
 import Settings from './pages/Settings';
 import OrganizationSettings from './pages/settings/OrganizationSettings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
@@ -79,6 +80,7 @@ const App: React.FC = () => {
                   <Route index element={<Dashboard />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="plans" element={<PlansList />} />
+                  <Route path="plans/create" element={<CreatePlanSelector />} />
                   <Route path="plans/new" element={<CreatePlan />} />
                   <Route path="plans/ai-create" element={<AICreatePlan />} />
                   <Route path="plans/:planId" element={<PlanVisualization />} />
