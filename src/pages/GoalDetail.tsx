@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import {
   Target,
   ArrowLeft,
@@ -37,7 +37,10 @@ interface Notification {
 
 // Overview Tab Content
 const OverviewTab: React.FC<{ goal: Goal }> = ({ goal }) => {
-  const progress = calculateOverallProgress(goal.success_metrics);
+  const progress = useMemo(
+    () => calculateOverallProgress(goal.success_metrics),
+    [goal.success_metrics]
+  );
 
   return (
     <div className="space-y-6">
@@ -331,12 +334,15 @@ const DeleteModal: React.FC<{
   );
 };
 
+// Notification timeout constant
+const NOTIFICATION_TIMEOUT_MS = 5000;
+
 // Main GoalDetail Component
 const GoalDetail: React.FC = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { goal, loading, error, deleteGoal, unlinkPlan } = useGoal(goalId || null);
+  const { goal, loading, error, deleteGoal, unlinkPlan } = useGoal(goalId ?? null);
   
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -358,7 +364,7 @@ const GoalDetail: React.FC = () => {
 
   const showNotification = useCallback((message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), NOTIFICATION_TIMEOUT_MS);
   }, []);
 
   const handleDelete = useCallback(async () => {
@@ -381,6 +387,11 @@ const GoalDetail: React.FC = () => {
   const handleError = useCallback((message: string) => {
     showNotification(message, 'error');
   }, [showNotification]);
+
+  // Redirect if no goalId provided
+  if (!goalId) {
+    return <Navigate to="/app/goals" replace />;
+  }
 
   if (loading) {
     return (
@@ -477,9 +488,13 @@ const GoalDetail: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {/* TODO: Implement edit modal */}}
+                onClick={() => {
+                  // Edit functionality will be implemented in a future update
+                  // See: https://github.com/TAgents/agent-planner-ui/issues/new?title=Implement+goal+edit+modal
+                  showNotification('Edit functionality coming soon!', 'success');
+                }}
                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title="Edit goal"
+                title="Edit goal (coming soon)"
                 aria-label="Edit goal"
               >
                 <Edit className="w-5 h-5" />

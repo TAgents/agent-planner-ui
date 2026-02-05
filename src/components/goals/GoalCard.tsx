@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Target,
@@ -164,7 +164,10 @@ const DropdownMenu: React.FC<{
 };
 
 const GoalCard: React.FC<GoalCardProps> = ({ goal, onEdit, onDelete, onArchive }) => {
-  const overallProgress = calculateOverallProgress(goal.success_metrics);
+  const overallProgress = useMemo(
+    () => calculateOverallProgress(goal.success_metrics),
+    [goal.success_metrics]
+  );
   const hasMetrics = goal.success_metrics && goal.success_metrics.length > 0;
 
   return (
