@@ -1901,3 +1901,97 @@ export const webhookApi = {
     });
   },
 };
+
+// Dashboard Types
+export interface DashboardSummary {
+  pending_decisions_count: number;
+  pending_agent_requests_count: number;
+  active_plans_count: number;
+  tasks_completed_this_week: number;
+  active_goals_count: number;
+  knowledge_entries_count: number;
+}
+
+export interface PendingDecision {
+  id: string;
+  title: string;
+  description?: string;
+  urgency: string;
+  created_at: string;
+  plan_id: string;
+  plan_title: string;
+  node_id?: string;
+}
+
+export interface PendingAgentRequest {
+  id: string;
+  task_title: string;
+  request_type: string;
+  requested_at: string;
+  message?: string;
+  plan_id: string;
+  plan_title: string;
+}
+
+export interface PendingItems {
+  decisions: PendingDecision[];
+  agent_requests: PendingAgentRequest[];
+  total: number;
+}
+
+export interface DashboardPlan {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  progress?: number | null;
+  is_owner: boolean;
+}
+
+export interface DashboardGoal {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  target_date?: string;
+  current_value?: number;
+  target_value?: number;
+  metric_type?: string;
+  progress: number;
+}
+
+// Dashboard API
+export const dashboardApi = {
+  getSummary: async () => {
+    return request<DashboardSummary>({
+      method: 'GET',
+      url: '/dashboard/summary',
+    });
+  },
+
+  getPending: async (limit: number = 5) => {
+    return request<PendingItems>({
+      method: 'GET',
+      url: '/dashboard/pending',
+      params: { limit },
+    });
+  },
+
+  getRecentPlans: async (limit: number = 6) => {
+    return request<{ plans: DashboardPlan[] }>({
+      method: 'GET',
+      url: '/dashboard/recent-plans',
+      params: { limit },
+    });
+  },
+
+  getActiveGoals: async (limit: number = 5) => {
+    return request<{ goals: DashboardGoal[] }>({
+      method: 'GET',
+      url: '/dashboard/active-goals',
+      params: { limit },
+    });
+  },
+};

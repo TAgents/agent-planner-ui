@@ -12,7 +12,7 @@ import {
   X,
   Target,
   BookOpen,
-  // Home, // Reserved for future Dashboard page (Phase 7)
+  Home,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
@@ -243,6 +243,22 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         {/* Bottom Navigation */}
         <div className="border-t border-gray-200 dark:border-gray-800">
           <nav className="p-2 space-y-1">
+            {/* Home/Dashboard - only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                to="/app"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  location.pathname === '/app' || location.pathname === '/app/dashboard'
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Home className="w-5 h-5" />
+                <span className="text-sm">Home</span>
+              </Link>
+            )}
+
             {/* My Plans - only for authenticated users */}
             {isAuthenticated && (
               <Link
