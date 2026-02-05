@@ -17,6 +17,7 @@ import { PlanTreeView } from '../components/tree/PlanTreeView';
 import VisibilityToggle from '../components/plans/VisibilityToggle';
 import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
+import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -24,7 +25,7 @@ import { usePlan } from '../hooks/usePlans';
 import { useNodes, useNode } from '../hooks/useNodes';
 import { usePlanActivity } from '../hooks/usePlanActivity';
 import { usePlanEvents } from '../hooks/useWebSocket';
-import { NodeType, NodeStatus } from '../types';
+import { NodeType, NodeStatus, Decision } from '../types';
 
 // Import detail components
 import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
@@ -198,6 +199,10 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
+  
+  // Decision UI state
+  const [showDecisionPanel, setShowDecisionPanel] = useState(false);
+  const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -477,6 +482,12 @@ const PlanVisualizationEnhanced: React.FC = () => {
               />
             </div>
 
+            {/* Decision Badge - shows pending decisions count */}
+            <DecisionBadge
+              planId={planId || ''}
+              onClick={() => setShowDecisionPanel(true)}
+            />
+
             {/* WebSocket connection status indicator - hidden on mobile */}
             <div className="hidden sm:flex px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
               <WebSocketStatus showDetails={false} />
@@ -662,6 +673,30 @@ const PlanVisualizationEnhanced: React.FC = () => {
         isOpen={showHelp}
         onClose={() => setShowHelp(false)}
       />
+
+      {/* Decision Panel */}
+      <DecisionPanel
+        planId={planId || ''}
+        isOpen={showDecisionPanel}
+        onClose={() => setShowDecisionPanel(false)}
+        onSelectDecision={(decision) => {
+          setSelectedDecision(decision);
+          setShowDecisionPanel(false);
+        }}
+      />
+
+      {/* Decision Detail Modal */}
+      {selectedDecision && (
+        <DecisionDetailModal
+          decision={selectedDecision}
+          planId={planId || ''}
+          isOpen={!!selectedDecision}
+          onClose={() => setSelectedDecision(null)}
+          onDecisionMade={() => {
+            setSelectedDecision(null);
+          }}
+        />
+      )}
     </div>
   );
 };
