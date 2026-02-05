@@ -1460,8 +1460,19 @@ export interface Goal {
   time_horizon: string;
   github_repo_url?: string;
   linked_plans: LinkedPlan[];
+  linked_plans_count?: number;
   created_at: string;
   updated_at: string;
+  organization?: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
+  created_by_user?: {
+    id: string;
+    name?: string;
+    email?: string;
+  };
 }
 
 // Goal Service
