@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
 import { CodeBlock } from './CodeBlock';
 import { StepCard } from './StepCard';
+import { Bot, Key, Terminal, MessageSquare } from 'lucide-react';
 
 export const GettingStartedSection: React.FC = () => {
-  const [configTab, setConfigTab] = useState<'desktop' | 'code'>('desktop');
+  const [configTab, setConfigTab] = useState<'openclaw' | 'claude-desktop' | 'claude-code'>('openclaw');
+
+  const openclawConfig = `# In your OpenClaw config (config.yaml)
+tools:
+  - name: agent-planner
+    type: mcp
+    command: npx
+    args: ["-y", "agent-planner-mcp"]
+    env:
+      API_URL: https://api.agentplanner.io
+      USER_API_TOKEN: your_api_token_here`;
 
   const claudeDesktopConfig = `{
   "mcpServers": {
-    "planning-system": {
+    "agent-planner": {
       "command": "npx",
       "args": ["-y", "agent-planner-mcp"],
       "env": {
@@ -18,44 +29,42 @@ export const GettingStartedSection: React.FC = () => {
   }
 }`;
 
-  const claudeCodeConfig = `claude mcp add planning-system npx agent-planner-mcp \\
+  const claudeCodeConfig = `claude mcp add agent-planner npx agent-planner-mcp \\
   -e API_URL=https://api.agentplanner.io \\
   -e USER_API_TOKEN=your_api_token_here`;
 
   const steps = [
     {
       number: 1,
-      title: 'Sign in to your account',
-      description: 'Sign in with GitHub or create an account with email. GitHub integration syncs your permissions automatically.',
-      code: null,
-      language: null,
+      title: 'Create Your Account',
+      description: 'Sign in with GitHub or email. Your OpenClaw agent will use your account to create and manage plans.',
+      icon: Bot,
       showButton: true,
       showTabs: false
     },
     {
       number: 2,
       title: 'Generate an API Token',
-      description: 'Go to Settings → API Tokens and create a new token. Copy it - you\'ll need it for the next step.',
-      code: null,
-      language: null,
+      description: 'Go to Settings → API Tokens and create a new token with read/write permissions. Keep it secure!',
+      icon: Key,
       showButton: false,
       showTabs: false
     },
     {
       number: 3,
-      title: 'Configure Claude',
-      description: 'Add the Agent Planner MCP server to your Claude configuration. The server runs via npx - no installation needed!',
-      code: null,
-      language: 'json',
+      title: 'Configure Your Agent',
+      description: 'Add the AgentPlanner MCP server to your agent\'s tools. Works with OpenClaw, Claude Desktop, or any MCP-compatible client.',
+      icon: Terminal,
       showButton: false,
       showTabs: true
     },
     {
       number: 4,
-      title: 'Start Planning with AI',
-      description: 'Tell Claude to create your first plan. The agent will use MCP tools to interact with Agent Planner.',
-      code: `Create a plan for "Build REST API" with phases for design, implementation, and testing. Add tasks to the implementation phase: set up Express server, add authentication, create database models.`,
-      language: 'text',
+      title: 'Start Planning',
+      description: 'Ask your agent to create a plan. It will break down your goals into structured phases and tasks.',
+      icon: MessageSquare,
+      code: `"Create a plan for building a mobile app with phases 
+for design, development, and launch"`,
       showButton: false,
       showTabs: false
     }
@@ -66,11 +75,14 @@ export const GettingStartedSection: React.FC = () => {
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-sm font-medium mb-4">
+            5 Minutes to Setup
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
-            Getting Started
+            Get Your Agent Planning
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-            Set up Agent Planner in minutes and start collaborating with AI agents
+            Connect AgentPlanner to your OpenClaw agent and start creating structured plans
           </p>
         </div>
 
@@ -87,11 +99,21 @@ export const GettingStartedSection: React.FC = () => {
               {/* Configuration Tabs for Step 3 */}
               {step.showTabs && (
                 <>
-                  <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                     <button
-                      onClick={() => setConfigTab('desktop')}
-                      className={`px-4 py-2 font-medium transition-colors ${
-                        configTab === 'desktop'
+                      onClick={() => setConfigTab('openclaw')}
+                      className={`px-4 py-2 font-medium transition-colors whitespace-nowrap ${
+                        configTab === 'openclaw'
+                          ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      OpenClaw
+                    </button>
+                    <button
+                      onClick={() => setConfigTab('claude-desktop')}
+                      className={`px-4 py-2 font-medium transition-colors whitespace-nowrap ${
+                        configTab === 'claude-desktop'
                           ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
@@ -99,9 +121,9 @@ export const GettingStartedSection: React.FC = () => {
                       Claude Desktop
                     </button>
                     <button
-                      onClick={() => setConfigTab('code')}
-                      className={`px-4 py-2 font-medium transition-colors ${
-                        configTab === 'code'
+                      onClick={() => setConfigTab('claude-code')}
+                      className={`px-4 py-2 font-medium transition-colors whitespace-nowrap ${
+                        configTab === 'claude-code'
                           ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
@@ -109,40 +131,52 @@ export const GettingStartedSection: React.FC = () => {
                       Claude Code
                     </button>
                   </div>
-                  <CodeBlock
-                    code={configTab === 'desktop' ? claudeDesktopConfig : claudeCodeConfig}
-                    language={configTab === 'desktop' ? 'json' : 'bash'}
+                  <CodeBlock 
+                    code={configTab === 'openclaw' ? openclawConfig : configTab === 'claude-desktop' ? claudeDesktopConfig : claudeCodeConfig} 
+                    language={configTab === 'claude-code' ? 'bash' : configTab === 'openclaw' ? 'yaml' : 'json'} 
                   />
-                  <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                    {configTab === 'desktop'
-                      ? 'Add to ~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%/Claude/claude_desktop_config.json (Windows)'
-                      : 'Run this command in your project directory to configure Claude Code'
-                    }
-                  </p>
                 </>
               )}
 
-              {step.code && !step.showTabs && (
-                <CodeBlock
-                  code={step.code}
-                  language={step.language || 'text'}
-                />
+              {/* Code example for Step 4 */}
+              {step.code && (
+                <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <p className="text-sm text-purple-700 dark:text-purple-300 font-medium mb-2">Example prompt:</p>
+                  <code className="text-sm text-purple-800 dark:text-purple-200 font-mono">
+                    {step.code}
+                  </code>
+                </div>
               )}
 
-              {/* Step 1: Sign-in Button */}
+              {/* Sign in button for Step 1 */}
               {step.showButton && (
                 <a
                   href="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors mt-4"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                  Sign In
+                  Get Started
                 </a>
               )}
             </StepCard>
           ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="mt-12 text-center p-8 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl border border-purple-200 dark:border-purple-800">
+          <Bot className="w-12 h-12 text-purple-600 dark:text-purple-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Ready to supercharge your agent?
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Give your OpenClaw agent the ability to plan, track, and execute complex projects.
+          </p>
+          <a
+            href="/login"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+          >
+            <Bot className="w-5 h-5" />
+            Start for Free
+          </a>
         </div>
       </div>
     </section>
