@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import AppSidebar from './AppSidebar';
+import NotificationBell from './NotificationBell';
 
 const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,8 +38,8 @@ const MainLayout: React.FC = () => {
             </span>
           </Link>
           
-          {/* Placeholder for right side (keeps logo centered) */}
-          <div className="w-10" />
+          {/* Notification Bell */}
+          <NotificationBell />
         </header>
 
         <main className="flex-1 overflow-y-auto">
