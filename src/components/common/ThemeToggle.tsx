@@ -39,7 +39,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
         hover:bg-gray-100 dark:hover:bg-gray-800
         hover:text-gray-900 dark:hover:text-white
         transition-colors
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+        focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-opacity-50
         ${className}
       `}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
