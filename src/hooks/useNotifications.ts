@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from 'react-query';
 import { useCallback } from 'react';
-import { decisionsApi, agentRequestApi } from '../services/api';
+import { decisionsApi, agentRequestApi, planService } from '../services/api';
 import { useWebSocketEvent } from './useWebSocket';
 import { AGENT_EVENTS } from '../types/websocket';
 
@@ -25,33 +25,35 @@ export interface NotificationSummary {
 
 // Fetch pending notifications across all accessible plans
 async function fetchPendingNotifications(): Promise<NotificationSummary> {
+  // Check if user is authenticated
+  const sessionStr = localStorage.getItem('auth_session');
+  if (!sessionStr) {
+    return {
+      decisions: [],
+      agentRequests: [],
+      totalCount: 0,
+      hasUrgent: false,
+    };
+  }
+
   try {
-    // Get all plans the user has access to
-    const plansResponse = await fetch('/api/plans', {
-      headers: {
-        'Authorization': `Bearer ${JSON.parse(localStorage.getItem('auth_session') || '{}').access_token}`,
-      },
-    });
-    
-    if (!plansResponse.ok) {
-      throw new Error('Failed to fetch plans');
-    }
-    
-    const plans = await plansResponse.json();
+    // Get all plans the user has access to using the API client
+    const plansData = await planService.getPlans(1, 20);
+    const plans = Array.isArray(plansData) ? plansData : (plansData?.plans || []);
     
     // For each plan, fetch pending decisions and agent requests
     const decisions: NotificationItem[] = [];
     const agentRequests: NotificationItem[] = [];
     
     // Limit to first 10 plans to avoid too many requests
-    const plansToCheck = (Array.isArray(plans) ? plans : plans.plans || []).slice(0, 10);
+    const plansToCheck = plans.slice(0, 10);
     
-    await Promise.all(plansToCheck.map(async (plan: any) => {
+    await Promise.all(plansToCheck.map(async (plan: { id: string; title: string }) => {
       try {
         // Fetch pending decisions
         const planDecisions = await decisionsApi.list(plan.id, { status: 'pending' });
         if (Array.isArray(planDecisions)) {
-          planDecisions.forEach((d: any) => {
+          planDecisions.forEach((d) => {
             decisions.push({
               id: d.id,
               type: 'decision',
@@ -64,20 +66,24 @@ async function fetchPendingNotifications(): Promise<NotificationSummary> {
           });
         }
         
-        // Fetch pending agent requests
-        const planRequests = await agentRequestApi.listForPlan(plan.id, 'pending');
-        if (Array.isArray(planRequests)) {
-          planRequests.forEach((r: any) => {
-            agentRequests.push({
-              id: r.id,
-              type: 'agent_request',
-              plan_id: plan.id,
-              plan_title: plan.title,
-              title: r.task_title || 'Agent Request',
-              request_type: r.request_type,
-              created_at: r.created_at,
+        // Fetch pending agent requests (if endpoint exists)
+        try {
+          const planRequests = await agentRequestApi.listForPlan(plan.id, 'pending');
+          if (Array.isArray(planRequests)) {
+            planRequests.forEach((r) => {
+              agentRequests.push({
+                id: r.id,
+                type: 'agent_request',
+                plan_id: plan.id,
+                plan_title: plan.title,
+                title: r.prompt || `${r.request_type} request`,
+                request_type: r.request_type,
+                created_at: r.created_at,
+              });
             });
-          });
+          }
+        } catch {
+          // Agent requests endpoint might not exist yet - silently skip
         }
       } catch (err) {
         // Silently skip plans where fetching fails (might not have access)
@@ -112,6 +118,7 @@ export function usePendingNotifications() {
     {
       refetchInterval: 60000, // Poll every 60s as fallback
       staleTime: 30000, // Consider data stale after 30s
+      retry: false, // Don't retry on failure
     }
   );
 }
