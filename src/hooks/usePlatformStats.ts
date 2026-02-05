@@ -18,7 +18,7 @@ export const usePlatformStats = () => {
     },
     {
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-      retry: 1,
+      retry: false,
     }
   );
 };

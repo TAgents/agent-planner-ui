@@ -214,12 +214,11 @@ export const useNode = (planId: string, nodeId: string) => {
     },
     {
       enabled: !!planId && !!nodeId,
-      staleTime: 0, // Always fetch fresh data when switching nodes
+      staleTime: 30000, // Consider fresh for 30s to reduce duplicate fetches
       cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      retry: 2, // Retry twice if the request fails
-      retryDelay: 1000, // Wait 1 second between retries
+      retry: false, // Don't retry on failure to prevent rate limit cascades
       refetchOnWindowFocus: false,
-      refetchOnMount: 'always', // Always refetch when component mounts
+      refetchOnMount: true, // Refetch on mount but respect staleTime
       onSuccess: (data) => {
         console.log('Node details fetched successfully:', data?.data?.id);
       },

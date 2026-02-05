@@ -29,11 +29,11 @@ export const useCollaborators = (planId: string) => {
       staleTime: 5 * 60 * 1000, // 5 minutes
       cacheTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error: any) => {
-        // Don't retry if it's a 404 (collaborators endpoint might not be implemented yet)
-        if (error?.response?.status === 404) {
+        // Don't retry if it's a 404 or 429 (rate limit)
+        if (error?.response?.status === 404 || error?.response?.status === 429 || error?.status === 429) {
           return false;
         }
-        return failureCount < 2;
+        return failureCount < 1;
       },
     }
   );

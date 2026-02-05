@@ -25,7 +25,7 @@ export const useNodeAssignments = (planId: string, nodeId: string) => {
         if (error?.response?.status === 404 || error?.response?.status === 403) {
           return false;
         }
-        return failureCount < 2;
+        return failureCount < 1;
       },
     }
   );

@@ -19,10 +19,10 @@ export const usePlanProgress = (planId: string) => {
       cacheTime: 5 * 60 * 1000, // 5 minutes
       retry: (failureCount, error: any) => {
         // Don't retry if endpoint doesn't exist yet
-        if (error?.response?.status === 404) {
+        if (error?.response?.status === 404 || error?.response?.status === 429 || error?.status === 429) {
           return false;
         }
-        return failureCount < 2;
+        return failureCount < 1;
       },
     }
   );

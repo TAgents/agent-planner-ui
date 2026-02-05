@@ -23,10 +23,11 @@ export const useActivityTimeline = (planId: string) => {
       staleTime: 1 * 60 * 1000, // 1 minute
       cacheTime: 5 * 60 * 1000, // 5 minutes
       retry: (failureCount, error: any) => {
-        if (error?.response?.status === 404) {
+        // Don't retry on 404 or 429 (rate limit)
+        if (error?.response?.status === 404 || error?.response?.status === 429 || error?.status === 429) {
           return false;
         }
-        return failureCount < 2;
+        return failureCount < 1;
       },
     }
   );
@@ -41,10 +42,11 @@ export const useNodeActivity = (planId: string, nodeId: string) => {
       staleTime: 30 * 1000, // 30 seconds
       cacheTime: 2 * 60 * 1000, // 2 minutes
       retry: (failureCount, error: any) => {
-        if (error?.response?.status === 404) {
+        // Don't retry on 404 or 429 (rate limit)
+        if (error?.response?.status === 404 || error?.response?.status === 429 || error?.status === 429) {
           return false;
         }
-        return failureCount < 2;
+        return failureCount < 1;
       },
     }
   );

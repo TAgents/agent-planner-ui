@@ -74,7 +74,7 @@ export const usePublicPlans = (params: UsePublicPlansParams = {}) => {
     },
     {
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-      retry: 1,
+      retry: false,
       keepPreviousData: true, // Keep previous data while fetching new page for better UX
     }
   );
