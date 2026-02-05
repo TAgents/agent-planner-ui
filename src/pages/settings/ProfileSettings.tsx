@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Edit3, ShieldCheck, Github, User, Mail, Building, Calendar, Camera } from 'lucide-react';
+import { Save, Edit3, ShieldCheck, Github, User, Mail, Building, Calendar } from 'lucide-react';
 import { SettingsNav } from '../../components/settings/SettingsLayout';
-import AvatarUpload from '../../components/auth/AvatarUpload';
 import api from '../../services/api';
 
 interface UserData {
@@ -108,10 +107,6 @@ const ProfileSettings: React.FC = () => {
     }
   };
 
-  const handleAvatarUpdate = (newAvatarUrl: string) => {
-    setUserData(prev => prev ? { ...prev, avatar: newAvatarUrl } : null);
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -181,9 +176,6 @@ const ProfileSettings: React.FC = () => {
                             {userData?.name?.charAt(0).toUpperCase() || 'U'}
                           </div>
                         )}
-                        <button className="absolute bottom-0 right-0 p-1.5 bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
-                          <Camera className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        </button>
                       </div>
                       <div>
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -324,7 +316,11 @@ const ProfileSettings: React.FC = () => {
                         Change your password or enable two-factor authentication
                       </p>
                     </div>
-                    <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <button 
+                      disabled
+                      title="Coming soon"
+                      className="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-not-allowed opacity-60"
+                    >
                       Change Password
                     </button>
                   </div>
