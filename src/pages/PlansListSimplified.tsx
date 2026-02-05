@@ -36,27 +36,44 @@ const SORT_OPTIONS = [
   { value: 'progress_desc', label: 'Most Progress' },
 ];
 
-// Hook to fetch pending decision counts for a plan
-function usePendingDecisions(planId: string) {
-  const [count, setCount] = useState(0);
+// Hook to batch fetch pending decision counts for all plans
+// Avoids N+1 API calls by fetching once at the list level
+function usePendingDecisionCounts(planIds: string[]) {
+  const [counts, setCounts] = useState<Record<string, number>>({});
   
   useEffect(() => {
-    let mounted = true;
+    if (planIds.length === 0) return;
     
-    decisionsApi.list(planId, { status: 'pending' })
-      .then(decisions => {
-        if (mounted && Array.isArray(decisions)) {
-          setCount(decisions.length);
+    let mounted = true;
+    const controller = new AbortController();
+    
+    // Fetch pending decisions for all plans in parallel
+    // TODO: Replace with batch endpoint (GET /decisions/counts?plan_ids=...) when available
+    Promise.all(
+      planIds.map(async (planId) => {
+        try {
+          const decisions = await decisionsApi.list(planId, { status: 'pending' });
+          return { planId, count: Array.isArray(decisions) ? decisions.length : 0 };
+        } catch {
+          return { planId, count: 0 };
         }
       })
-      .catch(() => {
-        // Silently fail - endpoint might not exist
+    ).then(results => {
+      if (!mounted) return;
+      const newCounts: Record<string, number> = {};
+      results.forEach(({ planId, count }) => {
+        newCounts[planId] = count;
       });
+      setCounts(newCounts);
+    });
     
-    return () => { mounted = false; };
-  }, [planId]);
+    return () => { 
+      mounted = false; 
+      controller.abort();
+    };
+  }, [planIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  return count;
+  return counts;
 }
 
 // Empty state component for first-time users
@@ -111,14 +128,15 @@ const EmptyPlansGuide: React.FC = () => {
 };
 
 // Enhanced Plan card component that fetches its own node data
-const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list'; highlight?: boolean }> = ({ plan, viewMode, highlight }) => {
+const PlanCard: React.FC<{ 
+  plan: Plan; 
+  viewMode: 'grid' | 'list'; 
+  pendingDecisionsCount?: number;
+}> = ({ plan, viewMode, pendingDecisionsCount = 0 }) => {
   const { nodes, isLoading } = useNodes(plan.id);
   const { deletePlan, updatePlan } = usePlans();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
-  
-  // Fetch pending decision count for this plan
-  const pendingDecisionsCount = usePendingDecisions(plan.id);
 
   const isArchived = plan.status === 'archived';
   const needsAttention = pendingDecisionsCount > 0;
@@ -203,7 +221,7 @@ const PlanCard: React.FC<{ plan: Plan; viewMode: 'grid' | 'list'; highlight?: bo
         <Link
           to={`/app/plans/${plan.id}`}
           className={`block bg-white dark:bg-gray-800 rounded-xl border-2 hover:shadow-lg transition-all duration-200 overflow-hidden ${
-            highlight || needsAttention
+            needsAttention
               ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-400 dark:hover:border-amber-600'
               : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
           }`}
@@ -557,6 +575,10 @@ const PlansListSimplified: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState('updated_desc'); // Default to recently active
 
+  // Batch fetch pending decision counts for all plans
+  const planIds = useMemo(() => plans.map((p: Plan) => p.id), [plans]);
+  const pendingDecisionCounts = usePendingDecisionCounts(planIds);
+
   // Subscribe to WebSocket plan events for real-time updates
   useEffect(() => {
     console.log('[PlansListSimplified] Setting up WebSocket subscriptions');
@@ -767,7 +789,12 @@ const PlansListSimplified: React.FC = () => {
             : 'space-y-3'
           }>
             {sortedPlans.map((plan: Plan) => (
-              <PlanCard key={plan.id} plan={plan} viewMode={viewMode} />
+              <PlanCard 
+                key={plan.id} 
+                plan={plan} 
+                viewMode={viewMode} 
+                pendingDecisionsCount={pendingDecisionCounts[plan.id] || 0}
+              />
             ))}
           </div>
         )}

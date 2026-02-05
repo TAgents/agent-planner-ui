@@ -41,7 +41,15 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  // Use ref to avoid stale closures in callbacks
+  const currentPresenceRef = useRef<{ resourceType: string; resourceId: string } | null>(null);
+  
   const isEnabled = isConnected && isAuthenticated;
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentPresenceRef.current = state.currentPresence;
+  }, [state.currentPresence]);
 
   // Send presence.join message
   const sendJoin = useCallback((resourceType: string, resourceId: string) => {
@@ -70,13 +78,13 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, [send]);
 
-  // Set presence for a resource
+  // Set presence for a resource (stable callback using ref)
   const setPresence = useCallback((resourceType: string, resourceId: string) => {
     if (!isEnabled) return;
     
-    // Clear previous presence if any
-    if (state.currentPresence) {
-      sendLeave(state.currentPresence.resourceType, state.currentPresence.resourceId);
+    // Clear previous presence if any (using ref to avoid stale closure)
+    if (currentPresenceRef.current) {
+      sendLeave(currentPresenceRef.current.resourceType, currentPresenceRef.current.resourceId);
     }
 
     // Clear existing heartbeat
@@ -97,13 +105,17 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     heartbeatRef.current = setInterval(() => {
       sendHeartbeat(resourceType, resourceId);
     }, HEARTBEAT_INTERVAL);
-  }, [isEnabled, state.currentPresence, sendJoin, sendLeave, sendHeartbeat]);
+  }, [isEnabled, sendJoin, sendLeave, sendHeartbeat]);
 
-  // Clear presence
+  // Clear presence (stable callback using ref)
   const clearPresence = useCallback(() => {
-    if (!isEnabled || !state.currentPresence) return;
+    if (!isEnabled) return;
+    
+    // Use ref to get current value
+    const current = currentPresenceRef.current;
+    if (!current) return;
 
-    sendLeave(state.currentPresence.resourceType, state.currentPresence.resourceId);
+    sendLeave(current.resourceType, current.resourceId);
     
     if (heartbeatRef.current) {
       clearInterval(heartbeatRef.current);
@@ -114,7 +126,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev,
       currentPresence: null,
     }));
-  }, [isEnabled, state.currentPresence, sendLeave]);
+  }, [isEnabled, sendLeave]);
 
   // Get viewers for a resource
   const getViewers = useCallback((resourceType: string, resourceId: string): Viewer[] => {
@@ -156,7 +168,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Clear presence when disconnected
   useEffect(() => {
-    if (!isConnected && state.currentPresence) {
+    if (!isConnected && currentPresenceRef.current) {
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
@@ -166,7 +178,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         currentPresence: null,
       }));
     }
-  }, [isConnected, state.currentPresence]);
+  }, [isConnected]);
 
   return (
     <PresenceContext.Provider 
@@ -193,20 +205,23 @@ export const usePresence = () => {
 // Hook to track presence for a specific view
 export const useViewPresence = (resourceType: string, resourceId: string | undefined) => {
   const { setPresence, clearPresence, getViewers, isEnabled } = usePresence();
+  
+  // Create stable resource key for dependency
+  const resourceKey = resourceId ? `${resourceType}:${resourceId}` : null;
 
   useEffect(() => {
-    if (!resourceId || !isEnabled) return;
+    if (!resourceKey || !resourceId || !isEnabled) return;
     
     setPresence(resourceType, resourceId);
     
     return () => {
       clearPresence();
     };
-  }, [resourceType, resourceId, setPresence, clearPresence, isEnabled]);
+    // Use resourceKey for stable dependency instead of setPresence/clearPresence
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resourceKey, isEnabled]);
 
   const viewers = resourceId ? getViewers(resourceType, resourceId) : [];
   
   return { viewers, isEnabled };
 };
-
-export default PresenceContext;
