@@ -361,6 +361,11 @@ const PlanVisualizationEnhanced: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Create node handler (defined before keyboard shortcuts so it's available)
+  const handleCreateNode = useCallback(() => {
+    setIsCreatingNode(true);
+  }, []);
+
   // Keyboard shortcuts for plan view
   useKeyboardShortcuts([
     // Navigation
@@ -429,11 +434,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
     { key: 's', action: toggleSidebar, description: 'Toggle sidebar' },
     { key: 'f', action: toggleFullScreen, description: 'Fullscreen' },
   ], !!plan);
-
-  // Create node
-  const handleCreateNode = () => {
-    setIsCreatingNode(true);
-  };
 
   const submitNewNode = (title: string) => {
     if (!planId) return;
