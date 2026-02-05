@@ -679,10 +679,10 @@ const PlanVisualizationEnhanced: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Tree View */}
-        <div className="flex-1 border-r border-gray-200 dark:border-gray-700">
+      {/* Main Content - Split Pane Layout */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Tree View - Takes remaining space with independent scrolling */}
+        <div className="flex-1 min-w-0 overflow-hidden border-r border-gray-200 dark:border-gray-700">
           {planNodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
             <EmptyStateGuide
               planTitle={plan.title}
@@ -770,9 +770,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
           </div>
         )}
 
-        {/* Sidebar - Desktop & Tablet */}
+        {/* Sidebar - Desktop & Tablet (Fixed width split pane) */}
         {uiState.sidebar.isOpen && uiState.nodeDetails.isOpen && selectedNode && (
-          <aside className="hidden md:flex w-[640px] xl:w-[720px] shadow-md overflow-hidden border-l border-gray-200 dark:border-gray-700">
+          <aside className="hidden md:flex flex-col flex-shrink-0 w-[480px] lg:w-[560px] xl:w-[640px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-lg">
             <UnifiedNodeDetails
               node={selectedNode}
               planId={planId || ''}
