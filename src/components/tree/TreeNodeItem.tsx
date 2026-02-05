@@ -124,6 +124,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   return (
     <motion.div
       ref={setRefs}
+      data-node-id={node.id}
       className={`
         flex items-center gap-2 py-2 px-3 rounded-lg transition-all cursor-pointer
         ${isSelected
