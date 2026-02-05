@@ -57,14 +57,14 @@ const features: Feature[] = [
 
 export const FeaturesSection: React.FC = () => {
   return (
-    <section className="py-16 md:py-20 lg:py-24 bg-white">
+    <section className="py-16 md:py-20 lg:py-24 bg-white dark:bg-gray-900">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
             Core Capabilities
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Everything you need to plan, collaborate, and execute with your team and AI agents
           </p>
         </div>

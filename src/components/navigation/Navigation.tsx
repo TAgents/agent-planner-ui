@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import ThemeToggle from '../common/ThemeToggle';
 
 export const Navigation: React.FC = () => {
   const { isAuthenticated, userName, userEmail, signOut } = useAuth();
@@ -15,18 +16,18 @@ export const Navigation: React.FC = () => {
   const navLinkClass = (path: string) => {
     const base = "text-xs sm:text-sm font-medium transition-colors px-2 py-1 sm:px-0";
     return isActive(path)
-      ? `${base} text-blue-600`
-      : `${base} text-gray-700 hover:text-gray-900`;
+      ? `${base} text-blue-600 dark:text-blue-400`
+      : `${base} text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white`;
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             <img
               src="/logo.png"
@@ -60,20 +61,23 @@ export const Navigation: React.FC = () => {
                   Explore
                 </Link>
 
+                {/* Theme Toggle */}
+                <ThemeToggle size="sm" />
+
                 {/* User Info (links to profile) and Sign Out */}
                 <div className="flex items-center gap-2 sm:gap-3">
                   <Link
                     to="/app/profile"
-                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                   >
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs sm:text-sm font-medium text-gray-900 max-w-[80px] sm:max-w-none truncate">
+                    <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white max-w-[80px] sm:max-w-none truncate">
                       {userName || userEmail || 'User'}
                     </span>
                   </Link>
                   <button
                     onClick={() => signOut()}
-                    className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                    className="hidden sm:inline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                   >
                     Sign Out
                   </button>
@@ -84,9 +88,11 @@ export const Navigation: React.FC = () => {
                 <Link to="/explore" className={navLinkClass('/explore')}>
                   Explore
                 </Link>
+                {/* Theme Toggle */}
+                <ThemeToggle size="sm" />
                 <Link
                   to="/login"
-                  className="text-xs sm:text-sm text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                  className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
                 >
                   Sign In
                 </Link>

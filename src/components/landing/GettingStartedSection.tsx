@@ -62,14 +62,14 @@ export const GettingStartedSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50">
+    <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white dark:from-gray-900 to-gray-50 dark:to-gray-800">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
             Getting Started
           </h2>
-          <p className="text-lg text-gray-600 leading-relaxed">
+          <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
             Set up Agent Planner in minutes and start collaborating with AI agents
           </p>
         </div>
@@ -87,13 +87,13 @@ export const GettingStartedSection: React.FC = () => {
               {/* Configuration Tabs for Step 3 */}
               {step.showTabs && (
                 <>
-                  <div className="flex gap-2 mb-4 border-b border-gray-200">
+                  <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => setConfigTab('desktop')}
                       className={`px-4 py-2 font-medium transition-colors ${
                         configTab === 'desktop'
-                          ? 'text-blue-600 border-b-2 border-blue-600'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
                     >
                       Claude Desktop
@@ -102,8 +102,8 @@ export const GettingStartedSection: React.FC = () => {
                       onClick={() => setConfigTab('code')}
                       className={`px-4 py-2 font-medium transition-colors ${
                         configTab === 'code'
-                          ? 'text-blue-600 border-b-2 border-blue-600'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
                     >
                       Claude Code
@@ -113,7 +113,7 @@ export const GettingStartedSection: React.FC = () => {
                     code={configTab === 'desktop' ? claudeDesktopConfig : claudeCodeConfig}
                     language={configTab === 'desktop' ? 'json' : 'bash'}
                   />
-                  <p className="mt-3 text-sm text-gray-600">
+                  <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
                     {configTab === 'desktop'
                       ? 'Add to ~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or %APPDATA%/Claude/claude_desktop_config.json (Windows)'
                       : 'Run this command in your project directory to configure Claude Code'

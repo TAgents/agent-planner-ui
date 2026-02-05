@@ -4,22 +4,22 @@ import { Sparkles } from 'lucide-react';
 
 export const HeroSection: React.FC = () => {
   return (
-    <section className="relative py-16 md:py-24 lg:py-32 bg-gradient-to-b from-gray-50 to-white">
+    <section className="relative py-16 md:py-24 lg:py-32 bg-gradient-to-b from-gray-50 dark:from-gray-800 to-white dark:to-gray-900">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center">
           {/* AI Badge */}
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4 mr-1.5" />
             AI-Powered Planning
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
             AI-Powered Planning for Your Ideas
           </h1>
 
           {/* Subheading */}
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto mb-10">
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto mb-10">
             Let AI create plans from your ideas. Implement the plan with your AI tools.
             Or let our Agents implement them.
           </p>
@@ -34,9 +34,9 @@ export const HeroSection: React.FC = () => {
           </Link>
 
           {/* Subtle explore link */}
-          <p className="mt-8 text-sm text-gray-500">
+          <p className="mt-8 text-sm text-gray-500 dark:text-gray-400">
             or{' '}
-            <Link to="/explore" className="text-blue-600 hover:text-blue-800 hover:underline">
+            <Link to="/explore" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
               explore public plans
             </Link>
             {' '}to see examples

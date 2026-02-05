@@ -27,11 +27,11 @@ export const SocialProofSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-12 md:py-16 bg-gray-50 border-y border-gray-200">
+    <section className="py-12 md:py-16 bg-gray-50 dark:bg-gray-800 border-y border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-base text-gray-600">
+          <p className="text-base text-gray-600 dark:text-gray-400">
             Connect to an LLM to do AI driven planning and Agent driven implementation.
           </p>
         </div>
@@ -40,10 +40,10 @@ export const SocialProofSection: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-blue-600 mb-2">
+              <div className="text-4xl md:text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                 {stat.number}
               </div>
-              <div className="text-base text-gray-600">
+              <div className="text-base text-gray-600 dark:text-gray-400">
                 {stat.label}
               </div>
             </div>
