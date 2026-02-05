@@ -133,6 +133,12 @@ export const useGoal = (goalId: string | null) => {
     await fetchGoal();
   };
 
+  const deleteGoal = async (id?: string) => {
+    const targetId = id || goalId;
+    if (!targetId) return;
+    await goalService.delete(targetId);
+  };
+
   return {
     goal,
     loading,
@@ -141,5 +147,6 @@ export const useGoal = (goalId: string | null) => {
     updateGoal,
     linkPlan,
     unlinkPlan,
+    deleteGoal,
   };
 };

@@ -1461,6 +1461,7 @@ export interface Goal {
   github_repo_url?: string;
   linked_plans: LinkedPlan[];
   linked_plans_count?: number;
+  knowledge_entries_count?: number;
   created_at: string;
   updated_at: string;
   organization?: {
