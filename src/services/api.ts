@@ -1703,3 +1703,103 @@ export const knowledgeService = {
     });
   },
 };
+
+// Decision Types for API
+export interface DecisionOption {
+  id: string;
+  title: string;
+  description?: string;
+  pros?: string[];
+  cons?: string[];
+  is_recommended?: boolean;
+}
+
+export interface Decision {
+  id: string;
+  plan_id: string;
+  node_id?: string;
+  title: string;
+  context: string;
+  options?: DecisionOption[];
+  urgency: 'blocking' | 'can_continue';
+  status: 'pending' | 'resolved' | 'cancelled' | 'expired';
+  decision?: string;
+  rationale?: string;
+  selected_option_id?: string;
+  requested_by: string;
+  resolved_by?: string;
+  created_at: string;
+  resolved_at?: string;
+  expires_at?: string;
+  metadata?: Record<string, any>;
+  requester?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  resolver?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+}
+
+// Decision API
+export const decisionsApi = {
+  // List decisions for a plan
+  list: async (planId: string, options?: {
+    status?: 'pending' | 'resolved' | 'cancelled' | 'expired';
+    node_id?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    return request<Decision[]>({
+      method: 'GET',
+      url: `/plans/${planId}/decisions`,
+      params: options,
+    });
+  },
+
+  // Get a single decision
+  get: async (planId: string, decisionId: string) => {
+    return request<Decision>({
+      method: 'GET',
+      url: `/plans/${planId}/decisions/${decisionId}`,
+    });
+  },
+
+  // Get pending decision count
+  getPendingCount: async (planId: string) => {
+    const decisions = await request<Decision[]>({
+      method: 'GET',
+      url: `/plans/${planId}/decisions`,
+      params: { status: 'pending' },
+    });
+    return {
+      total: decisions.length,
+      blocking: decisions.filter(d => d.urgency === 'blocking').length,
+      canContinue: decisions.filter(d => d.urgency === 'can_continue').length,
+    };
+  },
+
+  // Resolve a decision
+  resolve: async (planId: string, decisionId: string, data: {
+    decision: string;
+    rationale?: string;
+    selected_option_id?: string;
+  }) => {
+    return request<Decision>({
+      method: 'POST',
+      url: `/plans/${planId}/decisions/${decisionId}/resolve`,
+      data,
+    });
+  },
+
+  // Cancel a decision request
+  cancel: async (planId: string, decisionId: string) => {
+    return request<Decision>({
+      method: 'POST',
+      url: `/plans/${planId}/decisions/${decisionId}/cancel`,
+    });
+  },
+};

@@ -172,3 +172,46 @@ export interface NodeDetailsState {
   isOpen: boolean;
   selectedNodeId: string | null;
 }
+
+// Decision Types
+export type DecisionStatus = 'pending' | 'resolved' | 'cancelled' | 'expired';
+export type DecisionUrgency = 'blocking' | 'can_continue';
+
+export interface DecisionOption {
+  id: string;
+  title: string;
+  description?: string;
+  pros?: string[];
+  cons?: string[];
+  is_recommended?: boolean;
+}
+
+export interface Decision {
+  id: string;
+  plan_id: string;
+  node_id?: string;
+  title: string;
+  context: string;
+  options?: DecisionOption[];
+  urgency: DecisionUrgency;
+  status: DecisionStatus;
+  decision?: string;
+  rationale?: string;
+  selected_option_id?: string;
+  requested_by: string;
+  resolved_by?: string;
+  created_at: string;
+  resolved_at?: string;
+  expires_at?: string;
+  metadata?: Record<string, any>;
+  requester?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  resolver?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+}
