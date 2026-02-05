@@ -136,7 +136,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         {/* New Plan Button */}
         <div className="p-3">
           <Link
-            to={isAuthenticated ? "/app/plans/ai-create" : "/login"}
+            to={isAuthenticated ? "/app/plans/create" : "/login"}
             onClick={handleNavClick}
             className="flex items-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
