@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
-  Key,
-  Building2,
-  Webhook,
   Check,
   AlertCircle,
   Loader2,
@@ -13,7 +10,9 @@ import {
   Zap,
   BookOpen,
   TestTube,
+  Webhook,
 } from 'lucide-react';
+import { SettingsNav } from '../../components/settings/SettingsLayout';
 
 interface WebhookSettings {
   url: string;
@@ -37,42 +36,6 @@ const AVAILABLE_EVENTS: WebhookEvent[] = [
   { key: 'plan.updated', label: 'Plan Updated', description: 'When a plan is modified' },
   { key: 'comment.added', label: 'Comment Added', description: 'When a comment is added to a task' },
 ];
-
-// Settings Navigation
-const SettingsNav: React.FC = () => {
-  const location = useLocation();
-
-  const tabs = [
-    { path: '/app/settings', label: 'API Tokens', icon: Key },
-    { path: '/app/settings/organization', label: 'Organizations', icon: Building2 },
-    { path: '/app/settings/integrations', label: 'Integrations', icon: Webhook },
-  ];
-
-  return (
-    <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav className="flex gap-4">
-        {tabs.map((tab) => {
-          const isActive = location.pathname === tab.path;
-          const Icon = tab.icon;
-          return (
-            <Link
-              key={tab.path}
-              to={tab.path}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
-  );
-};
 
 const IntegrationsSettings: React.FC = () => {
   const [settings, setSettings] = useState<WebhookSettings>({

@@ -30,7 +30,7 @@ import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
 import KnowledgeHub from './pages/KnowledgeHub';
-import UserProfile from './pages/profile/UserProfile';
+import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Dashboard from './pages/Dashboard';
@@ -91,7 +91,8 @@ const App: React.FC = () => {
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
-                  <Route path="profile" element={<UserProfile />} />
+                  <Route path="settings/profile" element={<ProfileSettings />} />
+                  <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
                 </Route>
               </Route>
             </Routes>

@@ -352,7 +352,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </div>
               
               <Link
-                to="/app/profile"
+                to="/app/settings/profile"
                 onClick={handleNavClick}
                 className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
