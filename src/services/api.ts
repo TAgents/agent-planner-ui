@@ -1562,6 +1562,7 @@ export interface KnowledgeStore {
   scope: 'organization' | 'goal' | 'plan';
   scope_id: string;
   storage_mode: string;
+  name?: string;
   created_at: string;
   updated_at: string;
   entry_count?: number;
