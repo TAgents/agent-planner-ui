@@ -41,8 +41,7 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
     {
       keepPreviousData: true,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 3, // Retry 3 times on failure
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      retry: false, // Don't retry on failure to prevent rate limit cascades
     }
   );
 
@@ -177,8 +176,7 @@ export const usePlan = (planId: string) => {
     {
       enabled: !!planId, // Only run if planId is provided
       staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 3, // Retry 3 times on failure
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      retry: false, // Don't retry on failure to prevent rate limit cascades
     }
   );
 
