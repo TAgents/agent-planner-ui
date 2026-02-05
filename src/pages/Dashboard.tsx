@@ -158,9 +158,9 @@ const ActiveGoalsSection: React.FC<{ goals: ActiveGoal[] }> = ({ goals }) => {
                   style={{ width: `${goal.progress}%` }}
                 />
               </div>
-              {goal.target_date && (
+              {goal.target_date && safeFormatDate(goal.target_date) && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Due {formatDistanceToNow(new Date(goal.target_date), { addSuffix: true })}
+                  Due {safeFormatDate(goal.target_date)}
                 </p>
               )}
             </div>
@@ -231,13 +231,13 @@ const RecentPlansSection: React.FC<{ plans: RecentPlan[] }> = ({ plans }) => {
               <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  {formatDistanceToNow(new Date(plan.updated_at), { addSuffix: true })}
+                  {safeFormatDate(plan.updated_at) || 'Recently'}
                 </span>
-                {typeof plan.progress === 'number' && (
+                {typeof plan.progress === 'number' && plan.progress !== null && (
                   <span>{plan.progress}% complete</span>
                 )}
               </div>
-              {typeof plan.progress === 'number' && plan.progress > 0 && (
+              {typeof plan.progress === 'number' && plan.progress !== null && plan.progress > 0 && (
                 <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
@@ -302,28 +302,61 @@ const QuickStatsSection: React.FC<{
   );
 };
 
+// Helper to safely parse firstName
+const getFirstName = (name?: string | null): string => {
+  if (!name || typeof name !== 'string') return 'there';
+  const trimmed = name.trim();
+  if (!trimmed) return 'there';
+  const parts = trimmed.split(/\s+/);
+  const first = parts[0];
+  return first && first.length > 0 ? first : 'there';
+};
+
+// Helper to safely format date
+const safeFormatDate = (dateStr?: string | null): string | null => {
+  if (!dateStr) return null;
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (e) {
+    return null;
+  }
+};
+
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
   const { userName } = useAuth();
-  const { data: summary, isLoading: summaryLoading } = useDashboardSummary();
-  const { data: pending } = usePendingItems(5);
-  const { data: recentPlansData } = useRecentPlans(6);
-  const { data: goalsData } = useActiveGoals(5);
+  const { data: summary, isLoading: summaryLoading, error: summaryError } = useDashboardSummary();
+  const { data: pending, error: pendingError } = usePendingItems(5);
+  const { data: recentPlansData, error: plansError } = useRecentPlans(6);
+  const { data: goalsData, error: goalsError } = useActiveGoals(5);
 
-  const firstName = userName?.split(' ')[0] || 'there';
+  const firstName = getFirstName(userName);
+  const hasError = summaryError || pendingError || plansError || goalsError;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
+        <>
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {firstName}! 👋
+            Welcome back, {firstName}!
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             Here's what's happening with your plans and goals
           </p>
         </div>
+
+        {/* Error Alert */}
+        {hasError && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+            <p className="text-red-700 dark:text-red-300 text-sm">
+              Some data couldn't be loaded. Please try refreshing the page.
+            </p>
+          </div>
+        )}
 
         {/* Needs Attention */}
         {pending && (
@@ -364,6 +397,7 @@ const Dashboard: React.FC = () => {
 
         {/* Recent Plans */}
         <RecentPlansSection plans={recentPlansData?.plans || []} />
+        </>
       </div>
     </div>
   );

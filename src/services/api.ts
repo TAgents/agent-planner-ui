@@ -1946,7 +1946,7 @@ export interface DashboardPlan {
   status: string;
   created_at: string;
   updated_at: string;
-  progress?: number;
+  progress?: number | null;
   is_owner: boolean;
 }
 
