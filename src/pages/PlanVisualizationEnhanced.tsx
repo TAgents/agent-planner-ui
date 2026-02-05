@@ -15,12 +15,15 @@ import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
 import OnboardingTour from '../components/visualization/OnboardingTour';
 import ShareButton from '../components/sharing/ShareButton';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
+import { getNextStatus } from '../components/tree/StatusBadge';
 import VisibilityToggle from '../components/plans/VisibilityToggle';
 import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useFocusNavigation } from '../hooks/useFocusNavigation';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -36,48 +39,84 @@ import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
 
-// Enhanced Help Modal Component
+// Enhanced Help Modal Component with keyboard shortcuts
 const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
+  const shortcutGroups = [
+    {
+      name: 'Navigation',
+      shortcuts: [
+        { key: 'j', description: 'Move to next task' },
+        { key: 'k', description: 'Move to previous task' },
+        { key: 'Enter', description: 'Open task details' },
+        { key: '/', description: 'Focus search' },
+      ],
+    },
+    {
+      name: 'Actions',
+      shortcuts: [
+        { key: 'Space', description: 'Toggle task status' },
+        { key: 'e', description: 'Edit focused task' },
+        { key: 'n', description: 'New task in current phase' },
+        { key: 'Shift+N', description: 'New phase' },
+      ],
+    },
+    {
+      name: 'General',
+      shortcuts: [
+        { key: 'Esc', description: 'Close modal/panel' },
+        { key: '?', description: 'Show this help' },
+        { key: 's', description: 'Toggle sidebar' },
+        { key: 'f', description: 'Toggle fullscreen' },
+      ],
+    },
+  ];
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="help-modal-title"
+    >
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Keyboard Shortcuts</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <h3 id="help-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+            Keyboard Shortcuts
+          </h3>
+          <button 
+            onClick={onClose} 
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            aria-label="Close help"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">General</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">N</kbd> Add Node
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">S</kbd> Toggle Sidebar
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">?</kbd> Show Help
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tree View</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">⌘F</kbd> Search
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd> Clear Search
+        <div className="space-y-5">
+          {shortcutGroups.map((group) => (
+            <div key={group.name}>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                {group.name}
+              </h4>
+              <div className="space-y-1.5">
+                {group.shortcuts.map((shortcut) => (
+                  <div key={shortcut.key} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">{shortcut.description}</span>
+                    <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200 font-mono text-xs">
+                      {shortcut.key}
+                    </kbd>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          ))}
         </div>
+        
+        <p className="mt-5 text-xs text-gray-500 dark:text-gray-400 text-center">
+          Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">?</kbd> anytime to show this help
+        </p>
       </div>
     </div>
   );
@@ -197,6 +236,20 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Subscribe to agent request WebSocket events
   useAgentRequestEvents(planId || '');
 
+  // Keyboard focus navigation
+  const {
+    focusedId,
+    focusedNode,
+    focusNext,
+    focusPrev,
+  } = useFocusNavigation(planNodes, {
+    onFocusChange: (nodeId) => {
+      if (nodeId) {
+        openNodeDetails(nodeId);
+      }
+    },
+  });
+
   // UI state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -308,10 +361,79 @@ const PlanVisualizationEnhanced: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Create node
-  const handleCreateNode = () => {
+  // Create node handler (defined before keyboard shortcuts so it's available)
+  const handleCreateNode = useCallback(() => {
     setIsCreatingNode(true);
-  };
+  }, []);
+
+  // Keyboard shortcuts for plan view
+  useKeyboardShortcuts([
+    // Navigation
+    { key: 'j', action: focusNext, description: 'Next task' },
+    { key: 'k', action: focusPrev, description: 'Previous task' },
+    { 
+      key: 'Enter', 
+      action: () => {
+        if (focusedId) openNodeDetails(focusedId);
+      },
+      description: 'Open task details' 
+    },
+    // Actions
+    { 
+      key: ' ', 
+      action: () => {
+        if (focusedNode) {
+          const nextStatus = getNextStatus(focusedNode.status);
+          updateNodeStatus.mutate({ nodeId: focusedNode.id, status: nextStatus });
+        }
+      },
+      description: 'Toggle status' 
+    },
+    { 
+      key: 'n', 
+      action: () => {
+        // Add task to current phase or root
+        const parentId = focusedNode?.node_type === 'phase' 
+          ? focusedNode.id 
+          : focusedNode?.parent_id;
+        if (parentId) {
+          setNewNodeParentId(parentId);
+          setNewNodeType('task');
+          handleCreateNode();
+        }
+      },
+      description: 'New task' 
+    },
+    { 
+      key: 'n', 
+      shift: true,
+      action: () => {
+        // Find root and add phase
+        const root = planNodes.find(n => n.node_type === 'root');
+        if (root) {
+          setNewNodeParentId(root.id);
+          setNewNodeType('phase');
+          handleCreateNode();
+        }
+      },
+      description: 'New phase' 
+    },
+    // General
+    { 
+      key: 'Escape', 
+      action: () => {
+        if (showHelp) setShowHelp(false);
+        else if (showSettingsModal) setShowSettingsModal(false);
+        else if (showDecisionPanel) setShowDecisionPanel(false);
+        else if (selectedDecision) setSelectedDecision(null);
+        else if (uiState.nodeDetails.isOpen) closeNodeDetails();
+      },
+      description: 'Close' 
+    },
+    { key: '?', action: () => setShowHelp(true), description: 'Help' },
+    { key: 's', action: toggleSidebar, description: 'Toggle sidebar' },
+    { key: 'f', action: toggleFullScreen, description: 'Fullscreen' },
+  ], !!plan);
 
   const submitNewNode = (title: string) => {
     if (!planId) return;

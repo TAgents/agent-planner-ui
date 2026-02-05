@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
 import { Plan, PlanStatus } from '../../types';
+import NotificationBell from './NotificationBell';
 
 interface AppSidebarProps {
   className?: string;
@@ -281,6 +282,14 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           {/* User Section - for authenticated users */}
           {isAuthenticated && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-800">
+              {/* Notification Bell - Desktop only (mobile has it in header) */}
+              <div className="hidden md:flex items-center justify-between mb-2 px-2">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Notifications
+                </span>
+                <NotificationBell />
+              </div>
+              
               <Link
                 to="/app/profile"
                 onClick={handleNavClick}
