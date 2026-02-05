@@ -7,6 +7,7 @@ import {
   Minimize,
   HelpCircle,
   X,
+  Settings,
 } from 'lucide-react';
 
 // Import new components
@@ -18,6 +19,8 @@ import VisibilityToggle from '../components/plans/VisibilityToggle';
 import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
+import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
+import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -191,6 +194,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
     }, [planId, queryClient]),
   });
 
+  // Subscribe to agent request WebSocket events
+  useAgentRequestEvents(planId || '');
+
   // UI state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -203,6 +209,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Decision UI state
   const [showDecisionPanel, setShowDecisionPanel] = useState(false);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
+  
+  // Settings modal state
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -488,6 +497,15 @@ const PlanVisualizationEnhanced: React.FC = () => {
               onClick={() => setShowDecisionPanel(true)}
             />
 
+            {/* Settings button */}
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="Plan Settings"
+            >
+              <Settings className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </button>
+
             {/* WebSocket connection status indicator - hidden on mobile */}
             <div className="hidden sm:flex px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
               <WebSocketStatus showDetails={false} />
@@ -697,6 +715,14 @@ const PlanVisualizationEnhanced: React.FC = () => {
           }}
         />
       )}
+
+      {/* Plan Settings Modal */}
+      <PlanSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        planId={planId || ''}
+        planTitle={plan.title}
+      />
     </div>
   );
 };

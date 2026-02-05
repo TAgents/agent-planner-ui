@@ -72,13 +72,20 @@ export const PRESENCE_EVENTS = {
   NODE_VIEWERS: 'node_viewers'
 } as const;
 
+export const AGENT_EVENTS = {
+  REQUESTED: 'agent.requested',
+  RESPONSE: 'agent.response',
+  FAILED: 'agent.failed'
+} as const;
+
 export const EVENT_TYPES = {
   ...CONNECTION_EVENTS,
   ...PLAN_EVENTS,
   ...NODE_EVENTS,
   ...COLLABORATION_EVENTS,
   ...COLLABORATOR_EVENTS,
-  ...PRESENCE_EVENTS
+  ...PRESENCE_EVENTS,
+  ...AGENT_EVENTS
 } as const;
 
 // Extract all event type values
@@ -88,7 +95,8 @@ export type EventType =
   | typeof NODE_EVENTS[keyof typeof NODE_EVENTS]
   | typeof COLLABORATION_EVENTS[keyof typeof COLLABORATION_EVENTS]
   | typeof COLLABORATOR_EVENTS[keyof typeof COLLABORATOR_EVENTS]
-  | typeof PRESENCE_EVENTS[keyof typeof PRESENCE_EVENTS];
+  | typeof PRESENCE_EVENTS[keyof typeof PRESENCE_EVENTS]
+  | typeof AGENT_EVENTS[keyof typeof AGENT_EVENTS];
 
 // ============================================================================
 // Message Structure Types

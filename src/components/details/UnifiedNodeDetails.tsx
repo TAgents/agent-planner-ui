@@ -36,6 +36,7 @@ import { useNodeLogs } from '../../hooks/useNodeLogs';
 import { useCollaborators } from '../../hooks/useCollaborators';
 import { useNodeAssignments } from '../../hooks/useNodeAssignments';
 import { useNodeInstructions } from '../../hooks/useNodeInstructions';
+import { AskAgentButton } from '../agent-request';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -1091,6 +1092,14 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
+            {node.node_type === 'task' && (
+              <AskAgentButton
+                planId={planId}
+                taskId={node.id}
+                taskTitle={node.title}
+                compact
+              />
+            )}
             <ActionsMenu
               onEdit={handleEdit}
               onCopyId={handleCopyId}

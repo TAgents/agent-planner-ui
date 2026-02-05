@@ -1803,3 +1803,101 @@ export const decisionsApi = {
     });
   },
 };
+
+// Agent Request Types
+export interface AgentRequest {
+  id: string;
+  plan_id: string;
+  task_id: string;
+  request_type: 'execute' | 'review' | 'plan' | 'custom';
+  prompt?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  priority: 'normal' | 'urgent';
+  response?: string;
+  error?: string;
+  requested_by: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  requester?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+}
+
+export interface WebhookConfig {
+  url?: string;
+  secret?: string;
+  events: string[];
+  enabled: boolean;
+}
+
+// Agent Request API
+export const agentRequestApi = {
+  // Create an agent request for a task
+  create: async (planId: string, taskId: string, data: {
+    request_type: 'execute' | 'review' | 'plan' | 'custom';
+    prompt?: string;
+    priority?: 'normal' | 'urgent';
+  }) => {
+    return request<AgentRequest>({
+      method: 'POST',
+      url: `/plans/${planId}/tasks/${taskId}/agent-request`,
+      data,
+    });
+  },
+
+  // Get agent requests for a task
+  listForTask: async (planId: string, taskId: string) => {
+    return request<AgentRequest[]>({
+      method: 'GET',
+      url: `/plans/${planId}/tasks/${taskId}/agent-requests`,
+    });
+  },
+
+  // Get all pending agent requests for a plan
+  listForPlan: async (planId: string, status?: string) => {
+    return request<AgentRequest[]>({
+      method: 'GET',
+      url: `/plans/${planId}/agent-requests`,
+      params: status ? { status } : undefined,
+    });
+  },
+
+  // Get single agent request
+  get: async (planId: string, requestId: string) => {
+    return request<AgentRequest>({
+      method: 'GET',
+      url: `/plans/${planId}/agent-requests/${requestId}`,
+    });
+  },
+};
+
+// Webhook Config API
+export const webhookApi = {
+  // Get webhook config for a plan
+  get: async (planId: string) => {
+    return request<WebhookConfig>({
+      method: 'GET',
+      url: `/plans/${planId}/settings/webhook`,
+    });
+  },
+
+  // Update webhook config
+  update: async (planId: string, config: Partial<WebhookConfig>) => {
+    return request<WebhookConfig>({
+      method: 'PUT',
+      url: `/plans/${planId}/settings/webhook`,
+      data: config,
+    });
+  },
+
+  // Test webhook connection
+  test: async (planId: string) => {
+    return request<{ success: boolean; status?: number; error?: string }>({
+      method: 'POST',
+      url: `/plans/${planId}/settings/webhook/test`,
+    });
+  },
+};
