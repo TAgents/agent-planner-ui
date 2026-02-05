@@ -10,9 +10,9 @@ import {
   LogIn,
   FolderKanban,
   X,
-  Home,
   Target,
   BookOpen,
+  // Home, // Reserved for future Dashboard page (Phase 7)
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
