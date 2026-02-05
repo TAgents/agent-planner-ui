@@ -25,7 +25,8 @@ import { formatDate } from '../utils/planUtils';
 import { Plan } from '../types';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { PLAN_EVENTS } from '../types/websocket';
-import { decisionsApi } from '../services/api';
+// decisionsApi import removed - pending counts disabled due to rate limiting
+// import { decisionsApi } from '../services/api';
 
 // Sort options
 const SORT_OPTIONS = [
@@ -37,43 +38,12 @@ const SORT_OPTIONS = [
 ];
 
 // Hook to batch fetch pending decision counts for all plans
-// Avoids N+1 API calls by fetching once at the list level
-function usePendingDecisionCounts(planIds: string[]) {
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  
-  useEffect(() => {
-    if (planIds.length === 0) return;
-    
-    let mounted = true;
-    const controller = new AbortController();
-    
-    // Fetch pending decisions for all plans in parallel
-    // TODO: Replace with batch endpoint (GET /decisions/counts?plan_ids=...) when available
-    Promise.all(
-      planIds.map(async (planId) => {
-        try {
-          const decisions = await decisionsApi.list(planId, { status: 'pending' });
-          return { planId, count: Array.isArray(decisions) ? decisions.length : 0 };
-        } catch {
-          return { planId, count: 0 };
-        }
-      })
-    ).then(results => {
-      if (!mounted) return;
-      const newCounts: Record<string, number> = {};
-      results.forEach(({ planId, count }) => {
-        newCounts[planId] = count;
-      });
-      setCounts(newCounts);
-    });
-    
-    return () => { 
-      mounted = false; 
-      controller.abort();
-    };
-  }, [planIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  return counts;
+// DISABLED: Causes 429 rate limiting when fetching for many plans simultaneously
+// TODO: Re-enable when backend has batch endpoint (GET /decisions/counts?plan_ids=...)
+function usePendingDecisionCounts(_planIds: string[]) {
+  // Return empty counts to avoid rate limiting
+  // Pending decisions will show in the notification bell instead
+  return {} as Record<string, number>;
 }
 
 // Empty state component for first-time users
