@@ -65,7 +65,9 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
   onClose,
   onSelectDecision,
 }) => {
-  const { data: decisions, isLoading } = useDecisions(planId, 'pending');
+  // Only poll decisions when panel is open to avoid redundant requests
+  // (DecisionBadge already polls for counts)
+  const { data: decisions, isLoading } = useDecisions(planId, 'pending', { enabled: isOpen });
 
   if (!isOpen) return null;
 

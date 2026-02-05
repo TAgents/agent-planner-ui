@@ -2,12 +2,16 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { decisionsApi, Decision } from '../services/api';
 
 // Hook for listing decisions
-export function useDecisions(planId: string, status?: 'pending' | 'resolved' | 'cancelled' | 'expired') {
+export function useDecisions(
+  planId: string, 
+  status?: 'pending' | 'resolved' | 'cancelled' | 'expired',
+  options?: { enabled?: boolean }
+) {
   return useQuery(
     ['decisions', planId, status],
     () => decisionsApi.list(planId, { status }),
     {
-      enabled: !!planId,
+      enabled: !!planId && (options?.enabled ?? true),
       refetchInterval: status === 'pending' ? 30000 : false, // Poll pending decisions every 30s
     }
   );
