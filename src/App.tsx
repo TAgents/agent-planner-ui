@@ -29,6 +29,7 @@ import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
 import GoalSettings from './pages/settings/GoalSettings';
 import KnowledgeSettings from './pages/settings/KnowledgeSettings';
+import KnowledgeHub from './pages/KnowledgeHub';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -85,7 +86,7 @@ const App: React.FC = () => {
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<Goals />} />
                   <Route path="goals/:goalId" element={<GoalDetail />} />
-                  <Route path="knowledge" element={<KnowledgeSettings />} />
+                  <Route path="knowledge" element={<KnowledgeHub />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="settings/goals" element={<GoalSettings />} />
