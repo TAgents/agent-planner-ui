@@ -20,6 +20,7 @@ import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
+import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -192,6 +193,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
       console.log('[WebSocket] Log added - refreshing activity');
     }, [planId, queryClient]),
   });
+
+  // Subscribe to agent request WebSocket events
+  useAgentRequestEvents(planId || '');
 
   // UI state
   const [showOnboarding, setShowOnboarding] = useState(false);

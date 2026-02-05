@@ -107,6 +107,9 @@ export const AskAgentButton: React.FC<AskAgentButtonProps> = ({
         <button
           onClick={() => setIsOpen(!isOpen)}
           disabled={createRequest.isLoading || loadingRequests}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-label="Ask agent for help with this task"
           className={`
             inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
             bg-indigo-50 dark:bg-indigo-900/30 
@@ -152,12 +155,17 @@ const DropdownMenu: React.FC<{
   onSelect: (type: typeof requestTypes[number]['id']) => void;
   isLoading: boolean;
 }> = ({ requestTypes, onSelect, isLoading }) => (
-  <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+  <div 
+    role="menu"
+    aria-label="Agent request options"
+    className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+  >
     {requestTypes.map((type) => {
       const Icon = type.icon;
       return (
         <button
           key={type.id}
+          role="menuitem"
           onClick={() => onSelect(type.id)}
           disabled={isLoading}
           className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50"

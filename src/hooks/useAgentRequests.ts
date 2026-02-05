@@ -29,22 +29,54 @@ export function usePlanAgentRequests(planId: string, status?: string) {
   );
 }
 
-// Hook for creating an agent request
-export function useCreateAgentRequest(planId: string) {
+// Hook for creating an agent request with optimistic updates
+export function useCreateAgentRequest(planId: string, taskId?: string) {
   const queryClient = useQueryClient();
 
   return useMutation(
-    ({ taskId, data }: {
+    ({ taskId: tId, data }: {
       taskId: string;
       data: {
         request_type: 'execute' | 'review' | 'plan' | 'custom';
         prompt?: string;
         priority?: 'normal' | 'urgent';
       };
-    }) => agentRequestApi.create(planId, taskId, data),
+    }) => agentRequestApi.create(planId, tId, data),
     {
-      onSuccess: (_, { taskId }) => {
-        queryClient.invalidateQueries(['agentRequests', planId, taskId]);
+      // Optimistic update for instant UI feedback
+      onMutate: async ({ taskId: tId, data }) => {
+        const queryKey = ['agentRequests', planId, tId];
+        await queryClient.cancelQueries(queryKey);
+        const previous = queryClient.getQueryData<AgentRequest[]>(queryKey);
+        
+        // Optimistically add the new request
+        queryClient.setQueryData<AgentRequest[]>(queryKey, (old) => [
+          {
+            id: 'temp-' + Date.now(),
+            plan_id: planId,
+            task_id: tId,
+            request_type: data.request_type,
+            prompt: data.prompt,
+            status: 'pending',
+            priority: data.priority || 'normal',
+            requested_by: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          ...(old || []),
+        ]);
+        
+        return { previous, taskId: tId };
+      },
+      onError: (err, vars, context) => {
+        // Rollback on error
+        if (context?.previous) {
+          queryClient.setQueryData(['agentRequests', planId, context.taskId], context.previous);
+        }
+      },
+      onSettled: (_, __, { taskId: tId }) => {
+        // Always refetch after mutation
+        queryClient.invalidateQueries(['agentRequests', planId, tId]);
         queryClient.invalidateQueries(['agentRequests', planId, 'all']);
       },
     }

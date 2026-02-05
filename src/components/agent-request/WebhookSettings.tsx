@@ -225,26 +225,27 @@ export const WebhookSettings: React.FC<WebhookSettingsProps> = ({ planId }) => {
       </div>
 
       {/* Test result */}
-      {testResult && (
-        <div className={`flex items-center gap-2 p-3 rounded-lg ${
-          testResult.success
-            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-            : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-        }`}>
-          {testResult.success ? (
-            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-          ) : (
-            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-          )}
-          <p className={`text-sm ${
-            testResult.success 
-              ? 'text-green-700 dark:text-green-300'
-              : 'text-red-700 dark:text-red-300'
-          }`}>
-            {testResult.message}
-          </p>
-        </div>
-      )}
+      {testResult && (() => {
+        const resultBgClass = testResult.success
+          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+        const resultTextClass = testResult.success
+          ? 'text-green-700 dark:text-green-300'
+          : 'text-red-700 dark:text-red-300';
+        
+        return (
+          <div className={`flex items-center gap-2 p-3 rounded-lg border ${resultBgClass}`}>
+            {testResult.success ? (
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            ) : (
+              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            )}
+            <p className={`text-sm ${resultTextClass}`}>
+              {testResult.message}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">

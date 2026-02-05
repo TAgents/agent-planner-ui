@@ -48,19 +48,26 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
       setPrompt('');
       setRequestType('custom');
       setPriority('normal');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create request');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create request';
+      setError(message);
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ask-agent-modal-title"
+    >
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
@@ -68,16 +75,17 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <Bot className="w-5 h-5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+            <h2 id="ask-agent-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
               Ask Agent
             </h2>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
