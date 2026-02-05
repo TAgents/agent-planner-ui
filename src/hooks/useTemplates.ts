@@ -1,11 +1,24 @@
 import { useQuery } from 'react-query';
 
+/** Plan template structure for phases and tasks */
+export interface TemplateStructure {
+  phases?: Array<{
+    title: string;
+    description?: string;
+    tasks?: Array<{
+      title: string;
+      description?: string;
+    }>;
+  }>;
+}
+
+/** Plan template definition */
 export interface Template {
   id: string;
   name: string;
   description: string;
   category?: string;
-  structure?: any;
+  structure?: TemplateStructure;
   created_at?: string;
 }
 
