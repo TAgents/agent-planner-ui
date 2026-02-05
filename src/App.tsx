@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { UIProvider } from './contexts/UIContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
@@ -31,6 +31,7 @@ import KnowledgeSettings from './pages/settings/KnowledgeSettings';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Dashboard from './pages/Dashboard';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -74,7 +75,8 @@ const App: React.FC = () => {
               {/* Protected Main Application Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/app" element={<MainLayout />}>
-                  <Route index element={<Navigate to="/app/plans" replace />} />
+                  <Route index element={<Dashboard />} />
+                  <Route path="dashboard" element={<Dashboard />} />
                   <Route path="plans" element={<PlansList />} />
                   <Route path="plans/new" element={<CreatePlan />} />
                   <Route path="plans/ai-create" element={<AICreatePlan />} />
