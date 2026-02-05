@@ -772,7 +772,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
 
         {/* Sidebar - Desktop & Tablet (Fixed width split pane) */}
         {uiState.sidebar.isOpen && uiState.nodeDetails.isOpen && selectedNode && (
-          <aside className="hidden md:flex flex-col flex-shrink-0 w-[480px] lg:w-[560px] xl:w-[640px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-lg">
+          <aside className="hidden md:flex flex-col flex-shrink-0 w-[480px] lg:w-[560px] xl:w-[640px] border-l border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
             <UnifiedNodeDetails
               node={selectedNode}
               planId={planId || ''}
