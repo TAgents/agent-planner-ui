@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { agentRequestApi, webhookApi, AgentRequest, WebhookConfig } from '../services/api';
+import { useWebSocketEvent } from './useWebSocket';
+import { AGENT_EVENTS } from '../types/websocket';
 
 export type { AgentRequest, WebhookConfig };
 
@@ -79,4 +81,34 @@ export function useTestWebhook(planId: string) {
   return useMutation(
     () => webhookApi.test(planId)
   );
+}
+
+// Hook to subscribe to agent WebSocket events and refresh queries
+export function useAgentRequestEvents(planId: string) {
+  const queryClient = useQueryClient();
+
+  // Listen for agent.requested events
+  useWebSocketEvent(AGENT_EVENTS.REQUESTED, (message) => {
+    if (message.payload?.plan_id === planId) {
+      queryClient.invalidateQueries(['agentRequests', planId]);
+    }
+  }, [planId, queryClient]);
+
+  // Listen for agent.response events
+  useWebSocketEvent(AGENT_EVENTS.RESPONSE, (message) => {
+    if (message.payload?.plan_id === planId) {
+      queryClient.invalidateQueries(['agentRequests', planId]);
+      // Also invalidate specific task query if task_id is present
+      if (message.payload?.task_id) {
+        queryClient.invalidateQueries(['agentRequests', planId, message.payload.task_id]);
+      }
+    }
+  }, [planId, queryClient]);
+
+  // Listen for agent.failed events
+  useWebSocketEvent(AGENT_EVENTS.FAILED, (message) => {
+    if (message.payload?.plan_id === planId) {
+      queryClient.invalidateQueries(['agentRequests', planId]);
+    }
+  }, [planId, queryClient]);
 }
