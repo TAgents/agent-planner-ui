@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { PlanNode, NodeStatus } from '../../types';
-import { StatusBadge } from './StatusBadge';
-import { GripVertical } from 'lucide-react';
+import { StatusBadge, getNextStatus } from './StatusBadge';
+import { GripVertical, Plus } from 'lucide-react';
 
 interface TreeNodeItemProps {
   node: PlanNode;
@@ -14,6 +14,7 @@ interface TreeNodeItemProps {
   isSelected: boolean;
   onSelect: (nodeId: string) => void;
   onStatusChange?: (nodeId: string, status: NodeStatus) => void;
+  onAddChild?: (parentId: string) => void;
   isDragging?: boolean;
   isDropTarget?: boolean;
   canDrag?: boolean;
@@ -28,10 +29,13 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   isSelected,
   onSelect,
   onStatusChange,
+  onAddChild,
   isDragging = false,
   isDropTarget = false,
   canDrag = true
 }) => {
+  // Check if this node type can have children added
+  const canAddChildren = node.node_type === 'phase' || node.node_type === 'root';
   const [isHovered, setIsHovered] = useState(false);
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -180,11 +184,15 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         {getNodeTypeIcon()}
       </span>
 
-      {/* Status Badge */}
-      <StatusBadge status={node.status} compact />
+      {/* Status Badge - clickable when onStatusChange is provided */}
+      <StatusBadge 
+        status={node.status} 
+        compact 
+        onClick={onStatusChange ? () => onStatusChange(node.id, getNextStatus(node.status)) : undefined}
+      />
 
       {/* Title */}
-      <span className={`${getNodeTypeStyle()} flex-grow truncate`}>
+      <span className={`${getNodeTypeStyle()} flex-grow truncate`} title={node.title}>
         {node.title}
       </span>
 
@@ -209,19 +217,31 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       )}
 
       {/* Activity indicators */}
-      {((node.comment_count ?? 0) > 0 || (node.artifact_count ?? 0) > 0) && (
+      {(node.comment_count ?? 0) > 0 && (
         <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-          {(node.comment_count ?? 0) > 0 && (
-            <span className="flex items-center gap-0.5" title={`${node.comment_count} comments`}>
-              💬 {node.comment_count}
-            </span>
-          )}
-          {(node.artifact_count ?? 0) > 0 && (
-            <span className="flex items-center gap-0.5" title={`${node.artifact_count} attachments`}>
-              📎 {node.artifact_count}
-            </span>
-          )}
+          <span className="flex items-center gap-0.5" title={`${node.comment_count} comments`}>
+            💬 {node.comment_count}
+          </span>
         </div>
+      )}
+
+      {/* Add Child Button - only show for phases/root on hover */}
+      {canAddChildren && onAddChild && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddChild(node.id);
+          }}
+          className={`
+            p-1 rounded transition-all flex-shrink-0
+            text-gray-400 hover:text-blue-600 hover:bg-blue-50 
+            dark:hover:text-blue-400 dark:hover:bg-blue-900/30
+            ${isHovered ? 'opacity-100' : 'opacity-0'}
+          `}
+          title="Add task"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
       )}
     </motion.div>
   );

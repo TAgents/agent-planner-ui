@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, Artifact, ApiToken, TokenPermission } from '../types';
+import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission } from '../types';
 
 // API Configuration - only needs the API URL
 const API_CONFIG = {
@@ -729,7 +729,7 @@ export const nodeService = {
   getNode: async (planId: string, nodeId: string) => {
     console.log(`[api.ts] getNode: fetching node ${nodeId} from plan ${planId}`);
     try {
-      // Call the individual node endpoint to get full details (description, acceptance_criteria, etc.)
+      // Call the individual node endpoint to get full details (description, context, etc.)
       const response = await request<PlanNode>({
         method: 'GET',
         url: `/plans/${planId}/nodes/${nodeId}`,
@@ -833,7 +833,7 @@ export const nodeService = {
     });
   },
 
-  // Get all activities for a node (logs, artifacts, status changes)
+  // Get all activities for a node (logs, status changes)
   getNodeActivities: async (planId: string, nodeId: string) => {
     return request<any[]>({
       method: 'GET',
@@ -949,15 +949,6 @@ export const searchService = {
       params: { query },
     });
   },
-
-  // Search for artifacts across plans
-  searchArtifacts: async (query: string) => {
-    return request<ApiResponse<any>>({
-      method: 'GET',
-      url: '/artifacts/search',
-      params: { q: query },
-    });
-  },
 };
 
 // Logs endpoints
@@ -1001,46 +992,6 @@ export const logService = {
       console.error('[api.ts] Error adding log entry:', error);
       throw error;
     }
-  },
-};
-
-// Artifacts endpoints
-export const artifactService = {
-  getArtifacts: async (planId: string, nodeId: string) => {
-    return request<ApiResponse<Artifact[]>>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
-    });
-  },
-
-  addArtifact: async (planId: string, nodeId: string, artifactData: { name: string; content_type: string; url: string; metadata?: object }) => {
-    return request<ApiResponse<Artifact>>({
-      method: 'POST',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts`,
-      data: artifactData,
-    });
-  },
-
-  getArtifact: async (planId: string, nodeId: string, artifactId: string) => {
-    return request<ApiResponse<Artifact>>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
-    });
-  },
-
-  updateArtifact: async (planId: string, nodeId: string, artifactId: string, artifactData: { name?: string; content_type?: string; url?: string; metadata?: object }) => {
-    return request<ApiResponse<Artifact>>({
-      method: 'PUT',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
-      data: artifactData,
-    });
-  },
-
-  deleteArtifact: async (planId: string, nodeId: string, artifactId: string) => {
-    return request<ApiResponse<null>>({
-      method: 'DELETE',
-      url: `/plans/${planId}/nodes/${nodeId}/artifacts/${artifactId}`,
-    });
   },
 };
 
@@ -1212,7 +1163,6 @@ export const githubService = {
       id: string;
       title: string;
       description?: string;
-      acceptance_criteria?: string;
       context?: string;
       node_type?: string;
       status?: string;
@@ -1402,7 +1352,6 @@ const apiServices = {
   activity: activityService,
   search: searchService,
   logs: logService,
-  artifacts: artifactService,
   upload: uploadService,
   users: userService,
   github: githubService,
@@ -1486,81 +1435,271 @@ export const organizationService = {
   },
 };
 
-// Goals service
-export const goalsService = {
-  list: async (filters?: { organization_id?: string; status?: string }) => {
-    const params = new URLSearchParams();
-    if (filters?.organization_id) params.append('organization_id', filters.organization_id);
-    if (filters?.status) params.append('status', filters.status);
-    const response = await request<any>({
+// Goal Types
+export interface SuccessMetric {
+  metric: string;
+  target: string;
+  current: string;
+  unit: string;
+}
+
+export interface LinkedPlan {
+  id: string;
+  title: string;
+  status: string;
+  progress: number;
+}
+
+export interface Goal {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'achieved' | 'at_risk' | 'abandoned';
+  success_metrics: SuccessMetric[];
+  time_horizon: string;
+  github_repo_url?: string;
+  linked_plans: LinkedPlan[];
+  linked_plans_count?: number;
+  created_at: string;
+  updated_at: string;
+  organization?: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
+  created_by_user?: {
+    id: string;
+    name?: string;
+    email?: string;
+  };
+}
+
+// Goal Service
+export const goalService = {
+  // List goals with optional filters
+  list: async (organizationId?: string, status?: string) => {
+    const params: Record<string, string> = {};
+    if (organizationId) params.organization_id = organizationId;
+    if (status) params.status = status;
+
+    const response = await request<{ goals: Goal[] } | Goal[]>({
       method: 'GET',
-      url: `/goals?${params.toString()}`,
+      url: '/goals',
+      params,
     });
-    return response.goals || response;
+    return Array.isArray(response) ? response : response.goals || [];
   },
 
+  // Get goal details with linked plans
   get: async (goalId: string) => {
-    return request<any>({
+    return request<Goal>({
       method: 'GET',
       url: `/goals/${goalId}`,
     });
   },
 
+  // Create a new goal
   create: async (data: {
     organization_id: string;
     title: string;
     description?: string;
-    success_metrics?: Array<{ metric: string; target: number; current: number; unit: string }>;
+    success_metrics?: SuccessMetric[];
     time_horizon?: string;
     github_repo_url?: string;
   }) => {
-    return request<any>({
+    return request<Goal>({
       method: 'POST',
       url: '/goals',
       data,
     });
   },
 
+  // Update a goal
   update: async (goalId: string, data: {
     title?: string;
     description?: string;
-    status?: string;
-    success_metrics?: Array<{ metric: string; target: number; current: number; unit: string }>;
+    status?: 'active' | 'achieved' | 'at_risk' | 'abandoned';
+    success_metrics?: SuccessMetric[];
     time_horizon?: string;
   }) => {
-    return request<any>({
+    return request<Goal>({
       method: 'PUT',
       url: `/goals/${goalId}`,
       data,
     });
   },
 
-  updateMetrics: async (goalId: string, metrics: Array<{ metric: string; target: number; current: number; unit: string }>) => {
-    return request<any>({
-      method: 'PUT',
-      url: `/goals/${goalId}/metrics`,
-      data: { metrics },
-    });
-  },
-
+  // Delete a goal
   delete: async (goalId: string) => {
-    return request<any>({
+    return request<{ success: boolean; message: string }>({
       method: 'DELETE',
       url: `/goals/${goalId}`,
     });
   },
 
+  // Link a plan to a goal
   linkPlan: async (goalId: string, planId: string) => {
-    return request<any>({
+    return request<{ success: boolean; message: string }>({
       method: 'POST',
       url: `/goals/${goalId}/plans/${planId}`,
     });
   },
 
+  // Unlink a plan from a goal
   unlinkPlan: async (goalId: string, planId: string) => {
-    return request<any>({
+    return request<{ success: boolean; message: string }>({
       method: 'DELETE',
       url: `/goals/${goalId}/plans/${planId}`,
+    });
+  },
+};
+
+// Knowledge Store Types
+export interface KnowledgeStore {
+  id: string;
+  scope: 'organization' | 'goal' | 'plan';
+  scope_id: string;
+  storage_mode: string;
+  created_at: string;
+  updated_at: string;
+  entry_count?: number;
+  entries_by_type?: Record<string, number>;
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  store_id: string;
+  entry_type: 'decision' | 'context' | 'constraint' | 'learning' | 'reference' | 'note';
+  title: string;
+  content: string;
+  source_url?: string;
+  tags: string[];
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  created_by_user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+// Knowledge Service
+export const knowledgeService = {
+  // Get stores accessible to the user, optionally filtered by scope
+  getStores: async (scope?: string, scopeId?: string) => {
+    const params: Record<string, string> = {};
+    if (scope) params.scope = scope;
+    if (scopeId) params.scope_id = scopeId;
+
+    const response = await request<{ stores: KnowledgeStore[] }>({
+      method: 'GET',
+      url: '/knowledge/stores',
+      params,
+    });
+    return response.stores || [];
+  },
+
+  // Get a single store by ID
+  getStore: async (storeId: string) => {
+    return request<KnowledgeStore>({
+      method: 'GET',
+      url: `/knowledge/stores/${storeId}`,
+    });
+  },
+
+  // Get entries from a store
+  getEntries: async (storeId: string, options?: {
+    entry_type?: string;
+    tags?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const response = await request<{
+      entries: KnowledgeEntry[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>({
+      method: 'GET',
+      url: '/knowledge/entries',
+      params: { store_id: storeId, ...options },
+    });
+    return response;
+  },
+
+  // Get a single entry
+  getEntry: async (entryId: string) => {
+    return request<KnowledgeEntry>({
+      method: 'GET',
+      url: `/knowledge/entries/${entryId}`,
+    });
+  },
+
+  // Create a new entry
+  createEntry: async (data: {
+    store_id?: string;
+    scope?: string;
+    scope_id?: string;
+    entry_type: string;
+    title: string;
+    content: string;
+    source_url?: string;
+    tags?: string[];
+    metadata?: Record<string, any>;
+  }) => {
+    return request<KnowledgeEntry>({
+      method: 'POST',
+      url: '/knowledge/entries',
+      data,
+    });
+  },
+
+  // Update an entry
+  updateEntry: async (entryId: string, data: {
+    entry_type?: string;
+    title?: string;
+    content?: string;
+    source_url?: string;
+    tags?: string[];
+    metadata?: Record<string, any>;
+  }) => {
+    return request<KnowledgeEntry>({
+      method: 'PUT',
+      url: `/knowledge/entries/${entryId}`,
+      data,
+    });
+  },
+
+  // Delete an entry
+  deleteEntry: async (entryId: string) => {
+    return request<{ success: boolean; message: string }>({
+      method: 'DELETE',
+      url: `/knowledge/entries/${entryId}`,
+    });
+  },
+
+  // Search entries
+  search: async (data: {
+    query?: string;
+    embedding?: number[];
+    store_ids?: string[];
+    scope?: string;
+    scope_id?: string;
+    entry_types?: string[];
+    threshold?: number;
+    limit?: number;
+  }) => {
+    return request<{
+      results: KnowledgeEntry[];
+      search_type: 'semantic' | 'text';
+      message?: string;
+    }>({
+      method: 'POST',
+      url: '/knowledge/search',
+      data,
     });
   },
 };

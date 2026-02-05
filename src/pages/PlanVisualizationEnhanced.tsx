@@ -16,6 +16,7 @@ import ShareButton from '../components/sharing/ShareButton';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
 import VisibilityToggle from '../components/plans/VisibilityToggle';
 import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
+import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 
 // Import existing components
 import { useUI } from '../contexts/UIContext';
@@ -98,7 +99,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     uiState.nodeDetails.selectedNodeId || ''
   );
 
-  // Get the selected node - prefer selectedNodeFromAPI which has full details (description, acceptance_criteria, etc.)
+  // Get the selected node - prefer selectedNodeFromAPI which has full details (description, context, etc.)
   // The planNodes list only has basic fields (id, title, status, etc.)
   const selectedNode = useMemo(() => {
     if (!uiState.nodeDetails.selectedNodeId) return null;
@@ -187,18 +188,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
       queryClient.invalidateQueries(['planActivity', planId]);
       console.log('[WebSocket] Log added - refreshing activity');
     }, [planId, queryClient]),
-
-    onArtifactAdded: useCallback(() => {
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Artifact added - refreshing activity');
-    }, [planId, queryClient]),
   });
 
   // UI state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [, setActiveDetailTab] = useState<'details' | 'comments' | 'logs' | 'artifacts'>('details');
+  const [, setActiveDetailTab] = useState<'details' | 'comments' | 'logs'>('details');
   const [isCreatingNode, setIsCreatingNode] = useState(false);
   const [newNodeType, setNewNodeType] = useState<NodeType>('task');
   const [newNodeParentId, setNewNodeParentId] = useState<string | null>(null);
@@ -207,11 +203,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
     console.log('Adding log:', content, 'Type:', logType, 'Tags:', tags);
     // The hook will handle the API call
-  }, []);
-
-  const handleFileUpload = useCallback((files: File[]) => {
-    console.log('Uploading files:', files);
-    // TODO: Add API call to upload files
   }, []);
 
   // Handle visibility change
@@ -326,6 +317,28 @@ const PlanVisualizationEnhanced: React.FC = () => {
     });
   };
 
+  // Inline node creation (for quick add from tree view)
+  const handleInlineNodeCreate = useCallback(async (parentId: string, title: string, nodeType: NodeType) => {
+    if (!planId) return;
+    
+    return new Promise<void>((resolve, reject) => {
+      createNode.mutate({
+        plan_id: planId,
+        parent_id: parentId,
+        title,
+        node_type: nodeType,
+        status: 'not_started',
+      }, {
+        onSuccess: () => {
+          resolve();
+        },
+        onError: (error) => {
+          reject(error);
+        }
+      });
+    });
+  }, [planId, createNode]);
+
   // Handle status change
   const handleStatusChange = useCallback((nodeId: string, newStatus: NodeStatus) => {
     if (!planId) return;
@@ -390,7 +403,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Loading state
   if (isPlanLoading || isNodesLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="spinner w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your plan...</p>
@@ -402,7 +415,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Error state
   if (!plan) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <h2 className="text-xl font-bold text-red-600 dark:text-red-400">Plan not found</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">The requested plan doesn't exist or you don't have access.</p>
@@ -415,42 +428,46 @@ const PlanVisualizationEnhanced: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Enhanced Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm z-10 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
           {/* Left section */}
-          <div className="flex items-center gap-3">
-            <Link to="/app/plans" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <Link to="/app/plans" className="p-2 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0">
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </Link>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-2xl">
+            <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
               {plan.title}
             </h1>
           </div>
 
           {/* Right section */}
-          <div className="flex items-center gap-2">
-            {/* Visibility Toggle - only shown to owner */}
-            <VisibilityToggle
-              planId={planId || ''}
-              currentVisibility={plan.visibility || 'private'}
-              isOwner={isOwner}
-              onVisibilityChange={handleVisibilityChange}
-            />
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Visibility Toggle - hidden on mobile */}
+            <div className="hidden sm:block">
+              <VisibilityToggle
+                planId={planId || ''}
+                currentVisibility={plan.visibility || 'private'}
+                isOwner={isOwner}
+                onVisibilityChange={handleVisibilityChange}
+              />
+            </div>
 
-            {/* GitHub Repository Badge */}
-            <GitHubRepoBadge
-              planId={planId || ''}
-              owner={plan.github_repo_owner}
-              name={plan.github_repo_name}
-              isOwner={isOwner}
-              onLinked={() => {
-                const userId = getUserId();
-                queryClient.invalidateQueries(['plan', userId, planId]);
-              }}
-              variant="compact"
-            />
+            {/* GitHub Repository Badge - hidden on mobile */}
+            <div className="hidden md:block">
+              <GitHubRepoBadge
+                planId={planId || ''}
+                owner={plan.github_repo_owner}
+                name={plan.github_repo_name}
+                isOwner={isOwner}
+                onLinked={() => {
+                  const userId = getUserId();
+                  queryClient.invalidateQueries(['plan', userId, planId]);
+                }}
+                variant="compact"
+              />
+            </div>
 
             <div data-tour="share-button">
               <ShareButton
@@ -460,22 +477,24 @@ const PlanVisualizationEnhanced: React.FC = () => {
               />
             </div>
 
-            {/* WebSocket connection status indicator */}
-            <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
+            {/* WebSocket connection status indicator - hidden on mobile */}
+            <div className="hidden sm:flex px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
               <WebSocketStatus showDetails={false} />
             </div>
 
+            {/* Fullscreen button - hidden on mobile (most mobile browsers don't support it well) */}
             <button
               onClick={toggleFullScreen}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Fullscreen"
             >
               {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
             </button>
             
+            {/* Help button - hidden on mobile (keyboard shortcuts aren't relevant) */}
             <button
               onClick={() => setShowHelp(true)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Help (?)"
             >
               <HelpCircle className="w-5 h-5" />
@@ -483,6 +502,19 @@ const PlanVisualizationEnhanced: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Breadcrumb Navigation - shows when a node is selected */}
+      {uiState.nodeDetails.selectedNodeId && (
+        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <PlanBreadcrumb
+            planId={planId || ''}
+            planTitle={plan.title}
+            nodes={planNodes}
+            selectedNodeId={uiState.nodeDetails.selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -500,6 +532,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
               onNodeSelect={handleNodeSelect}
               onNodeStatusChange={handleStatusChange}
               onNodeCreate={() => handleCreateNode()}
+              onNodeCreateInline={handleInlineNodeCreate}
               onNodeMove={handleNodeMove}
               className="h-full"
             />
@@ -584,7 +617,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
               activeUsers={[]}
               onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
               onLogAdd={handleLogAdd}
-              onFileUpload={handleFileUpload}
               onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
               onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
               onClose={closeNodeDetails}
@@ -610,7 +642,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 activeUsers={[]}
                 onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
                 onLogAdd={handleLogAdd}
-                onFileUpload={handleFileUpload}
                 onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
                 onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}

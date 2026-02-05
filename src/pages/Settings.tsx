@@ -1,7 +1,45 @@
 import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useTokens } from '../hooks/useTokens';
 import { TokenPermission } from '../types';
-import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles } from 'lucide-react';
+import { Key, Copy, Trash2, AlertCircle, Check, X, Zap, ExternalLink, Terminal, Code, Bot, FileCode, Sparkles, Building2, BookOpen, Target } from 'lucide-react';
+
+// Settings Navigation Tabs Component
+const SettingsNav: React.FC = () => {
+  const location = useLocation();
+  
+  const tabs = [
+    { path: '/app/settings', label: 'API Tokens', icon: Key },
+    { path: '/app/settings/organization', label: 'Organizations', icon: Building2 },
+    { path: '/app/settings/goals', label: 'Goals', icon: Target },
+    { path: '/app/settings/knowledge', label: 'Knowledge', icon: BookOpen },
+  ];
+
+  return (
+    <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+      <nav className="flex gap-4">
+        {tabs.map((tab) => {
+          const isActive = location.pathname === tab.path;
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.path}
+              to={tab.path}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                isActive
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+};
 
 const Settings: React.FC = () => {
   const { 
@@ -181,9 +219,12 @@ const Settings: React.FC = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Manage your API tokens and AI integrations
+            Manage your API tokens, organizations, and knowledge base
           </p>
         </div>
+
+        {/* Settings Navigation */}
+        <SettingsNav />
 
         {/* AI Integration Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">

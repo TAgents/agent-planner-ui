@@ -49,7 +49,7 @@ const features: Feature[] = [
   },
   {
     title: 'REST API',
-    description: 'Complete REST API with authentication, RLS policies, and OpenAPI documentation. Query plans, nodes, logs, and artifacts programmatically from any platform.',
+    description: 'Complete REST API with authentication, RLS policies, and OpenAPI documentation. Query plans, nodes, and logs programmatically from any platform.',
     icon: Plug,
     color: 'indigo'
   }

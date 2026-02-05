@@ -1,47 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { goalsService } from '../services/api';
+import { goalService, Goal, SuccessMetric } from '../services/api';
 
-export interface SuccessMetric {
-  metric: string;
-  target: number;
-  current: number;
-  unit: string;
-}
+export type { Goal, SuccessMetric };
 
-export interface Goal {
-  id: string;
-  organization_id: string;
-  title: string;
-  description?: string;
-  status: 'active' | 'achieved' | 'at_risk' | 'abandoned';
-  success_metrics: SuccessMetric[];
-  time_horizon?: string;
-  github_repo_url?: string;
-  knowledge_store_id?: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  organization?: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  created_by_user?: {
-    id: string;
-    name?: string;
-    email: string;
-  };
-  linked_plans?: Array<{
-    id: string;
-    title: string;
-    status: string;
-    progress: number;
-    linked_at: string;
-  }>;
-  linked_plans_count?: number;
-}
-
-export const useGoals = (filters?: { organization_id?: string; status?: string }) => {
+export const useGoals = (organizationId?: string, statusFilter?: string) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +12,7 @@ export const useGoals = (filters?: { organization_id?: string; status?: string }
     try {
       setLoading(true);
       setError(null);
-      const data = await goalsService.list(filters);
+      const data = await goalService.list(organizationId, statusFilter);
       setGoals(data);
     } catch (err: any) {
       console.error('Error fetching goals:', err);
@@ -58,7 +20,7 @@ export const useGoals = (filters?: { organization_id?: string; status?: string }
     } finally {
       setLoading(false);
     }
-  }, [filters?.organization_id, filters?.status]);
+  }, [organizationId, statusFilter]);
 
   useEffect(() => {
     fetchGoals();
@@ -70,20 +32,37 @@ export const useGoals = (filters?: { organization_id?: string; status?: string }
     description?: string;
     success_metrics?: SuccessMetric[];
     time_horizon?: string;
+    github_repo_url?: string;
   }) => {
-    const newGoal = await goalsService.create(data);
+    const newGoal = await goalService.create(data);
     await fetchGoals();
     return newGoal;
   };
 
-  const updateGoal = async (goalId: string, data: Partial<Goal>) => {
-    const updated = await goalsService.update(goalId, data);
+  const updateGoal = async (goalId: string, data: {
+    title?: string;
+    description?: string;
+    status?: 'active' | 'achieved' | 'at_risk' | 'abandoned';
+    success_metrics?: SuccessMetric[];
+    time_horizon?: string;
+  }) => {
+    const updated = await goalService.update(goalId, data);
     await fetchGoals();
     return updated;
   };
 
   const deleteGoal = async (goalId: string) => {
-    await goalsService.delete(goalId);
+    await goalService.delete(goalId);
+    await fetchGoals();
+  };
+
+  const linkPlan = async (goalId: string, planId: string) => {
+    await goalService.linkPlan(goalId, planId);
+    await fetchGoals();
+  };
+
+  const unlinkPlan = async (goalId: string, planId: string) => {
+    await goalService.unlinkPlan(goalId, planId);
     await fetchGoals();
   };
 
@@ -95,6 +74,8 @@ export const useGoals = (filters?: { organization_id?: string; status?: string }
     createGoal,
     updateGoal,
     deleteGoal,
+    linkPlan,
+    unlinkPlan,
   };
 };
 
@@ -113,7 +94,7 @@ export const useGoal = (goalId: string | null) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await goalsService.get(goalId);
+      const data = await goalService.get(goalId);
       setGoal(data);
     } catch (err: any) {
       console.error('Error fetching goal:', err);
@@ -127,21 +108,28 @@ export const useGoal = (goalId: string | null) => {
     fetchGoal();
   }, [fetchGoal]);
 
-  const updateMetrics = async (metrics: SuccessMetric[]) => {
+  const updateGoal = async (data: {
+    title?: string;
+    description?: string;
+    status?: 'active' | 'achieved' | 'at_risk' | 'abandoned';
+    success_metrics?: SuccessMetric[];
+    time_horizon?: string;
+  }) => {
     if (!goalId) return;
-    await goalsService.updateMetrics(goalId, metrics);
-    await fetchGoal();
+    const updated = await goalService.update(goalId, data);
+    setGoal(updated);
+    return updated;
   };
 
   const linkPlan = async (planId: string) => {
     if (!goalId) return;
-    await goalsService.linkPlan(goalId, planId);
+    await goalService.linkPlan(goalId, planId);
     await fetchGoal();
   };
 
   const unlinkPlan = async (planId: string) => {
     if (!goalId) return;
-    await goalsService.unlinkPlan(goalId, planId);
+    await goalService.unlinkPlan(goalId, planId);
     await fetchGoal();
   };
 
@@ -150,7 +138,7 @@ export const useGoal = (goalId: string | null) => {
     loading,
     error,
     fetchGoal,
-    updateMetrics,
+    updateGoal,
     linkPlan,
     unlinkPlan,
   };

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { useGoals, useGoal, Goal, SuccessMetric } from '../hooks/useGoals';
+import { useGoals, useGoal, SuccessMetric } from '../hooks/useGoals';
 import { useOrganizations } from '../hooks/useOrganizations';
 import { 
   Target, 
   Plus, 
   Trash2, 
-  Edit2,
   ChevronRight,
   Calendar,
   TrendingUp,
@@ -23,13 +22,14 @@ import { Link } from 'react-router-dom';
 const Goals: React.FC = () => {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const { goals, loading, error, createGoal, deleteGoal } = useGoals({
-    organization_id: selectedOrgId || undefined,
-    status: statusFilter || undefined,
-  });
+  const { goals, loading, error, createGoal, deleteGoal } = useGoals(
+    selectedOrgId || undefined,
+    statusFilter || undefined
+  );
   const { organizations } = useOrganizations();
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
-  const { goal: selectedGoal, loading: goalLoading, error: goalError, updateMetrics, unlinkPlan } = useGoal(selectedGoalId);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { goal: selectedGoal, loading: goalLoading, error: goalError, updateGoal, unlinkPlan } = useGoal(selectedGoalId);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -70,7 +70,9 @@ const Goals: React.FC = () => {
   const calculateProgress = (metrics: SuccessMetric[]) => {
     if (!metrics || metrics.length === 0) return 0;
     const total = metrics.reduce((acc, m) => {
-      const progress = m.target > 0 ? Math.min((m.current / m.target) * 100, 100) : 0;
+      const target = parseFloat(m.target) || 0;
+      const current = parseFloat(m.current) || 0;
+      const progress = target > 0 ? Math.min((current / target) * 100, 100) : 0;
       return acc + progress;
     }, 0);
     return Math.round(total / metrics.length);
@@ -325,7 +327,9 @@ const Goals: React.FC = () => {
                   ) : (
                     <div className="space-y-4">
                       {selectedGoal.success_metrics.map((metric, idx) => {
-                        const progress = metric.target > 0 ? Math.min((metric.current / metric.target) * 100, 100) : 0;
+                        const targetVal = parseFloat(metric.target) || 0;
+                        const currentVal = parseFloat(metric.current) || 0;
+                        const progress = targetVal > 0 ? Math.min((currentVal / targetVal) * 100, 100) : 0;
                         return (
                           <div key={idx}>
                             <div className="flex justify-between mb-1">

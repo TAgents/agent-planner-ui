@@ -25,6 +25,8 @@ import AICreatePlan from './pages/plans/AICreatePlan';
 import Settings from './pages/Settings';
 import OrganizationSettings from './pages/settings/OrganizationSettings';
 import Goals from './pages/Goals';
+import GoalSettings from './pages/settings/GoalSettings';
+import KnowledgeSettings from './pages/settings/KnowledgeSettings';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -79,6 +81,8 @@ const App: React.FC = () => {
                   <Route path="goals" element={<Goals />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
+                  <Route path="settings/goals" element={<GoalSettings />} />
+                  <Route path="settings/knowledge" element={<KnowledgeSettings />} />
                   <Route path="profile" element={<UserProfile />} />
                 </Route>
               </Route>
