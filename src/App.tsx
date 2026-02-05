@@ -27,8 +27,6 @@ import Settings from './pages/Settings';
 import OrganizationSettings from './pages/settings/OrganizationSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
-import GoalSettings from './pages/settings/GoalSettings';
-import KnowledgeSettings from './pages/settings/KnowledgeSettings';
 import KnowledgeHub from './pages/KnowledgeHub';
 import UserProfile from './pages/profile/UserProfile';
 import TermsOfService from './pages/TermsOfService';
@@ -89,8 +87,6 @@ const App: React.FC = () => {
                   <Route path="knowledge" element={<KnowledgeHub />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
-                  <Route path="settings/goals" element={<GoalSettings />} />
-                  <Route path="settings/knowledge" element={<KnowledgeSettings />} />
                   <Route path="profile" element={<UserProfile />} />
                 </Route>
               </Route>
