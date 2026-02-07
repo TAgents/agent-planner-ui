@@ -106,12 +106,42 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <a
+                  href="https://api.agentplanner.io/api-docs/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  API Documentation
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/TAgents/agent-planner/blob/main/docs/OPENCLAW_INTEGRATION.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  OpenClaw Integration
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/TAgents/agent-planner/blob/main/docs/NOTIFICATIONS.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  Webhook Notifications
+                </a>
+              </li>
+              <li>
+                <a
                   href="https://github.com/tagents/agent-planner-mcp#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
-                  Guides & Tutorials
+                  MCP Guide
                 </a>
               </li>
             </ul>
