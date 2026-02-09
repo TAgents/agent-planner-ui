@@ -198,7 +198,68 @@ const PlanCard: React.FC<{
           }`}
         >
           <div className="p-4">
-            <div className="flex items-center gap-4">
+            {/* Mobile layout: stacked vertically */}
+            <div className="flex flex-col gap-3 sm:hidden">
+              {/* Title row - most prominent */}
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <FolderOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white leading-tight" title={plan.title}>
+                    {plan.title}
+                  </h3>
+                  {plan.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mt-0.5" title={plan.description}>
+                      {plan.description}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5" />
+              </div>
+              {/* Stats row */}
+              <div className="flex items-center gap-2 ml-11 flex-wrap">
+                <span className={`px-2 py-0.5 text-xs font-medium rounded whitespace-nowrap ${getStatusClasses(plan.status)}`}>
+                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-lg border whitespace-nowrap ${
+                    isPublic
+                      ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                      : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+                  }`}
+                >
+                  {isPublic ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                  {isPublic ? 'Public' : 'Private'}
+                </span>
+                {!isLoading && (
+                  <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{nodeCount} nodes</span>
+                )}
+                {pendingDecisionsCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    <HelpCircle className="w-3 h-3" />
+                    {pendingDecisionsCount}
+                  </span>
+                )}
+              </div>
+              {/* Progress bar */}
+              <div className="flex items-center gap-2 ml-11">
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 shadow-inner overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 transition-all duration-500 rounded-full"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 w-8 text-right">
+                  {isLoading ? '-' : `${progress}%`}
+                </span>
+              </div>
+            </div>
+
+            {/* Desktop layout: single row */}
+            <div className="hidden sm:flex items-center gap-4">
               {/* Icon */}
               <div className="flex-shrink-0">
                 <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -551,6 +612,18 @@ const PlansListSimplified: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState('updated_desc'); // Default to recently active
 
+  // Force list view on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setViewMode('list');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Batch fetch pending decision counts for all plans
   const planIds = useMemo(() => plans.map((p: Plan) => p.id), [plans]);
   const pendingDecisionCounts = usePendingDecisionCounts(planIds);
@@ -711,8 +784,8 @@ const PlansListSimplified: React.FC = () => {
                   <ArrowUpDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
 
-                {/* View Mode Toggle */}
-                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700">
+                {/* View Mode Toggle - hidden on mobile (forced list view) */}
+                <div className="hidden sm:flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-md transition-all ${
