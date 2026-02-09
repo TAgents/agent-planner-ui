@@ -1839,14 +1839,25 @@ export interface WebhookConfig {
 export const agentRequestApi = {
   // Create an agent request for a task
   create: async (planId: string, taskId: string, data: {
-    request_type: 'execute' | 'review' | 'plan' | 'custom';
+    request_type: 'start' | 'review' | 'help' | 'continue' | 'execute' | 'plan' | 'custom';
     prompt?: string;
+    message?: string;
     priority?: 'normal' | 'urgent';
   }) => {
+    // Map frontend request types to backend enum values
+    const typeMap: Record<string, string> = {
+      'execute': 'start',
+      'plan': 'help',
+      'custom': 'help',
+    };
+    const mappedData = {
+      request_type: typeMap[data.request_type] || data.request_type,
+      message: data.prompt || data.message || '',
+    };
     return request<AgentRequest>({
       method: 'POST',
-      url: `/plans/${planId}/tasks/${taskId}/agent-request`,
-      data,
+      url: `/plans/${planId}/nodes/${taskId}/request-agent`,
+      data: mappedData,
     });
   },
 
@@ -1854,8 +1865,8 @@ export const agentRequestApi = {
   listForTask: async (planId: string, taskId: string) => {
     return request<AgentRequest[]>({
       method: 'GET',
-      url: `/plans/${planId}/tasks/${taskId}/agent-requests`,
-    });
+      url: `/plans/${planId}/nodes/${taskId}/request-agent`,
+    }).catch(() => [] as AgentRequest[]);
   },
 
   // Get all pending agent requests for a plan
