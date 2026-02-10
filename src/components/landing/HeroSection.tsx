@@ -16,7 +16,7 @@ export const HeroSection: React.FC = () => {
           {/* OpenClaw Badge */}
           <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-sm font-medium mb-6 gap-2">
             <Bot className="w-4 h-4" />
-            Built for OpenClaw Agents
+            Connect Your AI Agent
           </div>
 
           {/* Headline */}
@@ -29,8 +29,8 @@ export const HeroSection: React.FC = () => {
 
           {/* Subheading */}
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto mb-10">
-            AgentPlanner is the native planning tool for OpenClaw agents. 
-            Create detailed plans, track progress, and let your agent execute—all through natural conversation.
+            The planning platform for AI agents. 
+            Create detailed plans, track progress, and let your agent execute—all through MCP or REST API.
           </p>
 
           {/* CTAs */}
@@ -56,7 +56,7 @@ export const HeroSection: React.FC = () => {
           {/* Agent-first message */}
           <div className="mt-12 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-xl max-w-xl mx-auto">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">
-              💡 Pro tip: Have your OpenClaw agent create plans for you
+              💡 Pro tip: Have your AI agent create plans for you
             </p>
             <code className="text-sm bg-gray-200 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-purple-600 dark:text-purple-400 font-mono">
               "Create a plan for building a REST API"

@@ -37,7 +37,7 @@ tools:
     {
       number: 1,
       title: 'Create Your Account',
-      description: 'Sign in with GitHub or email. Your OpenClaw agent will use your account to create and manage plans.',
+      description: 'Sign in with GitHub or email. Your agent will use your account to create and manage plans.',
       icon: Bot,
       showButton: true,
       showTabs: false
@@ -82,7 +82,7 @@ for design, development, and launch"`,
             Get Your Agent Planning
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-            Connect AgentPlanner to your OpenClaw agent and start creating structured plans
+            Connect AgentPlanner to your AI agent and start creating structured plans
           </p>
         </div>
 
@@ -165,10 +165,10 @@ for design, development, and launch"`,
         <div className="mt-12 text-center p-8 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl border border-purple-200 dark:border-purple-800">
           <Bot className="w-12 h-12 text-purple-600 dark:text-purple-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Ready to supercharge your agent?
+            Ready to connect your agent?
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Give your OpenClaw agent the ability to plan, track, and execute complex projects.
+            Choose your platform below and follow the configuration guide.
           </p>
           <a
             href="/login"

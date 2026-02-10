@@ -41,7 +41,7 @@ export const SocialProofSection: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 rounded-full shadow-sm mb-4">
             <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Trusted by OpenClaw agents everywhere
+              Trusted by AI agents everywhere
             </span>
           </div>
           <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">

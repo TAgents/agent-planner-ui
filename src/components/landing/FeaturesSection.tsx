@@ -22,7 +22,7 @@ interface Feature {
 const features: Feature[] = [
   {
     title: 'Agent-First Design',
-    description: 'Built for OpenClaw agents from the ground up. MCP-native tools let your agent create, update, and track plans through natural conversation.',
+    description: 'MCP-native tools let any compatible agent create, update, and track plans through natural conversation.',
     icon: Bot,
     color: 'purple'
   },
@@ -58,7 +58,7 @@ const features: Feature[] = [
   },
   {
     title: 'Webhook Notifications',
-    description: 'Get notified when tasks are blocked, completed, or need attention. OpenClaw can ping you through your preferred channels.',
+    description: 'Get notified when tasks are blocked, completed, or need attention. Webhooks and polling keep your agent in the loop.',
     icon: Webhook,
     color: 'cyan'
   },
@@ -89,7 +89,7 @@ export const FeaturesSection: React.FC = () => {
             Everything Your Agent Needs
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            From planning to execution—give your OpenClaw agent the tools to work effectively
+            From planning to execution—give your AI agent the tools to work effectively
           </p>
         </div>
 
