@@ -68,9 +68,10 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   }, [plans, searchQuery]);
 
   const isActive = (path: string) => {
-    if (path === '/app/plans' && location.pathname === '/app/plans') return true;
-    if (path !== '/app/plans' && location.pathname.startsWith(path)) return true;
-    return false;
+    const pathname = location.pathname.replace(/\/+$/, '') || '/'; // normalize trailing slash
+    if (path === '/app/plans') return pathname === '/app/plans';
+    if (path === '/explore') return pathname === '/explore' || pathname.startsWith('/explore/');
+    return pathname.startsWith(path);
   };
 
   const isPlanActive = (planId: string) => {

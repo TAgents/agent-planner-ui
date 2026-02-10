@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -24,6 +24,8 @@ import {
   RecentPlan,
   ActiveGoal,
 } from '../hooks/useDashboard';
+import { usePlans } from '../hooks/usePlans';
+import { useRecentActivity, RecentActivityItem } from '../hooks/useRecentActivity';
 
 // Stat Card Component
 const StatCard: React.FC<{
@@ -171,8 +173,8 @@ const ActiveGoalsSection: React.FC<{ goals: ActiveGoal[] }> = ({ goals }) => {
   );
 };
 
-// Recent Plans Section
-const RecentPlansSection: React.FC<{ plans: RecentPlan[] }> = ({ plans }) => {
+// Recent Plans Section - uses progressMap for consistent progress display
+const RecentPlansSection: React.FC<{ plans: RecentPlan[]; progressMap?: Record<string, number> }> = ({ plans, progressMap }) => {
   const statusColors: Record<string, string> = {
     draft: 'bg-gray-400',
     active: 'bg-blue-500',
@@ -233,18 +235,24 @@ const RecentPlansSection: React.FC<{ plans: RecentPlan[] }> = ({ plans }) => {
                   <Clock className="w-3 h-3" />
                   {safeFormatDate(plan.updated_at) || 'Recently'}
                 </span>
-                {typeof plan.progress === 'number' && plan.progress !== null && (
-                  <span>{plan.progress}% complete</span>
-                )}
+                {(() => {
+                  const progress = progressMap?.[plan.id] ?? plan.progress;
+                  return typeof progress === 'number' && progress !== null ? (
+                    <span>{progress}% complete</span>
+                  ) : null;
+                })()}
               </div>
-              {typeof plan.progress === 'number' && plan.progress !== null && plan.progress > 0 && (
-                <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
-                    style={{ width: `${plan.progress}%` }}
-                  />
-                </div>
-              )}
+              {(() => {
+                const progress = progressMap?.[plan.id] ?? plan.progress;
+                return typeof progress === 'number' && progress !== null && progress > 0 ? (
+                  <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                ) : null;
+              })()}
             </Link>
           ))}
         </div>
@@ -331,6 +339,21 @@ const Dashboard: React.FC = () => {
   const { data: pending, error: pendingError } = usePendingItems(5);
   const { data: recentPlansData, error: plansError } = useRecentPlans(6);
   const { data: goalsData, error: goalsError } = useActiveGoals(5);
+  const { plans: sidebarPlans } = usePlans(1, 20);
+  const { data: recentActivityData, isLoading: activityLoading } = useRecentActivity(10);
+
+  // Build a progress map from the plans list (same source as sidebar) for consistency
+  const progressMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (sidebarPlans) {
+      sidebarPlans.forEach((p: any) => {
+        if (typeof p.progress === 'number') {
+          map[p.id] = p.progress;
+        }
+      });
+    }
+    return map;
+  }, [sidebarPlans]);
 
   const firstName = getFirstName(userName);
   const hasError = summaryError || pendingError || plansError || goalsError;
@@ -382,21 +405,74 @@ const Dashboard: React.FC = () => {
             <ActiveGoalsSection goals={goalsData?.goals || []} />
           </div>
 
-          {/* Recent Activity placeholder - Takes 2 columns */}
+          {/* Recent Activity - Takes 2 columns */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 h-full">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  Recent Activity
+                </h3>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-                Activity feed coming soon...
-              </p>
+              {activityLoading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-start gap-3 animate-pulse">
+                      <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : !recentActivityData || recentActivityData.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No recent activity yet. Start by creating a plan!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {recentActivityData.map((item) => (
+                    <div key={item.id} className="flex items-start gap-3 group">
+                      <div className="flex-shrink-0 mt-1">
+                        {item.type === 'node_completed' ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : item.type === 'node_blocked' ? (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        ) : item.type === 'comment_added' ? (
+                          <Sparkles className="w-4 h-4 text-purple-500" />
+                        ) : (
+                          <div className="w-2 h-2 mt-1 bg-blue-500 rounded-full" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 dark:text-white">
+                          {item.description}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {item.plan_title && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                              {item.plan_title}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {safeFormatDate(item.created_at) || 'Recently'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Recent Plans */}
-        <RecentPlansSection plans={recentPlansData?.plans || []} />
+        <RecentPlansSection plans={recentPlansData?.plans || []} progressMap={progressMap} />
         </>
       </div>
     </div>
