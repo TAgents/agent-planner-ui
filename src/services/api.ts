@@ -2033,6 +2033,39 @@ export const dashboardApi = {
   },
 };
 
+// Handoff API
+export const handoffApi = {
+  create: async (planId: string, nodeId: string, data: { to_agent_id: string; context?: string; reason?: string }) => {
+    return request<any>({
+      method: 'POST',
+      url: `/plans/${planId}/nodes/${nodeId}/handoffs`,
+      data,
+    });
+  },
+
+  getForNode: async (planId: string, nodeId: string) => {
+    return request<any[]>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/handoffs`,
+    });
+  },
+
+  respond: async (handoffId: string, action: 'accepted' | 'rejected', notes?: string) => {
+    return request<any>({
+      method: 'POST',
+      url: `/handoffs/${handoffId}/respond`,
+      data: { action, notes },
+    });
+  },
+
+  getPending: async () => {
+    return request<any[]>({
+      method: 'GET',
+      url: '/handoffs/pending',
+    });
+  },
+};
+
 // Capability Tags API
 export const capabilityTagsApi = {
   get: async () => {
