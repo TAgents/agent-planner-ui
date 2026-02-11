@@ -8,6 +8,7 @@ import {
   HelpCircle,
   X,
   Settings,
+  MessageSquare as MessageSquareIcon,
 } from 'lucide-react';
 
 // Import new components
@@ -21,6 +22,7 @@ import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
+import PlanChatPanel from '../components/chat/PlanChatPanel';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useFocusNavigation } from '../hooks/useFocusNavigation';
@@ -270,6 +272,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -631,6 +634,15 @@ const PlanVisualizationEnhanced: React.FC = () => {
               onClick={() => setShowDecisionPanel(true)}
             />
 
+            {/* Chat button */}
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className={`p-2 rounded-lg transition-colors ${showChat ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'}`}
+              title="Plan Chat"
+            >
+              <MessageSquareIcon className="w-5 h-5" />
+            </button>
+
             {/* Settings button */}
             <button
               onClick={() => setShowSettingsModal(true)}
@@ -857,6 +869,17 @@ const PlanVisualizationEnhanced: React.FC = () => {
         planId={planId || ''}
         planTitle={plan.title}
       />
+
+      {/* Chat Panel - Fixed right side overlay */}
+      {showChat && (
+        <div className="fixed right-0 top-14 bottom-0 z-30 shadow-xl">
+          <PlanChatPanel
+            planId={planId || ''}
+            isOpen={showChat}
+            onClose={() => setShowChat(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };
