@@ -2045,6 +2045,54 @@ export const dashboardApi = {
   },
 };
 
+// Prompt Templates API
+export interface PromptTemplate {
+  id: string;
+  plan_id?: string;
+  user_id: string;
+  name: string;
+  template: string;
+  description?: string;
+  type: 'plan' | 'task' | 'review' | 'summary' | 'custom';
+  is_default: boolean;
+  variables: Array<{ name: string; description?: string }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const promptApi = {
+  list: async (planId?: string, type?: string) => {
+    return request<PromptTemplate[]>({
+      method: 'GET',
+      url: '/prompts',
+      params: { plan_id: planId, type },
+    });
+  },
+
+  create: async (data: Partial<PromptTemplate>) => {
+    return request<PromptTemplate>({
+      method: 'POST',
+      url: '/prompts',
+      data,
+    });
+  },
+
+  update: async (promptId: string, data: Partial<PromptTemplate>) => {
+    return request<PromptTemplate>({
+      method: 'PUT',
+      url: `/prompts/${promptId}`,
+      data,
+    });
+  },
+
+  delete: async (promptId: string) => {
+    return request<void>({
+      method: 'DELETE',
+      url: `/prompts/${promptId}`,
+    });
+  },
+};
+
 // Plan Chat API
 export const planChatApi = {
   getMessages: async (planId: string, limit?: number, before?: string) => {
