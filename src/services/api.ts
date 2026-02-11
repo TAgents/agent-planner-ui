@@ -2031,6 +2031,18 @@ export const dashboardApi = {
       params: { limit },
     });
   },
+
+  getAgentActivity: async () => {
+    return request<{
+      agents: Array<{ id: string; name: string; email: string; avatar_url: string; capability_tags: string[] }>;
+      assignments: Array<any>;
+      handoffs: Array<any>;
+      recentActivity: Array<any>;
+    }>({
+      method: 'GET',
+      url: '/dashboard/agent-activity',
+    });
+  },
 };
 
 // Handoff API
