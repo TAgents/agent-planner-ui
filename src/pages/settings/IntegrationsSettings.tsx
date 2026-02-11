@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PromptTemplates from '../../components/settings/PromptTemplates';
 import { Link } from 'react-router-dom';
 import {
   Check,
@@ -404,6 +405,11 @@ const IntegrationsSettings: React.FC = () => {
           </div>
         </div>
         </div> {/* End of transition wrapper */}
+
+        {/* Prompt Templates */}
+        <div className="mt-6">
+          <PromptTemplates />
+        </div>
       </div>
     </div>
   );
