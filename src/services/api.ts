@@ -2045,6 +2045,25 @@ export const dashboardApi = {
   },
 };
 
+// Plan Chat API
+export const planChatApi = {
+  getMessages: async (planId: string, limit?: number, before?: string) => {
+    return request<Array<{ id: string; plan_id: string; user_id: string; role: string; content: string; metadata: any; created_at: string }>>({
+      method: 'GET',
+      url: `/plans/${planId}/chat`,
+      params: { limit, before },
+    });
+  },
+
+  sendMessage: async (planId: string, content: string, role: string = 'user', metadata?: any) => {
+    return request<{ id: string; plan_id: string; user_id: string; role: string; content: string; created_at: string }>({
+      method: 'POST',
+      url: `/plans/${planId}/chat`,
+      data: { content, role, metadata },
+    });
+  },
+};
+
 // Handoff API
 export const handoffApi = {
   create: async (planId: string, nodeId: string, data: { to_agent_id: string; context?: string; reason?: string }) => {
