@@ -23,6 +23,7 @@ import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
 import PlanChatPanel from '../components/chat/PlanChatPanel';
+import AgentStatusIndicator from '../components/agent/AgentStatusIndicator';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useFocusNavigation } from '../hooks/useFocusNavigation';
@@ -589,6 +590,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
             {planViewers.length > 0 && (
               <div className="hidden sm:block">
                 <PresenceIndicator viewers={planViewers} maxVisible={3} size="sm" />
+                <AgentStatusIndicator planId={planId || ''} compact />
               </div>
             )}
           </div>
