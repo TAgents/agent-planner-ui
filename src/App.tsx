@@ -34,6 +34,7 @@ import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Dashboard from './pages/Dashboard';
+import AgentDashboard from './pages/AgentDashboard';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -88,6 +89,7 @@ const App: React.FC = () => {
                   <Route path="goals" element={<Goals />} />
                   <Route path="goals/:goalId" element={<GoalDetail />} />
                   <Route path="knowledge" element={<KnowledgeHub />} />
+                  <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
