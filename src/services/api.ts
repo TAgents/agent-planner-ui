@@ -833,6 +833,30 @@ export const nodeService = {
     });
   },
 
+  // Agent assignment
+  assignAgent: async (planId: string, nodeId: string, agentId: string) => {
+    return request<any>({
+      method: 'POST',
+      url: `/plans/${planId}/nodes/${nodeId}/assign-agent`,
+      data: { agent_id: agentId },
+    });
+  },
+
+  unassignAgent: async (planId: string, nodeId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/plans/${planId}/nodes/${nodeId}/assign-agent`,
+    });
+  },
+
+  getSuggestedAgents: async (planId: string, nodeId: string, tags?: string) => {
+    return request<{ agents: Array<{ id: string; name: string; email: string; avatar_url: string; capability_tags: string[] }> }>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/suggested-agents`,
+      params: tags ? { tags } : undefined,
+    });
+  },
+
   // Get all activities for a node (logs, status changes)
   getNodeActivities: async (planId: string, nodeId: string) => {
     return request<any[]>({

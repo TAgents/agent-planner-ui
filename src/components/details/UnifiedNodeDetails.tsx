@@ -37,6 +37,7 @@ import { useCollaborators } from '../../hooks/useCollaborators';
 import { useNodeAssignments } from '../../hooks/useNodeAssignments';
 import { useNodeInstructions } from '../../hooks/useNodeInstructions';
 import { AskAgentButton } from '../agent-request';
+import AgentAssignment from './AgentAssignment';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -1154,6 +1155,15 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               <span>Due: {formatDate(node.due_date)}</span>
             </div>
           )}
+        </div>
+
+        {/* Agent Assignment */}
+        <div className="mt-2">
+          <AgentAssignment
+            planId={planId}
+            nodeId={node.id}
+            assignedAgentId={node.assigned_agent_id}
+          />
         </div>
       </div>
 

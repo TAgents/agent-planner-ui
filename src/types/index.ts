@@ -39,6 +39,9 @@ export interface PlanNode {
   metadata?: Record<string, any>;
   comment_count?: number;
   log_count?: number;
+  assigned_agent_id?: string;
+  assigned_agent_at?: string;
+  assigned_agent_by?: string;
 }
 
 // Comment Types
