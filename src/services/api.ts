@@ -2008,3 +2008,36 @@ export const dashboardApi = {
     });
   },
 };
+
+// Capability Tags API
+export const capabilityTagsApi = {
+  get: async () => {
+    return request<{ capability_tags: string[] }>({
+      method: 'GET',
+      url: '/users/capabilities',
+    });
+  },
+
+  update: async (tags: string[]) => {
+    return request<{ capability_tags: string[] }>({
+      method: 'PUT',
+      url: '/users/capabilities',
+      data: { capability_tags: tags },
+    });
+  },
+
+  getForUser: async (userId: string) => {
+    return request<{ capability_tags: string[] }>({
+      method: 'GET',
+      url: `/users/${userId}/capabilities`,
+    });
+  },
+
+  searchByTags: async (tags: string[], match: 'any' | 'all' = 'any') => {
+    return request<{ results: Array<{ id: string; email: string; name: string; avatar_url: string; capability_tags: string[] }>; count: number }>({
+      method: 'GET',
+      url: '/users/capabilities/search',
+      params: { tags: tags.join(','), match },
+    });
+  },
+};
