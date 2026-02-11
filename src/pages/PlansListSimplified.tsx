@@ -208,7 +208,7 @@ const PlanCard: React.FC<{
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white leading-tight" title={plan.title}>
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white leading-tight line-clamp-2" title={plan.title}>
                     {plan.title}
                   </h3>
                   {plan.description && (
@@ -712,11 +712,11 @@ const PlansListSimplified: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Plans</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Plans</h1>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
                 {plans.length > 0
                   ? `${plans.length} plan${plans.length !== 1 ? 's' : ''} in your workspace`
                   : 'Create your first plan to get started'
@@ -742,7 +742,7 @@ const PlansListSimplified: React.FC = () => {
 
               <div className="flex flex-wrap items-center gap-2">
                 {/* Status Filter */}
-                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700">
+                <div className="flex overflow-x-auto bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700 max-w-full">
                   {(['all', 'active', 'draft', 'completed', 'archived'] as const).map(status => {
                     // Count plans for each status
                     const count = status === 'all'
@@ -753,7 +753,7 @@ const PlansListSimplified: React.FC = () => {
                       <button
                         key={status}
                         onClick={() => setFilterStatus(status)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all capitalize ${
+                        className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all capitalize whitespace-nowrap ${
                           filterStatus === status
                             ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
@@ -816,7 +816,7 @@ const PlansListSimplified: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         {/* Plans Grid/List or Empty State */}
         {plans.length === 0 ? (
           <EmptyPlansGuide />
