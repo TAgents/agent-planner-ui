@@ -438,12 +438,16 @@ const Dashboard: React.FC = () => {
                   {recentActivityData.map((item) => (
                     <div key={item.id} className="flex items-start gap-3 group">
                       <div className="flex-shrink-0 mt-1">
-                        {item.type === 'node_completed' ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        ) : item.type === 'node_blocked' ? (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        ) : item.type === 'comment_added' ? (
+                        {item.type === 'decision' ? (
                           <Sparkles className="w-4 h-4 text-purple-500" />
+                        ) : item.type === 'challenge' ? (
+                          <AlertCircle className="w-4 h-4 text-orange-500" />
+                        ) : item.type === 'comment' ? (
+                          <Sparkles className="w-4 h-4 text-blue-500" />
+                        ) : item.description?.match(/status\s+to\s+completed/i) ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : item.description?.match(/status\s+to\s+blocked/i) ? (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
                         ) : (
                           <div className="w-2 h-2 mt-1 bg-blue-500 rounded-full" />
                         )}
@@ -453,11 +457,15 @@ const Dashboard: React.FC = () => {
                           {item.description}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {item.plan_title && (
+                          {item.plan_title && item.plan_id ? (
+                            <a href={`/app/plans/${item.plan_id}`} className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 truncate">
+                              {item.plan_title}
+                            </a>
+                          ) : item.plan_title ? (
                             <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
                               {item.plan_title}
                             </span>
-                          )}
+                          ) : null}
                           <span className="text-xs text-gray-400 dark:text-gray-500">
                             {safeFormatDate(item.created_at) || 'Recently'}
                           </span>
