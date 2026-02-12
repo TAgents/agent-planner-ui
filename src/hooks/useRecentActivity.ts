@@ -20,13 +20,18 @@ export interface RecentActivityItem {
 
 interface ActivityFeedItem {
   id: string;
-  type?: string;
+  type?: string;         // 'log' | 'comment' — the activity source
   content?: string;
-  activity_type?: string;
+  activity_type?: string; // 'progress' | 'decision' | 'challenge' | 'reasoning' — more specific
   created_at: string;
   user?: { id: string; name: string; email?: string };
   node?: { id: string; title: string; node_type?: string };
   plan?: { id: string; title: string };
+}
+
+interface ActivityFeedResponse {
+  activities: ActivityFeedItem[];
+  pagination: { page: number; limit: number; total: number; pages: number };
 }
 
 const mapActivity = (a: ActivityFeedItem): RecentActivityItem => ({
@@ -47,14 +52,17 @@ export const useRecentActivity = (limit: number = 10) => {
     ['recentActivity', limit],
     async (): Promise<RecentActivityItem[]> => {
       try {
-        const response: any = await activityService.getActivityFeed(1, limit);
         // API returns { activities: [...], pagination: {...} }
-        const items = response?.activities || response?.data || [];
+        const response = await activityService.getActivityFeed(1, limit) as unknown as ActivityFeedResponse;
+        const items = response?.activities || [];
         if (Array.isArray(items)) {
           return items.slice(0, limit).map(mapActivity);
         }
         return [];
-      } catch {
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching recent activity:', error);
+        }
         return [];
       }
     },

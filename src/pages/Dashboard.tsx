@@ -444,9 +444,9 @@ const Dashboard: React.FC = () => {
                           <AlertCircle className="w-4 h-4 text-orange-500" />
                         ) : item.type === 'comment' ? (
                           <Sparkles className="w-4 h-4 text-blue-500" />
-                        ) : item.description?.toLowerCase().includes('completed') || item.description?.toLowerCase().includes('status to completed') ? (
+                        ) : item.description?.match(/status\s+to\s+completed/i) ? (
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        ) : item.description?.toLowerCase().includes('blocked') ? (
+                        ) : item.description?.match(/status\s+to\s+blocked/i) ? (
                           <AlertCircle className="w-4 h-4 text-red-500" />
                         ) : (
                           <div className="w-2 h-2 mt-1 bg-blue-500 rounded-full" />
