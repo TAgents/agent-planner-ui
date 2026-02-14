@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGoals } from '../hooks/useGoals';
-// Removed: useOrganizations (pre-v2 cleanup)
 import { 
   Target, 
   Plus, 
@@ -11,13 +10,12 @@ import {
 import GoalCard from '../components/goals/GoalCard';
 
 const Goals: React.FC = () => {
-  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
+  const [selectedOrgId] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { goals, loading, error, createGoal, deleteGoal } = useGoals(
     selectedOrgId || undefined,
     statusFilter || undefined
   );
-  // Removed: organizations (pre-v2 cleanup)
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -100,7 +98,6 @@ const Goals: React.FC = () => {
 
         {/* Filters */}
         <div className="flex gap-4 mb-6">
-          {/* Removed: organization filter (pre-v2 cleanup) */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -160,7 +157,6 @@ const Goals: React.FC = () => {
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Goal</h2>
             
             <div className="space-y-4">
-              {/* Removed: organization selector (pre-v2 cleanup) */}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

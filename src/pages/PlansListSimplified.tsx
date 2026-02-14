@@ -26,7 +26,6 @@ import { formatDistanceToNow } from '../utils/dateUtils';
 import { Plan } from '../types';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { PLAN_EVENTS } from '../types/websocket';
-// decisionsApi import removed - pending counts disabled due to rate limiting
 // import { decisionsApi } from '../services/api';
 
 // Sort options

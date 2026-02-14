@@ -87,7 +87,6 @@ export function useCreateAgentRequest(planId: string, taskId?: string) {
   );
 }
 
-// Removed: webhook hooks (pre-v2 cleanup)
 
 // Hook to subscribe to agent WebSocket events and refresh queries
 export function useAgentRequestEvents(planId: string) {

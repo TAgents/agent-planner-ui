@@ -302,7 +302,6 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
-            {/* Removed: Knowledge Hub nav link (pre-v2 cleanup) */}
 
             {/* Agent Activity - only for authenticated users */}
             {isAuthenticated && (

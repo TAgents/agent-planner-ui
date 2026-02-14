@@ -12,7 +12,6 @@ import {
 
 // Import new components
 import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
-// Removed: OnboardingTour (pre-v2 cleanup)
 import ShareButton from '../components/sharing/ShareButton';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
 import { getNextStatus } from '../components/tree/StatusBadge';
@@ -21,7 +20,6 @@ import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
-// Removed: PlanChatPanel (pre-v2 cleanup)
 import AgentStatusIndicator from '../components/agent/AgentStatusIndicator';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -272,7 +270,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
   
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  // Removed: showChat state (pre-v2 cleanup)
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -293,7 +290,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
     window.scrollTo(0, 0);
   }, [planId]);
 
-  // Removed: onboarding tour check (pre-v2 cleanup)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -820,7 +816,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
         )}
       </div>
 
-      {/* Removed: OnboardingTour (pre-v2 cleanup) */}
 
       {/* Help Modal */}
       <HelpModal
@@ -875,7 +870,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
         }}
       />
 
-      {/* Removed: Chat Panel (pre-v2 cleanup) */}
     </div>
   );
 };

@@ -28,7 +28,6 @@ import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
-// Removed: KnowledgeHub (pre-v2 cleanup)
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -87,10 +86,8 @@ const App: React.FC = () => {
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<Goals />} />
                   <Route path="goals/:goalId" element={<GoalDetail />} />
-                  {/* Removed: knowledge route (pre-v2 cleanup) */}
                   <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
-                  {/* Removed: organization settings route (pre-v2 cleanup) */}
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
                   <Route path="settings/profile" element={<ProfileSettings />} />
                   <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
