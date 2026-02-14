@@ -38,8 +38,6 @@ import { useNodeAssignments } from '../../hooks/useNodeAssignments';
 import { useNodeInstructions } from '../../hooks/useNodeInstructions';
 import { AskAgentButton } from '../agent-request';
 import AgentAssignment from './AgentAssignment';
-import HandoffPanel from './HandoffPanel';
-import { ArrowRightLeft } from 'lucide-react';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -924,7 +922,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onUnassignUser,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions' | 'handoffs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions'>('overview');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [assignedUser, setAssignedUser] = useState<any>(null);
 
@@ -1215,17 +1213,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full" />
               )}
             </button>
-            <button
-              onClick={() => setActiveTab('handoffs')}
-              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'handoffs'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-              }`}
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-              <span>Handoffs</span>
-            </button>
           </div>
         </div>
 
@@ -1315,9 +1302,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           />
         )}
 
-        {activeTab === 'handoffs' && (
-          <HandoffPanel planId={planId} nodeId={node.id} />
-        )}
       </div>
     </div>
   );
