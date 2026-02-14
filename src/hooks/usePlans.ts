@@ -80,7 +80,11 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
       onSuccess: (data) => {
         // Update the plan in the cache
         queryClient.invalidateQueries('plans');
-        queryClient.invalidateQueries(['plan', data.data.id]);
+        // Safely invalidate specific plan query
+        const planId = data?.data?.id || (data as any)?.id;
+        if (planId) {
+          queryClient.invalidateQueries(['plan', planId]);
+        }
       },
     }
   );
