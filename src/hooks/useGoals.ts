@@ -27,7 +27,7 @@ export const useGoals = (organizationId?: string, statusFilter?: string) => {
   }, [fetchGoals]);
 
   const createGoal = async (data: {
-    organization_id: string;
+    organization_id?: string;
     title: string;
     description?: string;
     success_metrics?: SuccessMetric[];

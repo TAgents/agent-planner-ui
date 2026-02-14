@@ -25,14 +25,14 @@ import CreatePlan from './pages/plans/CreatePlan';
 import AICreatePlan from './pages/plans/AICreatePlan';
 import CreatePlanSelector from './pages/plans/CreatePlanSelector';
 import Settings from './pages/Settings';
-import OrganizationSettings from './pages/settings/OrganizationSettings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
-import KnowledgeHub from './pages/KnowledgeHub';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import CookiesPolicy from './pages/CookiesPolicy';
+import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import AgentDashboard from './pages/AgentDashboard';
 
@@ -67,6 +67,7 @@ const App: React.FC = () => {
               {/* Legal Pages */}
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/cookies" element={<CookiesPolicy />} />
 
               {/* Authentication Routes */}
               <Route path="/login" element={<Login />} />
@@ -88,15 +89,16 @@ const App: React.FC = () => {
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<Goals />} />
                   <Route path="goals/:goalId" element={<GoalDetail />} />
-                  <Route path="knowledge" element={<KnowledgeHub />} />
                   <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
-                  <Route path="settings/organization" element={<OrganizationSettings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
                   <Route path="settings/profile" element={<ProfileSettings />} />
                   <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
                 </Route>
               </Route>
+
+              {/* 404 Catch-all */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </UIProvider>

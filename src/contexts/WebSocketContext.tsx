@@ -60,17 +60,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const getToken = useCallback((): string | null => {
     const sessionStr = localStorage.getItem('auth_session');
     if (!sessionStr) {
-      console.warn('[WebSocket] No auth_session found in localStorage');
       return null;
     }
 
     try {
       const session = JSON.parse(sessionStr);
       const token = session.access_token || session.accessToken;
-      if (!token) {
-        console.warn('[WebSocket] No token found in session. Session keys:', Object.keys(session));
-      }
-      return token;
+      return token || null;
     } catch (error) {
       console.error('[WebSocket] Failed to parse session:', error);
       return null;
@@ -150,8 +146,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     // Get token
     const token = getToken();
     if (!token) {
-      console.error('[WebSocket] Cannot connect: No authentication token');
-      setStatus(ConnectionStatus.ERROR);
+      // Silently skip connection for unauthenticated users (e.g. on public pages)
+      setStatus(ConnectionStatus.DISCONNECTED);
       return;
     }
 

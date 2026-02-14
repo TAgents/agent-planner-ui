@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGoals } from '../hooks/useGoals';
-import { useOrganizations } from '../hooks/useOrganizations';
 import { 
   Target, 
   Plus, 
@@ -11,13 +10,11 @@ import {
 import GoalCard from '../components/goals/GoalCard';
 
 const Goals: React.FC = () => {
-  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { goals, loading, error, createGoal, deleteGoal } = useGoals(
-    selectedOrgId || undefined,
+    undefined,
     statusFilter || undefined
   );
-  const { organizations } = useOrganizations();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -25,7 +22,6 @@ const Goals: React.FC = () => {
 
   // Create form state
   const [newGoal, setNewGoal] = useState({
-    organization_id: '',
     title: '',
     description: '',
     time_horizon: '',
@@ -37,16 +33,15 @@ const Goals: React.FC = () => {
   };
 
   const handleCreate = async () => {
-    if (!newGoal.title || !newGoal.organization_id) return;
+    if (!newGoal.title) return;
     try {
       await createGoal({
-        organization_id: newGoal.organization_id,
         title: newGoal.title,
         description: newGoal.description || undefined,
         time_horizon: newGoal.time_horizon || undefined,
       });
       setShowCreateDialog(false);
-      setNewGoal({ organization_id: '', title: '', description: '', time_horizon: '' });
+      setNewGoal({ title: '', description: '', time_horizon: '' });
       showNotification('Goal created successfully', 'success');
     } catch (err: any) {
       showNotification(err.message || 'Failed to create goal', 'error');
@@ -100,16 +95,6 @@ const Goals: React.FC = () => {
 
         {/* Filters */}
         <div className="flex gap-4 mb-6">
-          <select
-            value={selectedOrgId}
-            onChange={(e) => setSelectedOrgId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          >
-            <option value="">All Organizations</option>
-            {organizations.map((org) => (
-              <option key={org.id} value={org.id}>{org.name}</option>
-            ))}
-          </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -169,21 +154,6 @@ const Goals: React.FC = () => {
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Goal</h2>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Organization *
-                </label>
-                <select
-                  value={newGoal.organization_id}
-                  onChange={(e) => setNewGoal({ ...newGoal, organization_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">Select organization</option>
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id}>{org.name}</option>
-                  ))}
-                </select>
-              </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -233,7 +203,7 @@ const Goals: React.FC = () => {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!newGoal.title || !newGoal.organization_id}
+                disabled={!newGoal.title}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors"
               >
                 Create Goal

@@ -5,14 +5,12 @@ import {
   Loader2,
   AlertCircle,
   Check,
-  Building2,
   Target,
   FolderTree,
   FileText,
   Activity,
   BookOpen,
 } from 'lucide-react';
-import { useOrganizations } from '../../hooks/useOrganizations';
 import { useGoals } from '../../hooks/useGoals';
 
 interface ClonePlanModalProps {
@@ -38,12 +36,10 @@ interface CloneOptions {
 
 const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { organizations } = useOrganizations();
   const { goals } = useGoals();
 
   const [formData, setFormData] = useState({
     title: `${plan.title} (copy)`,
-    organization_id: '',
     goal_id: '',
   });
 
@@ -63,7 +59,6 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
     if (isOpen) {
       setFormData({
         title: `${plan.title} (copy)`,
-        organization_id: organizations[0]?.id || '',
         goal_id: '',
       });
       setOptions({
@@ -75,7 +70,7 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
       });
       setError(null);
     }
-  }, [isOpen, plan.title, organizations]);
+  }, [isOpen, plan.title]);
 
   const handleClone = async () => {
     if (!formData.title.trim()) {
@@ -98,7 +93,6 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
           },
           body: JSON.stringify({
             title: formData.title,
-            organization_id: formData.organization_id || undefined,
             goal_id: formData.goal_id || undefined,
             include_structure: options.structure,
             include_descriptions: options.descriptions,
@@ -183,26 +177,6 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter plan title"
               />
-            </div>
-
-            {/* Organization */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <Building2 className="w-4 h-4 inline mr-1" />
-                Organization
-              </label>
-              <select
-                value={formData.organization_id}
-                onChange={(e) => setFormData({ ...formData, organization_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option value="">Personal (no organization)</option>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Goal */}

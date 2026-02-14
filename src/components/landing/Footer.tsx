@@ -126,12 +126,12 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="https://github.com/TAgents/agent-planner/blob/main/docs/NOTIFICATIONS.md"
+                  href="https://github.com/TAgents/agent-planner/blob/main/docs/SLACK_INTEGRATION.md"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
-                  Webhook Notifications
+                  Slack Integration
                 </a>
               </li>
               <li>

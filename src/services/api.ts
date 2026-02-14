@@ -76,10 +76,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // Handle authentication errors
+    // Handle authentication errors - only redirect on protected routes
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_session');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      const isProtectedRoute = currentPath.startsWith('/app/') || currentPath === '/app';
+      if (isProtectedRoute) {
+        localStorage.removeItem('auth_session');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -1388,77 +1392,6 @@ const apiServices = {
 export default apiServices;
 
 // Organization service
-export const organizationService = {
-  list: async () => {
-    const response = await request<any>({
-      method: 'GET',
-      url: '/organizations',
-    });
-    return response.organizations || response;
-  },
-
-  get: async (orgId: string) => {
-    return request<any>({
-      method: 'GET',
-      url: `/organizations/${orgId}`,
-    });
-  },
-
-  create: async (data: { name: string; description?: string; slug?: string }) => {
-    return request<any>({
-      method: 'POST',
-      url: '/organizations',
-      data,
-    });
-  },
-
-  update: async (orgId: string, data: { name?: string; description?: string }) => {
-    return request<any>({
-      method: 'PUT',
-      url: `/organizations/${orgId}`,
-      data,
-    });
-  },
-
-  delete: async (orgId: string) => {
-    return request<any>({
-      method: 'DELETE',
-      url: `/organizations/${orgId}`,
-    });
-  },
-
-  listMembers: async (orgId: string) => {
-    const response = await request<any>({
-      method: 'GET',
-      url: `/organizations/${orgId}/members`,
-    });
-    return response.members || response;
-  },
-
-  addMember: async (orgId: string, data: { email?: string; user_id?: string; role?: string }) => {
-    return request<any>({
-      method: 'POST',
-      url: `/organizations/${orgId}/members`,
-      data,
-    });
-  },
-
-  removeMember: async (orgId: string, memberId: string) => {
-    return request<any>({
-      method: 'DELETE',
-      url: `/organizations/${orgId}/members/${memberId}`,
-    });
-  },
-
-  updateMemberRole: async (orgId: string, memberId: string, role: string) => {
-    return request<any>({
-      method: 'PUT',
-      url: `/organizations/${orgId}/members/${memberId}/role`,
-      data: { role },
-    });
-  },
-};
-
 // Goal Types
 export interface SuccessMetric {
   metric: string;
@@ -1476,7 +1409,7 @@ export interface LinkedPlan {
 
 export interface Goal {
   id: string;
-  organization_id: string;
+  organization_id?: string;
   title: string;
   description: string;
   status: 'active' | 'achieved' | 'at_risk' | 'abandoned';
@@ -1526,7 +1459,7 @@ export const goalService = {
 
   // Create a new goal
   create: async (data: {
-    organization_id: string;
+    organization_id?: string;
     title: string;
     description?: string;
     success_metrics?: SuccessMetric[];
@@ -1576,156 +1509,6 @@ export const goalService = {
     return request<{ success: boolean; message: string }>({
       method: 'DELETE',
       url: `/goals/${goalId}/plans/${planId}`,
-    });
-  },
-};
-
-// Knowledge Store Types
-export interface KnowledgeStore {
-  id: string;
-  scope: 'organization' | 'goal' | 'plan';
-  scope_id: string;
-  storage_mode: string;
-  name?: string;
-  created_at: string;
-  updated_at: string;
-  entry_count?: number;
-  entries_by_type?: Record<string, number>;
-}
-
-export interface KnowledgeEntry {
-  id: string;
-  store_id: string;
-  entry_type: 'decision' | 'context' | 'constraint' | 'learning' | 'reference' | 'note';
-  title: string;
-  content: string;
-  source_url?: string;
-  tags: string[];
-  metadata?: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  created_by_user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
-// Knowledge Service
-export const knowledgeService = {
-  // Get stores accessible to the user, optionally filtered by scope
-  getStores: async (scope?: string, scopeId?: string) => {
-    const params: Record<string, string> = {};
-    if (scope) params.scope = scope;
-    if (scopeId) params.scope_id = scopeId;
-
-    const response = await request<{ stores: KnowledgeStore[] }>({
-      method: 'GET',
-      url: '/knowledge/stores',
-      params,
-    });
-    return response.stores || [];
-  },
-
-  // Get a single store by ID
-  getStore: async (storeId: string) => {
-    return request<KnowledgeStore>({
-      method: 'GET',
-      url: `/knowledge/stores/${storeId}`,
-    });
-  },
-
-  // Get entries from a store
-  getEntries: async (storeId: string, options?: {
-    entry_type?: string;
-    tags?: string;
-    limit?: number;
-    offset?: number;
-  }) => {
-    const response = await request<{
-      entries: KnowledgeEntry[];
-      total: number;
-      limit: number;
-      offset: number;
-    }>({
-      method: 'GET',
-      url: '/knowledge/entries',
-      params: { store_id: storeId, ...options },
-    });
-    return response;
-  },
-
-  // Get a single entry
-  getEntry: async (entryId: string) => {
-    return request<KnowledgeEntry>({
-      method: 'GET',
-      url: `/knowledge/entries/${entryId}`,
-    });
-  },
-
-  // Create a new entry
-  createEntry: async (data: {
-    store_id?: string;
-    scope?: string;
-    scope_id?: string;
-    entry_type: string;
-    title: string;
-    content: string;
-    source_url?: string;
-    tags?: string[];
-    metadata?: Record<string, any>;
-  }) => {
-    return request<KnowledgeEntry>({
-      method: 'POST',
-      url: '/knowledge/entries',
-      data,
-    });
-  },
-
-  // Update an entry
-  updateEntry: async (entryId: string, data: {
-    entry_type?: string;
-    title?: string;
-    content?: string;
-    source_url?: string;
-    tags?: string[];
-    metadata?: Record<string, any>;
-  }) => {
-    return request<KnowledgeEntry>({
-      method: 'PUT',
-      url: `/knowledge/entries/${entryId}`,
-      data,
-    });
-  },
-
-  // Delete an entry
-  deleteEntry: async (entryId: string) => {
-    return request<{ success: boolean; message: string }>({
-      method: 'DELETE',
-      url: `/knowledge/entries/${entryId}`,
-    });
-  },
-
-  // Search entries
-  search: async (data: {
-    query?: string;
-    embedding?: number[];
-    store_ids?: string[];
-    scope?: string;
-    scope_id?: string;
-    entry_types?: string[];
-    threshold?: number;
-    limit?: number;
-  }) => {
-    return request<{
-      results: KnowledgeEntry[];
-      search_type: 'semantic' | 'text';
-      message?: string;
-    }>({
-      method: 'POST',
-      url: '/knowledge/search',
-      data,
     });
   },
 };
@@ -1852,13 +1635,6 @@ export interface AgentRequest {
   };
 }
 
-export interface WebhookConfig {
-  url?: string;
-  secret?: string;
-  events: string[];
-  enabled: boolean;
-}
-
 // Agent Request API
 export const agentRequestApi = {
   // Create an agent request for a task
@@ -1911,33 +1687,6 @@ export const agentRequestApi = {
   },
 };
 
-// Webhook Config API
-export const webhookApi = {
-  // Get webhook config for a plan
-  get: async (planId: string) => {
-    return request<WebhookConfig>({
-      method: 'GET',
-      url: `/plans/${planId}/settings/webhook`,
-    });
-  },
-
-  // Update webhook config
-  update: async (planId: string, config: Partial<WebhookConfig>) => {
-    return request<WebhookConfig>({
-      method: 'PUT',
-      url: `/plans/${planId}/settings/webhook`,
-      data: config,
-    });
-  },
-
-  // Test webhook connection
-  test: async (planId: string) => {
-    return request<{ success: boolean; status?: number; error?: string }>({
-      method: 'POST',
-      url: `/plans/${planId}/settings/webhook/test`,
-    });
-  },
-};
 
 // Dashboard Types
 export interface DashboardSummary {
@@ -2064,104 +1813,6 @@ export const agentStatusApi = {
 };
 
 // Prompt Templates API
-export interface PromptTemplate {
-  id: string;
-  plan_id?: string;
-  user_id: string;
-  name: string;
-  template: string;
-  description?: string;
-  type: 'plan' | 'task' | 'review' | 'summary' | 'custom';
-  is_default: boolean;
-  variables: Array<{ name: string; description?: string }>;
-  created_at: string;
-  updated_at: string;
-}
-
-export const promptApi = {
-  list: async (planId?: string, type?: string) => {
-    return request<PromptTemplate[]>({
-      method: 'GET',
-      url: '/prompts',
-      params: { plan_id: planId, type },
-    });
-  },
-
-  create: async (data: Partial<PromptTemplate>) => {
-    return request<PromptTemplate>({
-      method: 'POST',
-      url: '/prompts',
-      data,
-    });
-  },
-
-  update: async (promptId: string, data: Partial<PromptTemplate>) => {
-    return request<PromptTemplate>({
-      method: 'PUT',
-      url: `/prompts/${promptId}`,
-      data,
-    });
-  },
-
-  delete: async (promptId: string) => {
-    return request<void>({
-      method: 'DELETE',
-      url: `/prompts/${promptId}`,
-    });
-  },
-};
-
-// Plan Chat API
-export const planChatApi = {
-  getMessages: async (planId: string, limit?: number, before?: string) => {
-    return request<Array<{ id: string; plan_id: string; user_id: string; role: string; content: string; metadata: any; created_at: string }>>({
-      method: 'GET',
-      url: `/plans/${planId}/chat`,
-      params: { limit, before },
-    });
-  },
-
-  sendMessage: async (planId: string, content: string, role: string = 'user', metadata?: any) => {
-    return request<{ id: string; plan_id: string; user_id: string; role: string; content: string; created_at: string }>({
-      method: 'POST',
-      url: `/plans/${planId}/chat`,
-      data: { content, role, metadata },
-    });
-  },
-};
-
-// Handoff API
-export const handoffApi = {
-  create: async (planId: string, nodeId: string, data: { to_agent_id: string; context?: string; reason?: string }) => {
-    return request<any>({
-      method: 'POST',
-      url: `/plans/${planId}/nodes/${nodeId}/handoffs`,
-      data,
-    });
-  },
-
-  getForNode: async (planId: string, nodeId: string) => {
-    return request<any[]>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/handoffs`,
-    });
-  },
-
-  respond: async (handoffId: string, action: 'accepted' | 'rejected', notes?: string) => {
-    return request<any>({
-      method: 'POST',
-      url: `/handoffs/${handoffId}/respond`,
-      data: { action, notes },
-    });
-  },
-
-  getPending: async () => {
-    return request<any[]>({
-      method: 'GET',
-      url: '/handoffs/pending',
-    });
-  },
-};
 
 // Capability Tags API
 export const capabilityTagsApi = {
@@ -2192,6 +1843,66 @@ export const capabilityTagsApi = {
       method: 'GET',
       url: '/users/capabilities/search',
       params: { tags: tags.join(','), match },
+    });
+  },
+};
+
+// Slack Integration API
+export interface SlackStatus {
+  connected: boolean;
+  team_name?: string;
+  channel_id?: string;
+  channel_name?: string;
+  installed_at?: string;
+}
+
+export interface SlackChannel {
+  id: string;
+  name: string;
+  is_private: boolean;
+}
+
+export const slackService = {
+  getStatus: async () => {
+    return request<SlackStatus>({
+      method: 'GET',
+      url: '/integrations/slack/status',
+    });
+  },
+
+  getInstallUrl: async () => {
+    return request<{ url: string }>({
+      method: 'GET',
+      url: '/integrations/slack/install',
+    });
+  },
+
+  listChannels: async () => {
+    return request<{ channels: SlackChannel[] }>({
+      method: 'GET',
+      url: '/integrations/slack/channels',
+    });
+  },
+
+  setChannel: async (channelId: string, channelName: string) => {
+    return request<{ success: boolean; channel_id: string; channel_name: string }>({
+      method: 'PUT',
+      url: '/integrations/slack/channel',
+      data: { channelId, channelName },
+    });
+  },
+
+  disconnect: async () => {
+    return request<{ success: boolean }>({
+      method: 'DELETE',
+      url: '/integrations/slack',
+    });
+  },
+
+  sendTestMessage: async () => {
+    return request<{ success: boolean }>({
+      method: 'POST',
+      url: '/integrations/slack/test',
     });
   },
 };

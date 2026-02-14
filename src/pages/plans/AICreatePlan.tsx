@@ -8,8 +8,6 @@ import { useAIPlanGeneration } from '../../hooks/useAIPlanGeneration';
 import GenerationModal from '../../components/plans/GenerationModal';
 import PromptInput from '../../components/plans/PromptInput';
 import SuggestedPrompts from '../../components/plans/SuggestedPrompts';
-import PlanCreationTabs, { PlanCreationTab } from '../../components/plans/PlanCreationTabs';
-import MCPSetupGuide from '../../components/plans/MCPSetupGuide';
 import SmartQuestions from '../../components/plans/SmartQuestions';
 import { aiService, SmartQuestion } from '../../services/api';
 
@@ -20,7 +18,6 @@ interface QuestionAnswer {
 
 const AICreatePlan: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<PlanCreationTab>('ai');
   const [prompt, setPrompt] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [complexity, setComplexity] = useState<'simple' | 'detailed' | 'comprehensive'>('detailed');
@@ -123,11 +120,8 @@ const AICreatePlan: React.FC = () => {
 
         {/* Main Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <PlanCreationTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
           <div className="p-6">
-            {activeTab === 'ai' ? (
-              <>
+            <>
                 {error && (
                   <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <p className="text-red-800 dark:text-red-200 text-sm">
@@ -225,10 +219,7 @@ const AICreatePlan: React.FC = () => {
                 {!hasAnalyzed && (
                   <SuggestedPrompts onSelectPrompt={handlePromptChange} />
                 )}
-              </>
-            ) : (
-              <MCPSetupGuide />
-            )}
+            </>
           </div>
         </div>
       </div>

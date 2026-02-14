@@ -57,8 +57,8 @@ const features: Feature[] = [
     color: 'rose'
   },
   {
-    title: 'Webhook Notifications',
-    description: 'Get notified when tasks are blocked, completed, or need attention. Webhooks and polling keep your agent in the loop.',
+    title: 'Event Notifications',
+    description: 'Get notified when tasks are blocked, completed, or need attention. Polling and integrations keep your agent in the loop.',
     icon: Webhook,
     color: 'cyan'
   },

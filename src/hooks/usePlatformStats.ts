@@ -10,9 +10,9 @@ interface PlatformStats {
 }
 
 const FALLBACK_STATS: PlatformStats = {
-  users: 1200,
-  plans: 5400,
-  publicPlans: 320,
+  users: 6,
+  plans: 24,
+  publicPlans: 3,
 };
 
 export const usePlatformStats = () => {

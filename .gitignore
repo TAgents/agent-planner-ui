@@ -23,3 +23,5 @@ create-llm-contex.js
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.env.local.bak
+.env.local
