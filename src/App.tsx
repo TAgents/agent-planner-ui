@@ -28,6 +28,7 @@ import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
+import GoalsV2 from './pages/GoalsV2';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -89,6 +90,7 @@ const App: React.FC = () => {
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<Goals />} />
                   <Route path="goals/:goalId" element={<GoalDetail />} />
+                  <Route path="goals-v2" element={<GoalsV2 />} />
                   <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
