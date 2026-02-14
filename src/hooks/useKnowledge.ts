@@ -25,7 +25,14 @@ export interface KnowledgeGraphData {
 const KNOWLEDGE_KEY = 'knowledge-v2';
 
 async function fetchApi(path: string, options?: any) {
-  const token = localStorage.getItem('token');
+  const sessionStr = localStorage.getItem('auth_session');
+  let token: string | null = null;
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      token = session.access_token || session.accessToken || session;
+    } catch { token = sessionStr; }
+  }
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 

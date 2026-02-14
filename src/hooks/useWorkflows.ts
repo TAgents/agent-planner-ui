@@ -37,7 +37,14 @@ export interface WorkflowEvent {
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 async function fetchApi(path: string) {
-  const token = localStorage.getItem('token');
+  const sessionStr = localStorage.getItem('auth_session');
+  let token: string | null = null;
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      token = session.access_token || session.accessToken || session;
+    } catch { token = sessionStr; }
+  }
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
