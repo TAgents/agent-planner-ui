@@ -1847,3 +1847,63 @@ export const capabilityTagsApi = {
     });
   },
 };
+
+// Slack Integration API
+export interface SlackStatus {
+  connected: boolean;
+  team_name?: string;
+  channel_id?: string;
+  channel_name?: string;
+  installed_at?: string;
+}
+
+export interface SlackChannel {
+  id: string;
+  name: string;
+  is_private: boolean;
+}
+
+export const slackService = {
+  getStatus: async () => {
+    return request<SlackStatus>({
+      method: 'GET',
+      url: '/integrations/slack/status',
+    });
+  },
+
+  getInstallUrl: async () => {
+    return request<{ url: string }>({
+      method: 'GET',
+      url: '/integrations/slack/install',
+    });
+  },
+
+  listChannels: async () => {
+    return request<{ channels: SlackChannel[] }>({
+      method: 'GET',
+      url: '/integrations/slack/channels',
+    });
+  },
+
+  setChannel: async (channelId: string, channelName: string) => {
+    return request<{ success: boolean; channel_id: string; channel_name: string }>({
+      method: 'PUT',
+      url: '/integrations/slack/channel',
+      data: { channelId, channelName },
+    });
+  },
+
+  disconnect: async () => {
+    return request<{ success: boolean }>({
+      method: 'DELETE',
+      url: '/integrations/slack',
+    });
+  },
+
+  sendTestMessage: async () => {
+    return request<{ success: boolean }>({
+      method: 'POST',
+      url: '/integrations/slack/test',
+    });
+  },
+};
