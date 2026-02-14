@@ -1409,7 +1409,7 @@ export interface LinkedPlan {
 
 export interface Goal {
   id: string;
-  organization_id: string;
+  organization_id?: string;
   title: string;
   description: string;
   status: 'active' | 'achieved' | 'at_risk' | 'abandoned';
@@ -1459,7 +1459,7 @@ export const goalService = {
 
   // Create a new goal
   create: async (data: {
-    organization_id: string;
+    organization_id?: string;
     title: string;
     description?: string;
     success_metrics?: SuccessMetric[];
