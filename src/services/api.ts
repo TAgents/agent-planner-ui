@@ -76,10 +76,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // Handle authentication errors
+    // Handle authentication errors - only redirect on protected routes
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_session');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      const isProtectedRoute = currentPath.startsWith('/app/') || currentPath === '/app';
+      if (isProtectedRoute) {
+        localStorage.removeItem('auth_session');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

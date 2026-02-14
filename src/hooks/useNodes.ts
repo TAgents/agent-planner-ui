@@ -30,10 +30,9 @@ export const useNodes = (planId: string) => {
       try {
         // Check if authentication session exists
         if (!sessionStr) {
-          throw new Error('No authentication session found');
+          return { data: [], total: 0 };
         }
 
-        console.log(`Fetching nodes for plan ${planId} with authentication for user:`, userId);
         const response = await nodeService.getNodes(planId);
         console.log('Nodes API response:', response);
         return response;
@@ -200,10 +199,9 @@ export const useNode = (planId: string, nodeId: string) => {
       try {
         // Check if authentication session exists
         if (!sessionStr) {
-          throw new Error('No authentication session found');
+          return null;
         }
 
-        console.log(`Fetching node details for planId=${planId}, nodeId=${nodeId} with authentication for user:`, userId);
         const response = await nodeService.getNode(planId, nodeId);
         console.log('Node details API response:', response);
         return response;

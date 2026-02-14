@@ -49,7 +49,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   const showPlans = variant === 'full' && isAuthenticated;
 
   // Fetch plans only for full variant when authenticated
-  const { plans, isLoading } = usePlans(1, 20);
+  const { plans, isLoading } = usePlans(1, 20, undefined, showPlans);
 
   // Filter and sort plans: active first, then drafts, exclude archived/completed
   const filteredPlans = useMemo((): Plan[] => {

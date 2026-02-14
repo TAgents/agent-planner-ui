@@ -5,7 +5,7 @@ import { Plan } from '../types';
 /**
  * Hook for fetching and managing plans
  */
-export const usePlans = (page = 1, limit = 10, status?: string) => {
+export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) => {
   // Get user ID from session to use in query key
   const sessionStr = localStorage.getItem('auth_session');
   let userId = 'anonymous';
@@ -26,10 +26,9 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
       try {
         // Check if authentication session exists
         if (!sessionStr) {
-          throw new Error('No authentication session found');
+          return { data: [], total: 0, page, limit };
         }
 
-        console.log('Fetching plans with authentication for user:', userId);
         const response = await planService.getPlans(page, limit, status);
         console.log('Plans API response:', response);
         return response;
@@ -42,6 +41,7 @@ export const usePlans = (page = 1, limit = 10, status?: string) => {
       keepPreviousData: true,
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: false, // Don't retry on failure to prevent rate limit cascades
+      enabled: enabled && !!sessionStr,
     }
   );
 
@@ -165,10 +165,9 @@ export const usePlan = (planId: string) => {
       try {
         // Check if authentication session exists
         if (!sessionStr) {
-          throw new Error('No authentication session found');
+          return null;
         }
 
-        console.log(`Fetching plan ${planId} with authentication for user:`, userId);
         const response = await planService.getPlan(planId);
         console.log('Plan API response:', response);
         return response;

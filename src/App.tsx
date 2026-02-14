@@ -31,6 +31,8 @@ import GoalDetail from './pages/GoalDetail';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import CookiesPolicy from './pages/CookiesPolicy';
+import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import AgentDashboard from './pages/AgentDashboard';
 
@@ -65,6 +67,7 @@ const App: React.FC = () => {
               {/* Legal Pages */}
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/cookies" element={<CookiesPolicy />} />
 
               {/* Authentication Routes */}
               <Route path="/login" element={<Login />} />
@@ -93,6 +96,9 @@ const App: React.FC = () => {
                   <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
                 </Route>
               </Route>
+
+              {/* 404 Catch-all */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </UIProvider>
