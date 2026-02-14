@@ -886,8 +886,14 @@ const PlanVisualizationEnhanced: React.FC = () => {
           try {
             await planService.updatePlan(planId || '', { status: status as PlanStatus });
             refetchPlan();
-          } catch (err) {
+          } catch (err: any) {
             console.error('Failed to update plan status:', err);
+            const statusCode = err?.response?.status || err?.status;
+            if (statusCode === 403) {
+              alert('You don\'t have permission to change this plan\'s status. Only the plan owner can do this.');
+            } else {
+              alert('Failed to update plan status. Please try again.');
+            }
           }
         }}
       />

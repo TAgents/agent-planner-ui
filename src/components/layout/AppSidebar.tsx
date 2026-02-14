@@ -51,14 +51,23 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   // Fetch plans only for full variant when authenticated
   const { plans, isLoading } = usePlans(1, 20);
 
-  // Filter and sort plans (newest first by updated_at)
+  // Filter and sort plans: active first, then drafts, exclude archived/completed
   const filteredPlans = useMemo((): Plan[] => {
     if (!plans) return [];
     
-    // Sort by updated_at descending (newest first)
-    const sorted = [...plans].sort((a, b) => 
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    // Exclude archived and completed plans from sidebar
+    const visiblePlans = plans.filter((p: Plan) => 
+      p.status !== 'archived' && p.status !== 'completed'
     );
+    
+    // Sort: active plans first, then drafts, then by updated_at descending
+    const sorted = [...visiblePlans].sort((a, b) => {
+      const statusOrder: Record<string, number> = { active: 0, draft: 1 };
+      const aOrder = statusOrder[a.status] ?? 2;
+      const bOrder = statusOrder[b.status] ?? 2;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
     
     if (!searchQuery.trim()) return sorted.slice(0, 10);
     return sorted
