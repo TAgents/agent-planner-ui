@@ -9,7 +9,6 @@ import GenerationModal from '../../components/plans/GenerationModal';
 import PromptInput from '../../components/plans/PromptInput';
 import SuggestedPrompts from '../../components/plans/SuggestedPrompts';
 import PlanCreationTabs, { PlanCreationTab } from '../../components/plans/PlanCreationTabs';
-import MCPSetupGuide from '../../components/plans/MCPSetupGuide';
 import SmartQuestions from '../../components/plans/SmartQuestions';
 import { aiService, SmartQuestion } from '../../services/api';
 
@@ -226,9 +225,7 @@ const AICreatePlan: React.FC = () => {
                   <SuggestedPrompts onSelectPrompt={handlePromptChange} />
                 )}
               </>
-            ) : (
-              <MCPSetupGuide />
-            )}
+            ) : null}
           </div>
         </div>
       </div>
