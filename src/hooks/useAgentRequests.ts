@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { agentRequestApi, webhookApi, AgentRequest, WebhookConfig } from '../services/api';
+import { agentRequestApi, AgentRequest } from '../services/api';
 import { useWebSocketEvent } from './useWebSocket';
 import { AGENT_EVENTS } from '../types/websocket';
 
-export type { AgentRequest, WebhookConfig };
+export type { AgentRequest };
 
 // Hook for listing agent requests for a task
 export function useTaskAgentRequests(planId: string, taskId: string, options?: { enabled?: boolean }) {
@@ -87,37 +87,7 @@ export function useCreateAgentRequest(planId: string, taskId?: string) {
   );
 }
 
-// Hook for webhook config
-export function useWebhookConfig(planId: string) {
-  return useQuery(
-    ['webhook', planId],
-    () => webhookApi.get(planId),
-    {
-      enabled: !!planId,
-    }
-  );
-}
-
-// Hook for updating webhook config
-export function useUpdateWebhookConfig(planId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation(
-    (config: Partial<WebhookConfig>) => webhookApi.update(planId, config),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['webhook', planId]);
-      },
-    }
-  );
-}
-
-// Hook for testing webhook
-export function useTestWebhook(planId: string) {
-  return useMutation(
-    () => webhookApi.test(planId)
-  );
-}
+// Removed: webhook hooks (pre-v2 cleanup)
 
 // Hook to subscribe to agent WebSocket events and refresh queries
 export function useAgentRequestEvents(planId: string) {

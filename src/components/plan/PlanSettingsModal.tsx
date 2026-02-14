@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { X, Settings, Webhook, Bell, Sliders } from 'lucide-react';
-import { WebhookSettings } from '../agent-request';
+import { X, Settings, Bell, Sliders } from 'lucide-react';
 
 interface PlanSettingsModalProps {
   isOpen: boolean;
@@ -11,7 +10,7 @@ interface PlanSettingsModalProps {
   onUpdateStatus?: (status: string) => void;
 }
 
-type SettingsTab = 'general' | 'webhook' | 'notifications';
+type SettingsTab = 'general' | 'notifications';
 
 export const PlanSettingsModal: React.FC<PlanSettingsModalProps> = ({
   isOpen,
@@ -27,7 +26,6 @@ export const PlanSettingsModal: React.FC<PlanSettingsModalProps> = ({
 
   const tabs = [
     { id: 'general' as const, label: 'General', icon: Sliders },
-    { id: 'webhook' as const, label: 'Agent Webhook', icon: Webhook },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, disabled: true },
   ];
 
@@ -114,10 +112,6 @@ export const PlanSettingsModal: React.FC<PlanSettingsModalProps> = ({
                 </p>
               </div>
             </div>
-          )}
-
-          {activeTab === 'webhook' && (
-            <WebhookSettings planId={planId} />
           )}
 
           {activeTab === 'notifications' && (

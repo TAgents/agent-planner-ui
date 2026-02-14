@@ -12,7 +12,7 @@ import {
   Activity,
   BookOpen,
 } from 'lucide-react';
-import { useOrganizations } from '../../hooks/useOrganizations';
+// Removed: useOrganizations (pre-v2 cleanup)
 import { useGoals } from '../../hooks/useGoals';
 
 interface ClonePlanModalProps {
@@ -38,7 +38,7 @@ interface CloneOptions {
 
 const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { organizations } = useOrganizations();
+  const organizations: any[] = []; // Removed: organizations (pre-v2 cleanup)
   const { goals } = useGoals();
 
   const [formData, setFormData] = useState({

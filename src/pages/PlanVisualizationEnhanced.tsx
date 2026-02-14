@@ -8,12 +8,11 @@ import {
   HelpCircle,
   X,
   Settings,
-  MessageSquare as MessageSquareIcon,
 } from 'lucide-react';
 
 // Import new components
 import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
-import OnboardingTour from '../components/visualization/OnboardingTour';
+// Removed: OnboardingTour (pre-v2 cleanup)
 import ShareButton from '../components/sharing/ShareButton';
 import { PlanTreeView } from '../components/tree/PlanTreeView';
 import { getNextStatus } from '../components/tree/StatusBadge';
@@ -22,7 +21,7 @@ import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
-import PlanChatPanel from '../components/chat/PlanChatPanel';
+// Removed: PlanChatPanel (pre-v2 cleanup)
 import AgentStatusIndicator from '../components/agent/AgentStatusIndicator';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -260,7 +259,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
   });
 
   // UI state
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [, setActiveDetailTab] = useState<'details' | 'comments' | 'logs'>('details');
@@ -274,7 +272,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  // Removed: showChat state (pre-v2 cleanup)
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -295,15 +293,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     window.scrollTo(0, 0);
   }, [planId]);
 
-  // Check if this is a new user
-  useEffect(() => {
-    const hasSeenTour = localStorage.getItem('agent_planner_tour_completed');
-    const hasSkippedTour = localStorage.getItem('agent_planner_tour_skipped');
-    
-    if (!hasSeenTour && !hasSkippedTour && planNodes.length === 0) {
-      setShowOnboarding(true);
-    }
-  }, [planNodes]);
+  // Removed: onboarding tour check (pre-v2 cleanup)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -647,15 +637,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
               onClick={() => setShowDecisionPanel(true)}
             />
 
-            {/* Chat button */}
-            <button
-              onClick={() => setShowChat(!showChat)}
-              className={`p-2 rounded-lg transition-colors ${showChat ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'}`}
-              title="Plan Chat"
-            >
-              <MessageSquareIcon className="w-5 h-5" />
-            </button>
-
             {/* Settings button */}
             <button
               onClick={() => setShowSettingsModal(true)}
@@ -839,11 +820,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
         )}
       </div>
 
-      {/* Onboarding Tour */}
-      <OnboardingTour 
-        isVisible={showOnboarding}
-        onComplete={() => setShowOnboarding(false)}
-      />
+      {/* Removed: OnboardingTour (pre-v2 cleanup) */}
 
       {/* Help Modal */}
       <HelpModal
@@ -898,16 +875,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
         }}
       />
 
-      {/* Chat Panel - Fixed right side overlay */}
-      {showChat && (
-        <div className="fixed right-0 top-14 bottom-0 z-30 shadow-xl">
-          <PlanChatPanel
-            planId={planId || ''}
-            isOpen={showChat}
-            onClose={() => setShowChat(false)}
-          />
-        </div>
-      )}
+      {/* Removed: Chat Panel (pre-v2 cleanup) */}
     </div>
   );
 };

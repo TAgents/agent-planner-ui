@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGoals } from '../hooks/useGoals';
-import { useOrganizations } from '../hooks/useOrganizations';
+// Removed: useOrganizations (pre-v2 cleanup)
 import { 
   Target, 
   Plus, 
@@ -17,7 +17,7 @@ const Goals: React.FC = () => {
     selectedOrgId || undefined,
     statusFilter || undefined
   );
-  const { organizations } = useOrganizations();
+  // Removed: organizations (pre-v2 cleanup)
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -100,16 +100,7 @@ const Goals: React.FC = () => {
 
         {/* Filters */}
         <div className="flex gap-4 mb-6">
-          <select
-            value={selectedOrgId}
-            onChange={(e) => setSelectedOrgId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          >
-            <option value="">All Organizations</option>
-            {organizations.map((org) => (
-              <option key={org.id} value={org.id}>{org.name}</option>
-            ))}
-          </select>
+          {/* Removed: organization filter (pre-v2 cleanup) */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -169,21 +160,7 @@ const Goals: React.FC = () => {
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Goal</h2>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Organization *
-                </label>
-                <select
-                  value={newGoal.organization_id}
-                  onChange={(e) => setNewGoal({ ...newGoal, organization_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">Select organization</option>
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id}>{org.name}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Removed: organization selector (pre-v2 cleanup) */}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

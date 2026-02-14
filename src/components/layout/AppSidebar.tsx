@@ -302,21 +302,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
-            {/* Knowledge - only for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/app/knowledge"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/knowledge')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <BookOpen className="w-5 h-5" />
-                <span className="text-sm">Knowledge</span>
-              </Link>
-            )}
+            {/* Removed: Knowledge Hub nav link (pre-v2 cleanup) */}
 
             {/* Agent Activity - only for authenticated users */}
             {isAuthenticated && (
