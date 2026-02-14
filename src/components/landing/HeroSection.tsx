@@ -43,7 +43,7 @@ export const HeroSection: React.FC = () => {
               <span>Start Planning</span>
             </Link>
             <a
-              href="https://docs.openclaw.ai"
+              href="https://api.agentplanner.io/api-docs/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold text-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
