@@ -63,14 +63,14 @@ export function useWorkflowRuns(filters?: { status?: string; limit?: number; off
   return useQuery<WorkflowRun[]>(['workflow-runs', filters], async () => {
     const data = await fetchApi(`/runs${qs ? `?${qs}` : ''}`);
     return data.rows || data || [];
-  }, { refetchInterval: 10000 });
+  }, { refetchInterval: 10000, refetchIntervalInBackground: false });
 }
 
 export function useWorkflowRun(runId: string | null) {
   return useQuery<WorkflowRun>(['workflow-run', runId], async () => {
     if (!runId) throw new Error('No run ID');
     return fetchApi(`/runs/${runId}`);
-  }, { enabled: !!runId, refetchInterval: 5000 });
+  }, { enabled: !!runId, refetchInterval: 5000, refetchIntervalInBackground: false });
 }
 
 export function useWorkflowEvents(filters?: { limit?: number; offset?: number }) {
@@ -82,5 +82,5 @@ export function useWorkflowEvents(filters?: { limit?: number; offset?: number })
   return useQuery<WorkflowEvent[]>('workflow-events', async () => {
     const data = await fetchApi(`/events${qs ? `?${qs}` : ''}`);
     return data.rows || data || [];
-  }, { refetchInterval: 15000 });
+  }, { refetchInterval: 15000, refetchIntervalInBackground: false });
 }

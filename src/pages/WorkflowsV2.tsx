@@ -8,40 +8,17 @@ import {
   WorkflowTemplate,
 } from '../hooks/useWorkflows';
 
-// ─── Styles ──────────────────────────────────────────────────────
-const s: Record<string, React.CSSProperties> = {
-  container: { padding: 24, maxWidth: 1200, margin: '0 auto' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  title: { fontSize: 24, fontWeight: 700 },
-  layout: { display: 'flex', gap: 20 },
-  sidebar: { width: 240, flexShrink: 0 },
-  main: { flex: 1, minWidth: 0 },
-  tabs: { display: 'flex', gap: 8, marginBottom: 20 },
-  tab: { padding: '8px 16px', borderRadius: 6, cursor: 'pointer', border: '1px solid #334155', background: 'transparent', color: '#e2e8f0', fontSize: 14 },
-  tabActive: { padding: '8px 16px', borderRadius: 6, cursor: 'pointer', border: '1px solid #3b82f6', background: '#1e3a5f', color: '#93c5fd', fontSize: 14 },
-  card: { background: '#1e293b', borderRadius: 8, padding: 16, marginBottom: 12, cursor: 'pointer', border: '1px solid transparent', transition: 'border-color 0.15s' },
-  cardSelected: { background: '#1e293b', borderRadius: 8, padding: 16, marginBottom: 12, cursor: 'pointer', border: '1px solid #3b82f6' },
-  sidebarItem: { padding: '10px 14px', borderRadius: 6, marginBottom: 4, cursor: 'pointer', fontSize: 14, color: '#94a3b8' },
-  sidebarItemActive: { padding: '10px 14px', borderRadius: 6, marginBottom: 4, cursor: 'pointer', fontSize: 14, color: '#e2e8f0', background: '#334155' },
-  badge: { fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, display: 'inline-block' },
-  detailPanel: { background: '#1e293b', borderRadius: 8, padding: 20 },
-  step: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #334155' },
-  empty: { color: '#64748b', textAlign: 'center' as const, padding: 40 },
-  filterRow: { display: 'flex', gap: 8, marginBottom: 16 },
-  select: { padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: 13 },
-};
-
 const STATUS_COLORS: Record<string, { bg: string; fg: string; icon: string }> = {
-  pending: { bg: '#334155', fg: '#94a3b8', icon: '○' },
-  running: { bg: '#1e3a5f', fg: '#60a5fa', icon: '⏳' },
-  succeeded: { bg: '#064e3b', fg: '#34d399', icon: '✅' },
-  failed: { bg: '#7f1d1d', fg: '#f87171', icon: '❌' },
-  cancelled: { bg: '#44403c', fg: '#a8a29e', icon: '⊘' },
+  pending: { bg: 'bg-gray-100 dark:bg-slate-700', fg: 'text-gray-600 dark:text-gray-400', icon: '○' },
+  running: { bg: 'bg-blue-100 dark:bg-blue-900/30', fg: 'text-blue-600 dark:text-blue-400', icon: '⏳' },
+  succeeded: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', fg: 'text-emerald-600 dark:text-emerald-400', icon: '✅' },
+  failed: { bg: 'bg-red-100 dark:bg-red-900/30', fg: 'text-red-600 dark:text-red-400', icon: '❌' },
+  cancelled: { bg: 'bg-stone-100 dark:bg-stone-800', fg: 'text-stone-600 dark:text-stone-400', icon: '⊘' },
 };
 
 function StatusBadge({ status }: { status: string }) {
   const c = STATUS_COLORS[status] || STATUS_COLORS.pending;
-  return <span style={{ ...s.badge, background: c.bg, color: c.fg }}>{c.icon} {status}</span>;
+  return <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${c.bg} ${c.fg}`}>{c.icon} {status}</span>;
 }
 
 function timeAgo(dateStr: string) {
@@ -68,59 +45,121 @@ function TemplatesList({ templates, selected, onSelect }: {
   onSelect: (id: string | null) => void;
 }) {
   return (
-    <div style={s.sidebar}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', padding: '8px 14px', textTransform: 'uppercase' }}>
-        Templates
-      </div>
+    <div className="w-60 flex-shrink-0">
+      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3.5 py-2 uppercase">Templates</div>
       {templates.map(t => (
         <div
           key={t.id}
-          style={selected === t.id ? s.sidebarItemActive : s.sidebarItem}
+          className={`px-3.5 py-2.5 rounded-md mb-1 cursor-pointer text-sm transition-colors ${
+            selected === t.id
+              ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-slate-700'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'
+          }`}
           onClick={() => onSelect(selected === t.id ? null : t.id)}
         >
           ○ {t.name}
         </div>
       ))}
-      {templates.length === 0 && <div style={{ ...s.sidebarItem, color: '#475569' }}>No templates</div>}
+      {templates.length === 0 && <div className="px-3.5 py-2 text-sm text-gray-400">No templates</div>}
     </div>
   );
 }
 
 // ─── Run Detail Panel ────────────────────────────────────────────
-function RunDetail({ runId }: { runId: string }) {
+function RunDetail({ runId, onBack }: { runId: string; onBack: () => void }) {
   const { data: run, isLoading } = useWorkflowRun(runId);
-  if (isLoading) return <div style={s.detailPanel}>Loading…</div>;
-  if (!run) return <div style={s.detailPanel}>Run not found</div>;
+  if (isLoading) return <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-5 text-gray-500">Loading…</div>;
+  if (!run) return <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-5 text-gray-500">Run not found</div>;
 
   return (
-    <div style={s.detailPanel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{run.workflowName}</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>ID: {run.id.slice(0, 8)}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <StatusBadge status={run.status} />
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
-            {timeAgo(run.startedAt)} · {duration(run.startedAt, run.finishedAt)}
+    <div>
+      {/* Back button at the top */}
+      <button className="mb-4 px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={onBack}>
+        ← Back to runs
+      </button>
+
+      <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-5">
+        <div className="flex justify-between mb-4">
+          <div>
+            <div className="text-lg font-semibold text-gray-900 dark:text-white">{run.workflowName}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: {run.id.slice(0, 8)}</div>
           </div>
+          <div className="text-right">
+            <StatusBadge status={run.status} />
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {timeAgo(run.startedAt)} · {duration(run.startedAt, run.finishedAt)}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Steps</div>
+        {(run.steps || []).map((step, i) => {
+          const sc = STATUS_COLORS[step.status] || STATUS_COLORS.pending;
+          return (
+            <div key={i} className="flex items-center gap-2.5 py-2 border-b border-gray-200 dark:border-slate-700 last:border-0">
+              <span>{sc.icon}</span>
+              <span className="flex-1 font-medium text-sm text-gray-900 dark:text-gray-100">{step.name}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {step.startedAt && step.finishedAt ? duration(step.startedAt, step.finishedAt) : step.status}
+              </span>
+            </div>
+          );
+        })}
+        {(!run.steps || run.steps.length === 0) && <div className="text-gray-400 text-sm">No step data available</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Trigger Workflow Dialog ─────────────────────────────────────
+function TriggerDialog({ templates, onClose }: { templates: WorkflowTemplate[]; onClose: () => void }) {
+  const [selected, setSelected] = useState('');
+  const [payload, setPayload] = useState('{}');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleTrigger = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/workflows/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ workflowName: selected, input: JSON.parse(payload) }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
+      setResult('Workflow triggered successfully!');
+      setTimeout(onClose, 1500);
+    } catch (e: any) {
+      setResult(`Error: ${e.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-[440px] border border-gray-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trigger Workflow</h3>
+        <select className="w-full px-3 py-2.5 mb-3 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm" value={selected} onChange={e => setSelected(e.target.value)}>
+          <option value="">Select a workflow…</option>
+          {templates.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+        </select>
+        <textarea
+          className="w-full px-3 py-2.5 mb-3 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm font-mono min-h-[80px]"
+          placeholder='{"key": "value"}'
+          value={payload}
+          onChange={e => setPayload(e.target.value)}
+        />
+        {result && <p className={`text-sm mb-3 ${result.startsWith('Error') ? 'text-red-500' : 'text-emerald-600'}`}>{result}</p>}
+        <div className="flex gap-2 justify-end">
+          <button className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md" onClick={onClose}>Cancel</button>
+          <button className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50" onClick={handleTrigger} disabled={!selected || submitting}>
+            {submitting ? 'Triggering…' : '⚡ Trigger'}
+          </button>
         </div>
       </div>
-
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Steps</div>
-      {(run.steps || []).map((step, i) => {
-        const sc = STATUS_COLORS[step.status] || STATUS_COLORS.pending;
-        return (
-          <div key={i} style={s.step}>
-            <span>{sc.icon}</span>
-            <span style={{ flex: 1, fontWeight: 500 }}>{step.name}</span>
-            <span style={{ fontSize: 12, color: '#64748b' }}>
-              {step.startedAt && step.finishedAt ? duration(step.startedAt, step.finishedAt) : step.status}
-            </span>
-          </div>
-        );
-      })}
-      {(!run.steps || run.steps.length === 0) && <div style={{ color: '#475569', fontSize: 13 }}>No step data available</div>}
     </div>
   );
 }
@@ -133,6 +172,7 @@ export default function WorkflowsV2() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [showTrigger, setShowTrigger] = useState(false);
 
   const { data: templates = [] } = useWorkflowTemplates();
   const { data: runs = [], isLoading: runsLoading } = useWorkflowRuns({
@@ -141,99 +181,92 @@ export default function WorkflowsV2() {
   });
   const { data: events = [], isLoading: eventsLoading } = useWorkflowEvents({ limit: 50 });
 
-  // Filter runs by selected template
   const filteredRuns = selectedTemplate
     ? runs.filter(r => r.workflowName === templates.find(t => t.id === selectedTemplate)?.name)
     : runs;
 
   return (
-    <div style={s.container}>
-      <div style={s.header}>
-        <div style={s.title}>⚡ Workflows</div>
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">⚡ Workflows</h1>
+        <button className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md" onClick={() => setShowTrigger(true)}>
+          ⚡ Trigger Workflow
+        </button>
       </div>
 
-      <div style={s.layout}>
+      <div className="flex gap-5">
         <TemplatesList templates={templates} selected={selectedTemplate} onSelect={setSelectedTemplate} />
 
-        <div style={s.main}>
-          <div style={s.tabs}>
-            <button style={tab === 'runs' ? s.tabActive : s.tab} onClick={() => setTab('runs')}>Active Runs</button>
-            <button style={tab === 'events' ? s.tabActive : s.tab} onClick={() => setTab('events')}>Event Log</button>
+        <div className="flex-1 min-w-0">
+          <div className="flex gap-2 mb-5">
+            <button className={`px-4 py-2 text-sm rounded-md border transition-colors ${tab === 'runs' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('runs')}>Active Runs</button>
+            <button className={`px-4 py-2 text-sm rounded-md border transition-colors ${tab === 'events' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('events')}>Event Log</button>
           </div>
 
           {tab === 'runs' && (
             <>
-              <div style={s.filterRow}>
-                <select style={s.select} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                  <option value="">All statuses</option>
-                  <option value="running">Running</option>
-                  <option value="succeeded">Succeeded</option>
-                  <option value="failed">Failed</option>
-                  <option value="pending">Pending</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              {selectedRunId && <RunDetail runId={selectedRunId} />}
-
-              {!selectedRunId && runsLoading && <div style={s.empty}>Loading runs…</div>}
-
-              {!selectedRunId && !runsLoading && filteredRuns.length === 0 && (
-                <div style={s.empty}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>⚡</div>
-                  <div>No workflow runs yet</div>
-                  <div style={{ fontSize: 13, marginTop: 4 }}>Runs will appear here when workflows execute</div>
+              {!selectedRunId && (
+                <div className="flex gap-2 mb-4">
+                  <select className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                    <option value="">All statuses</option>
+                    <option value="running">Running</option>
+                    <option value="succeeded">Succeeded</option>
+                    <option value="failed">Failed</option>
+                    <option value="pending">Pending</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
                 </div>
               )}
 
-              {!selectedRunId && filteredRuns.map(run => (
-                <div
-                  key={run.id}
-                  style={s.card}
-                  onClick={() => setSelectedRunId(run.id)}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#475569')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{run.workflowName}</div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                        {run.id.slice(0, 8)} · {timeAgo(run.startedAt)}
+              {selectedRunId ? (
+                <RunDetail runId={selectedRunId} onBack={() => setSelectedRunId(null)} />
+              ) : (
+                <>
+                  {runsLoading && <div className="text-center py-10 text-gray-400">Loading runs…</div>}
+                  {!runsLoading && filteredRuns.length === 0 && (
+                    <div className="text-center py-10 text-gray-400">
+                      <div className="text-3xl mb-2">⚡</div>
+                      <div>No workflow runs yet</div>
+                      <div className="text-sm mt-1">Runs will appear here when workflows execute</div>
+                    </div>
+                  )}
+                  {filteredRuns.map(run => (
+                    <div
+                      key={run.id}
+                      className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 mb-3 cursor-pointer border border-transparent hover:border-gray-300 dark:hover:border-slate-600 transition-colors"
+                      onClick={() => setSelectedRunId(run.id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">{run.workflowName}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{run.id.slice(0, 8)} · {timeAgo(run.startedAt)}</div>
+                        </div>
+                        <StatusBadge status={run.status} />
                       </div>
                     </div>
-                    <StatusBadge status={run.status} />
-                  </div>
-                </div>
-              ))}
-
-              {selectedRunId && (
-                <button
-                  style={{ ...s.tab, marginTop: 12 }}
-                  onClick={() => setSelectedRunId(null)}
-                >
-                  ← Back to runs
-                </button>
+                  ))}
+                </>
               )}
             </>
           )}
 
           {tab === 'events' && (
             <>
-              {eventsLoading && <div style={s.empty}>Loading events…</div>}
+              {eventsLoading && <div className="text-center py-10 text-gray-400">Loading events…</div>}
               {!eventsLoading && events.length === 0 && (
-                <div style={s.empty}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>📡</div>
+                <div className="text-center py-10 text-gray-400">
+                  <div className="text-3xl mb-2">📡</div>
                   <div>No events yet</div>
                 </div>
               )}
               {events.map(event => (
-                <div key={event.id} style={s.card}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: 13 }}>{event.key}</span>
-                    <span style={{ fontSize: 12, color: '#64748b' }}>{timeAgo(event.createdAt)}</span>
+                <div key={event.id} className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 mb-3">
+                  <div className="flex justify-between">
+                    <span className="font-semibold font-mono text-sm text-gray-900 dark:text-white">{event.key}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{timeAgo(event.createdAt)}</span>
                   </div>
                   {event.payload && (
-                    <pre style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, overflow: 'auto', maxHeight: 100 }}>
+                    <pre className="text-xs text-gray-600 dark:text-gray-400 mt-2 overflow-auto max-h-24">
                       {JSON.stringify(event.payload, null, 2)}
                     </pre>
                   )}
@@ -243,6 +276,8 @@ export default function WorkflowsV2() {
           )}
         </div>
       </div>
+
+      {showTrigger && <TriggerDialog templates={templates} onClose={() => setShowTrigger(false)} />}
     </div>
   );
 }

@@ -287,13 +287,13 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
-            {/* Goals - only for authenticated users */}
+            {/* Goals */}
             {isAuthenticated && (
               <Link
-                to="/app/goals"
+                to="/app/goals-v2"
                 onClick={handleNavClick}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/goals')
+                  isActive('/app/goals-v2') || isActive('/app/goals')
                     ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                 }`}
@@ -303,24 +303,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
-
-            {/* Goals v2 - only for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/app/goals-v2"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/goals-v2')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Target className="w-5 h-5" />
-                <span className="text-sm">Goals v2</span>
-              </Link>
-            )}
-
-            {/* Knowledge v2 - only for authenticated users */}
+            {/* Knowledge */}
             {isAuthenticated && (
               <Link
                 to="/app/knowledge-v2"
@@ -332,11 +315,11 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 }`}
               >
                 <BookOpen className="w-5 h-5" />
-                <span className="text-sm">Knowledge v2</span>
+                <span className="text-sm">Knowledge</span>
               </Link>
             )}
 
-            {/* Workflows v2 - only for authenticated users */}
+            {/* Workflows */}
             {isAuthenticated && (
               <Link
                 to="/app/workflows-v2"
@@ -348,7 +331,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 }`}
               >
                 <Zap className="w-5 h-5" />
-                <span className="text-sm">Workflows v2</span>
+                <span className="text-sm">Workflows</span>
               </Link>
             )}
 

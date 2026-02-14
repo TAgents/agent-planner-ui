@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   useGoalsTree,
   useGoalV2,
@@ -6,6 +7,7 @@ import {
   useCreateGoal,
   useUpdateGoal,
   useDeleteGoal,
+  useAddEvaluation,
   GoalV2,
   GoalEvaluation,
 } from '../hooks/useGoalsV2';
@@ -46,40 +48,25 @@ function GoalTreeNode({
     <div style={{ marginLeft: depth * 16 }}>
       <div
         onClick={() => onSelect(goal.id)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '8px 12px',
-          cursor: 'pointer',
-          borderRadius: 6,
-          background: selectedId === goal.id ? '#1e293b' : 'transparent',
-          borderLeft: `3px solid ${typeConf.color}`,
-          marginBottom: 2,
-          transition: 'background 0.15s',
-        }}
+        className={`flex items-center gap-2 px-3 py-2 cursor-pointer rounded-md mb-0.5 transition-colors
+          ${selectedId === goal.id ? 'bg-gray-100 dark:bg-slate-800' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
+        style={{ borderLeft: `3px solid ${typeConf.color}` }}
       >
-        {hasChildren && (
+        {hasChildren ? (
           <span
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            style={{ cursor: 'pointer', fontSize: 12, width: 16 }}
+            className="cursor-pointer text-xs w-4 text-gray-500 dark:text-gray-400"
           >
             {expanded ? '▼' : '▶'}
           </span>
-        )}
-        {!hasChildren && <span style={{ width: 16 }} />}
+        ) : <span className="w-4" />}
         <span>{typeConf.icon}</span>
-        <span style={{ flex: 1, fontWeight: selectedId === goal.id ? 600 : 400, fontSize: 14 }}>
+        <span className={`flex-1 text-sm text-gray-900 dark:text-gray-100 ${selectedId === goal.id ? 'font-semibold' : ''}`}>
           {goal.title}
         </span>
         <span
-          style={{
-            fontSize: 10,
-            padding: '2px 6px',
-            borderRadius: 10,
-            background: statusConf.color + '22',
-            color: statusConf.color,
-          }}
+          className="text-[10px] px-1.5 py-0.5 rounded-full"
+          style={{ background: statusConf.color + '22', color: statusConf.color }}
         >
           {statusConf.label}
         </span>
@@ -112,24 +99,19 @@ function CreateGoalDialog({
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-    }} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        background: '#1e293b', borderRadius: 12, padding: 24, width: 420,
-        border: '1px solid #334155',
-      }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 18 }}>Create Goal</h3>
-        <form onSubmit={handleSubmit}>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-slate-800 rounded-xl p-6 w-[420px] border border-gray-200 dark:border-slate-700">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Create Goal</h3>
+        <form onSubmit={handleSubmit} className="space-y-3">
           <input
             placeholder="Goal title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            style={inputStyle}
+            className="w-full px-3 py-2.5 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm"
           />
-          <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+          <select value={type} onChange={(e) => setType(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm">
             {Object.entries(TYPE_CONFIG).map(([k, v]) => (
               <option key={k} value={k}>{`${v.icon} ${v.label}`}</option>
             ))}
@@ -139,18 +121,18 @@ function CreateGoalDialog({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            style={inputStyle}
+            className="w-full px-3 py-2.5 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm"
           />
           <input
             type="number"
             placeholder="Priority (0=normal)"
             value={priority}
             onChange={(e) => setPriority(Number(e.target.value))}
-            style={inputStyle}
+            className="w-full px-3 py-2.5 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm"
           />
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-            <button type="button" onClick={onClose} style={btnSecondary}>Cancel</button>
-            <button type="submit" disabled={createGoal.isLoading} style={btnPrimary}>
+          <div className="flex gap-2 justify-end pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700">Cancel</button>
+            <button type="submit" disabled={createGoal.isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50">
               {createGoal.isLoading ? 'Creating...' : 'Create'}
             </button>
           </div>
@@ -160,53 +142,92 @@ function CreateGoalDialog({
   );
 }
 
+// ─── Evaluation Form ─────────────────────────────────────────────
+function EvaluationForm({ goalId, onClose }: { goalId: string; onClose: () => void }) {
+  const addEval = useAddEvaluation();
+  const [score, setScore] = useState(50);
+  const [reasoning, setReasoning] = useState('');
+  const [evaluatedBy, setEvaluatedBy] = useState('human');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await addEval.mutateAsync({ goalId, evaluatedBy, score, reasoning });
+    onClose();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 mt-4 bg-gray-50 dark:bg-slate-900">
+      <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">New Evaluation</h4>
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Score: {score}/100</label>
+          <input type="range" min={0} max={100} value={score} onChange={e => setScore(Number(e.target.value))} className="w-full" />
+        </div>
+        <input
+          placeholder="Evaluated by (e.g. human, agent-name)"
+          value={evaluatedBy}
+          onChange={e => setEvaluatedBy(e.target.value)}
+          required
+          className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm"
+        />
+        <textarea
+          placeholder="Reasoning..."
+          value={reasoning}
+          onChange={e => setReasoning(e.target.value)}
+          rows={3}
+          className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm"
+        />
+        <div className="flex gap-2 justify-end">
+          <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md">Cancel</button>
+          <button type="submit" disabled={addEval.isLoading} className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50">
+            {addEval.isLoading ? 'Saving...' : 'Submit'}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
 // ─── Goal Detail Panel ───────────────────────────────────────────
 function GoalDetail({ goalId }: { goalId: string }) {
   const { data: goal, isLoading } = useGoalV2(goalId);
   const { data: evaluations } = useGoalEvaluations(goalId);
   const updateGoal = useUpdateGoal();
-  const deleteGoal = useDeleteGoal();
+  const [showEvalForm, setShowEvalForm] = useState(false);
 
-  if (isLoading) return <div style={{ padding: 24, color: '#94a3b8' }}>Loading...</div>;
-  if (!goal) return <div style={{ padding: 24, color: '#94a3b8' }}>Goal not found</div>;
+  if (isLoading) return <div className="p-6 text-gray-400">Loading...</div>;
+  if (!goal) return <div className="p-6 text-gray-400">Goal not found</div>;
 
   const typeConf = TYPE_CONFIG[goal.type] || TYPE_CONFIG.outcome;
   const statusConf = STATUS_CONFIG[goal.status] || STATUS_CONFIG.active;
 
   return (
-    <div style={{ padding: 24, overflow: 'auto', height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <span style={{ fontSize: 28 }}>{typeConf.icon}</span>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ margin: 0, fontSize: 20 }}>{goal.title}</h2>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: typeConf.color + '22', color: typeConf.color }}>
-              {typeConf.label}
-            </span>
-            <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: statusConf.color + '22', color: statusConf.color }}>
-              {statusConf.label}
-            </span>
-            <span style={{ fontSize: 12, color: '#64748b' }}>Priority: {goal.priority}</span>
+    <div className="p-6 overflow-auto h-full">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-3xl">{typeConf.icon}</span>
+        <div className="flex-1">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{goal.title}</h2>
+          <div className="flex gap-2 mt-1">
+            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: typeConf.color + '22', color: typeConf.color }}>{typeConf.label}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: statusConf.color + '22', color: statusConf.color }}>{statusConf.label}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Priority: {goal.priority}</span>
           </div>
         </div>
       </div>
 
-      {goal.description && (
-        <p style={{ color: '#cbd5e1', lineHeight: 1.6, marginBottom: 20 }}>{goal.description}</p>
-      )}
+      {goal.description && <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-5">{goal.description}</p>}
 
       {/* Status Actions */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+      <div className="flex gap-2 mb-6">
         {['active', 'achieved', 'paused', 'abandoned'].map((s) => (
           <button
             key={s}
             onClick={() => updateGoal.mutate({ id: goal.id, status: s as any })}
             disabled={goal.status === s}
-            style={{
-              ...btnSecondary,
-              opacity: goal.status === s ? 0.5 : 1,
-              borderColor: STATUS_CONFIG[s]?.color || '#475569',
-            }}
+            className={`px-3 py-1.5 text-xs rounded-md border transition-colors
+              ${goal.status === s
+                ? 'opacity-50 cursor-default border-gray-300 dark:border-slate-600 text-gray-400'
+                : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
           >
             {STATUS_CONFIG[s]?.label || s}
           </button>
@@ -215,11 +236,9 @@ function GoalDetail({ goalId }: { goalId: string }) {
 
       {/* Success Criteria */}
       {goal.successCriteria && (
-        <div style={{ marginBottom: 24 }}>
-          <h4 style={{ margin: '0 0 8px', color: '#94a3b8', fontSize: 13, textTransform: 'uppercase' }}>
-            Success Criteria
-          </h4>
-          <pre style={{ background: '#0f172a', padding: 12, borderRadius: 8, fontSize: 13, overflow: 'auto' }}>
+        <div className="mb-6">
+          <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Success Criteria</h4>
+          <pre className="bg-gray-50 dark:bg-slate-900 p-3 rounded-lg text-sm overflow-auto text-gray-800 dark:text-gray-200">
             {JSON.stringify(goal.successCriteria, null, 2)}
           </pre>
         </div>
@@ -227,47 +246,44 @@ function GoalDetail({ goalId }: { goalId: string }) {
 
       {/* Links */}
       {goal.links && goal.links.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h4 style={{ margin: '0 0 8px', color: '#94a3b8', fontSize: 13, textTransform: 'uppercase' }}>
-            Links ({goal.links.length})
-          </h4>
+        <div className="mb-6">
+          <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Links ({goal.links.length})</h4>
           {goal.links.map((link) => (
-            <div key={link.id} style={{
-              display: 'flex', gap: 8, padding: '6px 10px', background: '#0f172a',
-              borderRadius: 6, marginBottom: 4, fontSize: 13,
-            }}>
-              <span style={{ color: '#64748b' }}>{link.linkedType}</span>
-              <span style={{ color: '#cbd5e1', fontFamily: 'monospace' }}>{link.linkedId.slice(0, 8)}...</span>
+            <div key={link.id} className="flex gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-900 rounded-md mb-1 text-sm">
+              <span className="text-gray-500 dark:text-gray-400">{link.linkedType}</span>
+              <span className="text-gray-800 dark:text-gray-200 font-mono">{link.linkedId.slice(0, 8)}...</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Evaluations Timeline */}
+      {/* Evaluations */}
       <div>
-        <h4 style={{ margin: '0 0 8px', color: '#94a3b8', fontSize: 13, textTransform: 'uppercase' }}>
-          Evaluations {evaluations ? `(${evaluations.length})` : ''}
-        </h4>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+            Evaluations {evaluations ? `(${evaluations.length})` : ''}
+          </h4>
+          {!showEvalForm && (
+            <button onClick={() => setShowEvalForm(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+              + Add Evaluation
+            </button>
+          )}
+        </div>
+        {showEvalForm && <EvaluationForm goalId={goalId} onClose={() => setShowEvalForm(false)} />}
         {evaluations && evaluations.length > 0 ? (
           evaluations.map((ev) => (
-            <div key={ev.id} style={{
-              padding: 12, background: '#0f172a', borderRadius: 8,
-              marginBottom: 8, borderLeft: `3px solid ${ev.score != null && ev.score >= 70 ? '#22c55e' : ev.score != null ? '#f59e0b' : '#475569'}`,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 12, color: '#64748b' }}>{ev.evaluatedBy}</span>
-                <span style={{ fontSize: 12, color: '#64748b' }}>
-                  {new Date(ev.evaluatedAt).toLocaleDateString()}
-                </span>
+            <div key={ev.id} className="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg mb-2"
+              style={{ borderLeft: `3px solid ${ev.score != null && ev.score >= 70 ? '#22c55e' : ev.score != null ? '#f59e0b' : '#475569'}` }}>
+              <div className="flex justify-between mb-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400">{ev.evaluatedBy}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(ev.evaluatedAt).toLocaleDateString()}</span>
               </div>
-              {ev.score != null && (
-                <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{ev.score}/100</div>
-              )}
-              {ev.reasoning && <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1' }}>{ev.reasoning}</p>}
+              {ev.score != null && <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">{ev.score}/100</div>}
+              {ev.reasoning && <p className="text-sm text-gray-700 dark:text-gray-300">{ev.reasoning}</p>}
             </div>
           ))
         ) : (
-          <p style={{ color: '#475569', fontSize: 13 }}>No evaluations yet</p>
+          !showEvalForm && <p className="text-sm text-gray-400">No evaluations yet</p>
         )}
       </div>
     </div>
@@ -276,46 +292,49 @@ function GoalDetail({ goalId }: { goalId: string }) {
 
 // ─── Main Page ───────────────────────────────────────────────────
 export default function GoalsV2() {
+  const { goalId } = useParams<{ goalId?: string }>();
+  const navigate = useNavigate();
   const { data: tree, isLoading, error } = useGoalsTree();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
+  const handleSelect = (id: string) => {
+    navigate(`/app/goals-v2/${id}`);
+  };
+
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', background: '#0f172a', color: '#e2e8f0' }}>
+    <div className="flex h-[calc(100vh-64px)] bg-white dark:bg-slate-950 text-gray-900 dark:text-gray-100">
       {/* Left: Tree */}
-      <div style={{
-        width: 360, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column',
-      }}>
-        <div style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Goals</h2>
-          <button onClick={() => setShowCreate(true)} style={btnPrimary}>+ New</button>
+      <div className="w-[360px] border-r border-gray-200 dark:border-slate-800 flex flex-col">
+        <div className="p-4 pb-2 flex justify-between items-center">
+          <h2 className="text-lg font-bold">Goals</h2>
+          <button onClick={() => setShowCreate(true)} className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md">+ New</button>
         </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: '8px 12px' }}>
+        <div className="flex-1 overflow-auto px-3 py-2">
           <>
-            {isLoading && <p style={{ color: '#64748b', padding: 12 }}>Loading...</p>}
-            {error && <p style={{ color: '#ef4444', padding: 12 }}>Failed to load goals</p>}
+            {isLoading && <p className="text-gray-400 p-3">Loading...</p>}
+            {error && <p className="text-red-500 p-3">Failed to load goals</p>}
             {tree && tree.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 40, color: '#475569' }}>
-                <p style={{ fontSize: 32 }}>🎯</p>
-                <p>No goals yet. Create your first goal!</p>
+              <div className="text-center py-10 text-gray-400">
+                <p className="text-3xl">🎯</p>
+                <p className="mt-2">No goals yet. Create your first goal!</p>
               </div>
             )}
             {tree && tree.map((goal) => (
-              <GoalTreeNode key={goal.id} goal={goal} selectedId={selectedId} onSelect={setSelectedId} />
+              <GoalTreeNode key={goal.id} goal={goal} selectedId={goalId || null} onSelect={handleSelect} />
             ))}
           </>
         </div>
       </div>
 
       {/* Right: Detail */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        {selectedId ? (
-          <GoalDetail goalId={selectedId} />
+      <div className="flex-1 overflow-hidden">
+        {goalId ? (
+          <GoalDetail goalId={goalId} />
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#475569' }}>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 48 }}>🎯</p>
-              <p>Select a goal to view details</p>
+          <div className="flex items-center justify-center h-full text-gray-400">
+            <div className="text-center">
+              <p className="text-5xl">🎯</p>
+              <p className="mt-2">Select a goal to view details</p>
             </div>
           </div>
         )}
@@ -325,37 +344,3 @@ export default function GoalsV2() {
     </div>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  marginBottom: 10,
-  background: '#0f172a',
-  border: '1px solid #334155',
-  borderRadius: 6,
-  color: '#e2e8f0',
-  fontSize: 14,
-  boxSizing: 'border-box',
-};
-
-const btnPrimary: React.CSSProperties = {
-  padding: '8px 16px',
-  background: '#3b82f6',
-  color: '#fff',
-  border: 'none',
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: 13,
-  fontWeight: 600,
-};
-
-const btnSecondary: React.CSSProperties = {
-  padding: '6px 12px',
-  background: 'transparent',
-  color: '#94a3b8',
-  border: '1px solid #475569',
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: 12,
-};

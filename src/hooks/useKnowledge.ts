@@ -54,6 +54,7 @@ export function useKnowledgeItem(id: string | undefined) {
   );
 }
 
+// Legacy mutation-based search (kept for backward compat)
 export function useKnowledgeSearch() {
   return useMutation(
     (params: { query: string; limit?: number; scope?: string; scopeId?: string; entryType?: string; source?: string }) =>
@@ -61,6 +62,18 @@ export function useKnowledgeSearch() {
         results: d.results as KnowledgeEntry[],
         method: d.method as string,
       }))
+  );
+}
+
+// Query-based search with caching
+export function useKnowledgeSearchQuery(params: { query: string; limit?: number; scope?: string; entryType?: string } | null) {
+  return useQuery(
+    [KNOWLEDGE_KEY, 'search', params],
+    () => fetchApi('/search', { method: 'POST', body: JSON.stringify(params) }).then(d => ({
+      results: d.results as KnowledgeEntry[],
+      method: d.method as string,
+    })),
+    { enabled: !!params?.query?.trim(), staleTime: 30000 }
   );
 }
 
