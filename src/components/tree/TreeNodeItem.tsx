@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { PlanNode, NodeStatus } from '../../types';
 import { StatusBadge, getNextStatus } from './StatusBadge';
+import { StatusBadge } from './StatusBadge';
 import { GripVertical, Plus } from 'lucide-react';
 
 interface TreeNodeItemProps {
