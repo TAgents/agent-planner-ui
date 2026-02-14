@@ -2064,6 +2064,24 @@ export const agentStatusApi = {
   },
 };
 
+// Agent Status API
+export const agentStatusApi = {
+  sendHeartbeat: async (data: { plan_id?: string; task_id?: string; status?: string }) => {
+    return request<any>({
+      method: 'POST',
+      url: '/heartbeat',
+      data,
+    });
+  },
+
+  getPlanAgentStatuses: async (planId: string) => {
+    return request<{ agents: Array<{ id: string; name: string; email: string; capability_tags: string[]; status: string; last_seen_at: string | null; current_task_id: string | null }> }>({
+      method: 'GET',
+      url: `/plans/${planId}/agent-status`,
+    });
+  },
+};
+
 // Prompt Templates API
 export interface PromptTemplate {
   id: string;
