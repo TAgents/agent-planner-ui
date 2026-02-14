@@ -121,6 +121,7 @@ const AICreatePlan: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="p-6">
+            <>
                 {error && (
                   <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <p className="text-red-800 dark:text-red-200 text-sm">
@@ -218,6 +219,7 @@ const AICreatePlan: React.FC = () => {
                 {!hasAnalyzed && (
                   <SuggestedPrompts onSelectPrompt={handlePromptChange} />
                 )}
+            </>
           </div>
         </div>
       </div>
