@@ -12,7 +12,6 @@ export function useTaskAgentRequests(planId: string, taskId: string, options?: {
     () => agentRequestApi.listForTask(planId, taskId),
     {
       enabled: !!planId && !!taskId && (options?.enabled ?? true),
-      refetchInterval: 60000, // Poll every 60s for updates
       retry: false, // Don't retry on failure to prevent rate limit cascades
       staleTime: 30000, // Consider data stale after 30s
       refetchInterval: 30000, // Poll every 30s for updates
@@ -27,7 +26,6 @@ export function usePlanAgentRequests(planId: string, status?: string) {
     () => agentRequestApi.listForPlan(planId, status),
     {
       enabled: !!planId,
-      refetchInterval: 60000, // Poll every 60s
       retry: false,
       staleTime: 30000,
       refetchInterval: 30000,

@@ -1882,14 +1882,6 @@ export const agentRequestApi = {
       method: 'POST',
       url: `/plans/${planId}/nodes/${taskId}/request-agent`,
       data: mappedData,
-    request_type: 'execute' | 'review' | 'plan' | 'custom';
-    prompt?: string;
-    priority?: 'normal' | 'urgent';
-  }) => {
-    return request<AgentRequest>({
-      method: 'POST',
-      url: `/plans/${planId}/tasks/${taskId}/agent-request`,
-      data,
     });
   },
 
@@ -1899,8 +1891,6 @@ export const agentRequestApi = {
       method: 'GET',
       url: `/plans/${planId}/nodes/${taskId}/request-agent`,
     }).catch(() => [] as AgentRequest[]);
-      url: `/plans/${planId}/tasks/${taskId}/agent-requests`,
-    });
   },
 
   // Get all pending agent requests for a plan
@@ -2073,24 +2063,6 @@ export const agentStatusApi = {
   },
 };
 
-// Agent Status API
-export const agentStatusApi = {
-  sendHeartbeat: async (data: { plan_id?: string; task_id?: string; status?: string }) => {
-    return request<any>({
-      method: 'POST',
-      url: '/heartbeat',
-      data,
-    });
-  },
-
-  getPlanAgentStatuses: async (planId: string) => {
-    return request<{ agents: Array<{ id: string; name: string; email: string; capability_tags: string[]; status: string; last_seen_at: string | null; current_task_id: string | null }> }>({
-      method: 'GET',
-      url: `/plans/${planId}/agent-status`,
-    });
-  },
-};
-
 // Prompt Templates API
 export interface PromptTemplate {
   id: string;
@@ -2154,72 +2126,6 @@ export const planChatApi = {
       method: 'POST',
       url: `/plans/${planId}/chat`,
       data: { content, role, metadata },
-    });
-  },
-};
-
-// Handoff API
-export const handoffApi = {
-  create: async (planId: string, nodeId: string, data: { to_agent_id: string; context?: string; reason?: string }) => {
-    return request<any>({
-      method: 'POST',
-      url: `/plans/${planId}/nodes/${nodeId}/handoffs`,
-      data,
-    });
-  },
-
-  getForNode: async (planId: string, nodeId: string) => {
-    return request<any[]>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${nodeId}/handoffs`,
-    });
-  },
-
-  respond: async (handoffId: string, action: 'accepted' | 'rejected', notes?: string) => {
-    return request<any>({
-      method: 'POST',
-      url: `/handoffs/${handoffId}/respond`,
-      data: { action, notes },
-    });
-  },
-
-  getPending: async () => {
-    return request<any[]>({
-      method: 'GET',
-      url: '/handoffs/pending',
-    });
-  },
-};
-
-// Capability Tags API
-export const capabilityTagsApi = {
-  get: async () => {
-    return request<{ capability_tags: string[] }>({
-      method: 'GET',
-      url: '/users/capabilities',
-    });
-  },
-
-  update: async (tags: string[]) => {
-    return request<{ capability_tags: string[] }>({
-      method: 'PUT',
-      url: '/users/capabilities',
-      data: { capability_tags: tags },
-    });
-  },
-
-  getForUser: async (userId: string) => {
-    return request<{ capability_tags: string[] }>({
-      method: 'GET',
-      url: `/users/${userId}/capabilities`,
-    });
-  },
-
-  searchByTags: async (tags: string[], match: 'any' | 'all' = 'any') => {
-    return request<{ results: Array<{ id: string; email: string; name: string; avatar_url: string; capability_tags: string[] }>; count: number }>({
-      method: 'GET',
-      url: '/users/capabilities/search',
-      params: { tags: tags.join(','), match },
     });
   },
 };
