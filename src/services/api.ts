@@ -2043,6 +2043,7 @@ export const dashboardApi = {
       url: '/dashboard/agent-activity',
     });
   },
+<<<<<<< HEAD
 };
 
 // Agent Status API
@@ -2128,6 +2129,8 @@ export const planChatApi = {
       data: { content, role, metadata },
     });
   },
+=======
+>>>>>>> feature/agent-activity-dashboard
 };
 
 // Handoff API
