@@ -1882,6 +1882,14 @@ export const agentRequestApi = {
       method: 'POST',
       url: `/plans/${planId}/nodes/${taskId}/request-agent`,
       data: mappedData,
+    request_type: 'execute' | 'review' | 'plan' | 'custom';
+    prompt?: string;
+    priority?: 'normal' | 'urgent';
+  }) => {
+    return request<AgentRequest>({
+      method: 'POST',
+      url: `/plans/${planId}/tasks/${taskId}/agent-request`,
+      data,
     });
   },
 
@@ -1891,6 +1899,8 @@ export const agentRequestApi = {
       method: 'GET',
       url: `/plans/${planId}/nodes/${taskId}/request-agent`,
     }).catch(() => [] as AgentRequest[]);
+      url: `/plans/${planId}/tasks/${taskId}/agent-requests`,
+    });
   },
 
   // Get all pending agent requests for a plan
@@ -2043,7 +2053,6 @@ export const dashboardApi = {
       url: '/dashboard/agent-activity',
     });
   },
-<<<<<<< HEAD
 };
 
 // Agent Status API
@@ -2147,8 +2156,6 @@ export const planChatApi = {
       data: { content, role, metadata },
     });
   },
-=======
->>>>>>> feature/agent-activity-dashboard
 };
 
 // Handoff API
