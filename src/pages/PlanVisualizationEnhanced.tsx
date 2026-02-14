@@ -54,6 +54,12 @@ import { PresenceIndicator } from '../components/presence/PresenceIndicator';
               <Settings className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             </button>
 
+            {/* Decision Badge - shows pending decisions count */}
+            <DecisionBadge
+              planId={planId || ''}
+              onClick={() => setShowDecisionPanel(true)}
+            />
+
             {/* WebSocket connection status indicator - hidden on mobile */}
             <div className="hidden sm:flex px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
               <WebSocketStatus showDetails={false} />
