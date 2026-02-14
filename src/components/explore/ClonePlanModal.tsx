@@ -40,7 +40,6 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
 
   const [formData, setFormData] = useState({
     title: `${plan.title} (copy)`,
-
     goal_id: '',
   });
 
@@ -60,7 +59,6 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
     if (isOpen) {
       setFormData({
         title: `${plan.title} (copy)`,
-    
         goal_id: '',
       });
       setOptions({

@@ -10,10 +10,9 @@ import {
 import GoalCard from '../components/goals/GoalCard';
 
 const Goals: React.FC = () => {
-  const [selectedOrgId] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { goals, loading, error, createGoal, deleteGoal } = useGoals(
-    selectedOrgId || undefined,
+    undefined,
     statusFilter || undefined
   );
 
@@ -23,7 +22,6 @@ const Goals: React.FC = () => {
 
   // Create form state
   const [newGoal, setNewGoal] = useState({
-    organization_id: '',
     title: '',
     description: '',
     time_horizon: '',
@@ -35,16 +33,15 @@ const Goals: React.FC = () => {
   };
 
   const handleCreate = async () => {
-    if (!newGoal.title || !newGoal.organization_id) return;
+    if (!newGoal.title) return;
     try {
       await createGoal({
-        organization_id: newGoal.organization_id,
         title: newGoal.title,
         description: newGoal.description || undefined,
         time_horizon: newGoal.time_horizon || undefined,
       });
       setShowCreateDialog(false);
-      setNewGoal({ organization_id: '', title: '', description: '', time_horizon: '' });
+      setNewGoal({ title: '', description: '', time_horizon: '' });
       showNotification('Goal created successfully', 'success');
     } catch (err: any) {
       showNotification(err.message || 'Failed to create goal', 'error');
@@ -206,7 +203,7 @@ const Goals: React.FC = () => {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!newGoal.title || !newGoal.organization_id}
+                disabled={!newGoal.title}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors"
               >
                 Create Goal

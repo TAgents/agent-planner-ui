@@ -1813,7 +1813,6 @@ export const agentStatusApi = {
 };
 
 // Prompt Templates API
-// Removed: handoffApi (pre-v2 cleanup)
 
 // Capability Tags API
 export const capabilityTagsApi = {
