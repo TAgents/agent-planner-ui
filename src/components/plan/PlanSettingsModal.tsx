@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Settings, Webhook, Bell } from 'lucide-react';
+import { X, Settings, Webhook, Bell, Sliders } from 'lucide-react';
 import { WebhookSettings } from '../agent-request';
 
 interface PlanSettingsModalProps {
@@ -7,21 +7,26 @@ interface PlanSettingsModalProps {
   onClose: () => void;
   planId: string;
   planTitle: string;
+  planStatus?: string;
+  onUpdateStatus?: (status: string) => void;
 }
 
-type SettingsTab = 'webhook' | 'notifications';
+type SettingsTab = 'general' | 'webhook' | 'notifications';
 
 export const PlanSettingsModal: React.FC<PlanSettingsModalProps> = ({
   isOpen,
   onClose,
   planId,
   planTitle,
+  planStatus,
+  onUpdateStatus,
 }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('webhook');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   if (!isOpen) return null;
 
   const tabs = [
+    { id: 'general' as const, label: 'General', icon: Sliders },
     { id: 'webhook' as const, label: 'Agent Webhook', icon: Webhook },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, disabled: true },
   ];
@@ -89,6 +94,28 @@ export const PlanSettingsModal: React.FC<PlanSettingsModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
+          {activeTab === 'general' && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Plan Status
+                </label>
+                <select
+                  value={planStatus || 'draft'}
+                  onChange={(e) => onUpdateStatus?.(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Controls the current lifecycle stage of this plan.
+                </p>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'webhook' && (
             <WebhookSettings planId={planId} />
           )}

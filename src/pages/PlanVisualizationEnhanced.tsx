@@ -33,10 +33,11 @@ import { PresenceIndicator } from '../components/presence/PresenceIndicator';
 // Import existing components
 import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
+import { planService } from '../services/api';
 import { useNodes, useNode } from '../hooks/useNodes';
 import { usePlanActivity } from '../hooks/usePlanActivity';
 import { usePlanEvents } from '../hooks/useWebSocket';
-import { NodeType, NodeStatus, Decision } from '../types';
+import { NodeType, NodeStatus, Decision, PlanStatus } from '../types';
 
 // Import detail components
 import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
@@ -133,7 +134,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const queryClient = useQueryClient();
   
   // Data fetching
-  const { plan, isLoading: isPlanLoading } = usePlan(planId || '');
+  const { plan, isLoading: isPlanLoading, error: planError, refetch: refetchPlan } = usePlan(planId || '');
   const {
     nodes: planNodes,
     isLoading: isNodesLoading,
@@ -558,12 +559,22 @@ const PlanVisualizationEnhanced: React.FC = () => {
   }
 
   // Error state
-  if (!plan) {
+  if (planError || !plan) {
+    const statusCode = (planError as any)?.response?.status || (planError as any)?.status;
+    let errorTitle = 'Failed to load plan';
+    let errorMessage = 'Please try again.';
+    if (statusCode === 403) {
+      errorTitle = 'Access denied';
+      errorMessage = "You don't have access to this plan. Ask the owner to share it with you.";
+    } else if (statusCode === 404 || !planError) {
+      errorTitle = 'Plan not found';
+      errorMessage = "The requested plan doesn't exist.";
+    }
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-red-600 dark:text-red-400">Plan not found</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">The requested plan doesn't exist or you don't have access.</p>
+          <h2 className="text-xl font-bold text-red-600 dark:text-red-400">{errorTitle}</h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{errorMessage}</p>
           <Link to="/app/plans" className="mt-4 inline-block text-blue-600 hover:text-blue-800 dark:text-blue-400">
             Back to plans
           </Link>
@@ -870,6 +881,15 @@ const PlanVisualizationEnhanced: React.FC = () => {
         onClose={() => setShowSettingsModal(false)}
         planId={planId || ''}
         planTitle={plan.title}
+        planStatus={plan.status}
+        onUpdateStatus={async (status) => {
+          try {
+            await planService.updatePlan(planId || '', { status: status as PlanStatus });
+            refetchPlan();
+          } catch (err) {
+            console.error('Failed to update plan status:', err);
+          }
+        }}
       />
 
       {/* Chat Panel - Fixed right side overlay */}
