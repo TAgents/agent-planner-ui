@@ -144,7 +144,7 @@ const Settings: React.FC = () => {
       apiUrl = window.location.origin.replace('3001', '3000');
     } else if (hostname.includes('agentplanner.io')) {
       // For agentplanner.io domain
-      apiUrl = 'https://api.agentplanner.io';
+      apiUrl = 'https://agentplanner.io/api';
     } else {
       // For Cloud Run or other deployments, replace 'ui' with 'api' in the hostname
       apiUrl = window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
@@ -304,7 +304,7 @@ const Settings: React.FC = () => {
         "API_URL": "${(() => {
           const hostname = window.location.hostname;
           if (hostname === 'localhost') return 'http://localhost:3000';
-          if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+          if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
           return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
         })()}",
         "USER_API_TOKEN": "your_token_here"
@@ -383,7 +383,7 @@ const Settings: React.FC = () => {
   -e API_URL=${(() => {
     const hostname = window.location.hostname;
     if (hostname === 'localhost') return 'http://localhost:3000';
-    if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+    if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
     return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
   })()} \\
   -e USER_API_TOKEN=YOUR_TOKEN_HERE`}
@@ -480,7 +480,7 @@ const Settings: React.FC = () => {
         "API_URL": "${(() => {
           const hostname = window.location.hostname;
           if (hostname === 'localhost') return 'http://localhost:3000';
-          if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+          if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
           return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
         })()}",
         "USER_API_TOKEN": "your_token_here"
@@ -553,7 +553,7 @@ const Settings: React.FC = () => {
         "API_URL": "${(() => {
           const hostname = window.location.hostname;
           if (hostname === 'localhost') return 'http://localhost:3000';
-          if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+          if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
           return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
         })()}",
         "USER_API_TOKEN": "your_token_here"
@@ -665,7 +665,7 @@ const Settings: React.FC = () => {
   -e API_URL=${(() => {
     const hostname = window.location.hostname;
     if (hostname === 'localhost') return 'http://localhost:3000';
-    if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+    if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
     return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
   })()} \\
   -e USER_API_TOKEN=YOUR_TOKEN_HERE`}
@@ -1018,7 +1018,7 @@ const Settings: React.FC = () => {
   -e API_URL=${(() => {
     const hostname = window.location.hostname;
     if (hostname === 'localhost') return 'http://localhost:3000';
-    if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+    if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
     return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
   })()} \\
   -e USER_API_TOKEN=${newToken?.token || 'YOUR_TOKEN'}`}
@@ -1028,7 +1028,7 @@ const Settings: React.FC = () => {
                           const hostname = window.location.hostname;
                           let apiUrl;
                           if (hostname === 'localhost') apiUrl = 'http://localhost:3000';
-                          else if (hostname.includes('agentplanner.io')) apiUrl = 'https://api.agentplanner.io';
+                          else if (hostname.includes('agentplanner.io')) apiUrl = 'https://agentplanner.io/api';
                           else apiUrl = window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
 
                           const command = `claude mcp add planning-system npx agent-planner-mcp \\
@@ -1137,7 +1137,7 @@ npm install`}
       "API_URL": "${(() => {
         const hostname = window.location.hostname;
         if (hostname === 'localhost') return window.location.origin.replace('3001', '3000');
-        if (hostname.includes('agentplanner.io')) return 'https://api.agentplanner.io';
+        if (hostname.includes('agentplanner.io')) return 'https://agentplanner.io/api';
         return window.location.origin.replace('agent-planner-ui', 'agent-planner-api');
       })()}",
       "USER_API_TOKEN": "${tokenCopied ? '•••••••••••••••••••••••' : newToken.token?.substring(0, 25) + '...'}"

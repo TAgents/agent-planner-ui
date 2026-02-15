@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="https://api.agentplanner.io/api-docs/"
+                  href="/api/api-docs/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-gray-900 dark:hover:text-white transition-colors"

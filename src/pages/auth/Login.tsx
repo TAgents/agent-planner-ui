@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, UserPlus, AlertCircle, Github } from 'lucide-react';
+import { Eye, EyeOff, LogIn, UserPlus, AlertCircle } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
-import { supabase } from '../../services/supabase';
 
 interface LocationState {
   from?: Location;
@@ -98,37 +97,6 @@ const Login: React.FC = () => {
       setError(err.message || 'Failed to resend verification email. Please try again.');
     } finally {
       setResendingEmail(false);
-    }
-  };
-
-  const handleGitHubLogin = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: 'user:email read:user read:org',
-        },
-      });
-
-      if (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('GitHub OAuth error:', error.message);
-        }
-        setError(error.message || 'Failed to initiate GitHub login');
-        setLoading(false);
-      }
-      // If successful, the browser will redirect to GitHub
-      // So we don't need to do anything else here
-    } catch (err: any) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('GitHub login error:', err.message);
-      }
-      setError(err.message || 'Failed to login with GitHub');
-      setLoading(false);
     }
   };
 
@@ -281,26 +249,6 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative mt-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
-            </div>
-          </div>
-
-          {/* GitHub Sign In Button */}
-          <button
-            type="button"
-            onClick={handleGitHubLogin}
-            disabled={loading}
-            className="mt-6 w-full flex items-center justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            <Github className="h-5 w-5 mr-2" />
-            Sign in with GitHub
-          </button>
         </div>
 
         {/* Sign Up Link */}
