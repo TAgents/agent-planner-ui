@@ -56,7 +56,8 @@ async function fetchApi(path: string) {
 export function useWorkflowTemplates() {
   return useQuery<WorkflowTemplate[]>('workflow-templates', async () => {
     const data = await fetchApi('/templates');
-    return data.workflows || [];
+    const wf = data.workflows;
+    return Array.isArray(wf) ? wf : wf?.rows || [];
   });
 }
 

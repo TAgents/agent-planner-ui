@@ -122,8 +122,12 @@ function TriggerDialog({ templates, onClose }: { templates: WorkflowTemplate[]; 
     if (!selected) return;
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/workflows/trigger`, {
+      const sessionStr = localStorage.getItem('auth_session');
+      let token: string | null = null;
+      if (sessionStr) {
+        try { const s = JSON.parse(sessionStr); token = s.access_token || s.accessToken || s; } catch { token = sessionStr; }
+      }
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/workflows/trigger`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ workflowName: selected, input: JSON.parse(payload) }),
