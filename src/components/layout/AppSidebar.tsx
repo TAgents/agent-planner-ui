@@ -14,6 +14,7 @@ import {
   BookOpen,
   Home,
   Bot,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
@@ -302,6 +303,54 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
+
+            {/* Goals v2 - only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                to="/app/goals-v2"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive('/app/goals-v2')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Target className="w-5 h-5" />
+                <span className="text-sm">Goals v2</span>
+              </Link>
+            )}
+
+            {/* Knowledge v2 - only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                to="/app/knowledge-v2"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive('/app/knowledge-v2')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                <span className="text-sm">Knowledge v2</span>
+              </Link>
+            )}
+
+            {/* Workflows v2 - only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                to="/app/workflows-v2"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive('/app/workflows-v2')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Zap className="w-5 h-5" />
+                <span className="text-sm">Workflows v2</span>
+              </Link>
+            )}
 
             {/* Agent Activity - only for authenticated users */}
             {isAuthenticated && (
