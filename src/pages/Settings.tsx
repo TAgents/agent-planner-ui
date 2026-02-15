@@ -331,12 +331,12 @@ const Settings: React.FC = () => {
                     Copy Config
                   </button>
                   <a
-                    href="https://github.com/talkingagents/agent-planner-mcp"
+                    href="https://github.com/TAgents/agent-planner-mcp"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
-                    Documentation
+                    MCP Guide
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>
@@ -1120,7 +1120,7 @@ const Settings: React.FC = () => {
                   <div>
                     <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">1. Clone the repository:</h5>
                     <pre className="bg-gray-100 dark:bg-gray-900 p-3 rounded-md text-sm font-mono overflow-x-auto">
-{`git clone https://github.com/talkingagents/agent-planner-mcp.git
+{`git clone https://github.com/TAgents/agent-planner-mcp.git
 cd agent-planner-mcp
 npm install`}
                     </pre>

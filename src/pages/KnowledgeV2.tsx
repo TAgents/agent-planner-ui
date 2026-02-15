@@ -21,7 +21,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string }
 const SOURCE_OPTIONS = ['human', 'agent', 'import', 'openclaw'];
 
 // ─── Timeline View ───────────────────────────────────────────────
-function TimelineView() {
+function TimelineView({ onCreateClick }: { onCreateClick: () => void }) {
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const { data: entries, isLoading } = useKnowledgeList({ entryType: typeFilter || undefined });
@@ -71,7 +71,24 @@ function TimelineView() {
         );
       })}
 
-      {!isLoading && filtered.length === 0 && <p className="text-gray-400 text-center py-10">No knowledge entries yet. Create one to get started!</p>}
+      {!isLoading && filtered.length === 0 && (
+        <div className="text-center py-16 px-4">
+          <div className="text-5xl mb-4">🧠</div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Capture decisions & context</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+            Knowledge stores help your agents remember important decisions, constraints, and learnings across projects.
+          </p>
+          <button
+            className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+            onClick={onCreateClick}
+          >
+            + New Knowledge Entry
+          </button>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+            💡 Tip: Agents automatically add learnings as they work
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -341,7 +358,7 @@ export default function KnowledgeV2() {
         ))}
       </div>
 
-      {activeTab === 'timeline' && <TimelineView />}
+      {activeTab === 'timeline' && <TimelineView onCreateClick={() => setShowCreate(true)} />}
       {activeTab === 'search' && <SearchView />}
       {activeTab === 'graph' && <GraphView />}
 

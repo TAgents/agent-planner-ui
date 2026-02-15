@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Tag, ArrowRightLeft, ListTodo, Activity, Clock, Loader2, Users } from 'lucide-react';
+import { Bot, Tag, ArrowRightLeft, ListTodo, Activity, Clock, Loader2, Users, Plus, X } from 'lucide-react';
 import { dashboardApi } from '../services/api';
 
 interface AgentInfo {
@@ -19,6 +19,7 @@ const AgentDashboard: React.FC = () => {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -56,12 +57,21 @@ const AgentDashboard: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Bot className="w-7 h-7 text-purple-600 dark:text-purple-400" />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agent Activity</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Monitor agent assignments, handoffs, and activity</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Bot className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agent Activity</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Monitor agent assignments, handoffs, and activity</p>
+          </div>
         </div>
+        <button
+          onClick={() => setShowRegisterModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Register Agent
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -80,7 +90,22 @@ const AgentDashboard: React.FC = () => {
             Agents
           </h2>
           {data.agents.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No agents with capability tags found</p>
+            <div className="text-center py-12 px-4">
+              <div className="text-5xl mb-4">🤖</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Your AI team members</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
+                Register and manage AI agents. Assign them tasks, track their work, and review their output.
+              </p>
+              <button
+                onClick={() => setShowRegisterModal(true)}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+              >
+                + Register Your First Agent
+              </button>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+                💡 Tip: Connect via MCP or REST API
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
               {data.agents.map(agent => {
@@ -201,6 +226,143 @@ const AgentDashboard: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Register Agent Modal */}
+      {showRegisterModal && (
+        <RegisterAgentModal onClose={() => setShowRegisterModal(false)} onSuccess={() => { setShowRegisterModal(false); loadData(); }} />
+      )}
+    </div>
+  );
+};
+
+const RegisterAgentModal: React.FC<{ onClose: () => void; onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+  const [form, setForm] = useState({
+    name: '',
+    role: 'executor',
+    description: '',
+    connectionMethod: 'mcp',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/agents/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          capability_tags: [form.role],
+          description: form.description.trim(),
+          connection_method: form.connectionMethod,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to register agent');
+      }
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Register an Agent</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., Planner Pro"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              value={form.role}
+              onChange={e => setForm({ ...form, role: e.target.value })}
+            >
+              <option value="planner">Planner</option>
+              <option value="executor">Executor</option>
+              <option value="reviewer">Reviewer</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[80px]"
+              placeholder="What does this agent do?"
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Connection Method</label>
+            <div className="space-y-2">
+              {[
+                { value: 'mcp', label: 'MCP Server', desc: 'npx agent-planner-mcp' },
+                { value: 'rest', label: 'REST API', desc: 'Use token auth' },
+                { value: 'openclaw', label: 'OpenClaw', desc: 'Task dispatch' },
+              ].map(opt => (
+                <label key={opt.value} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="connectionMethod"
+                    value={opt.value}
+                    checked={form.connectionMethod === opt.value}
+                    onChange={e => setForm({ ...form, connectionMethod: e.target.value })}
+                    className="text-purple-600 focus:ring-purple-500"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">{opt.label}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          )}
+        </div>
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!form.name.trim() || submitting}
+            className="px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:opacity-50 transition-colors"
+          >
+            {submitting ? 'Registering…' : 'Register'}
+          </button>
         </div>
       </div>
     </div>

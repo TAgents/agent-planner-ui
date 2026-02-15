@@ -224,10 +224,21 @@ export default function WorkflowsV2() {
                 <>
                   {runsLoading && <div className="text-center py-10 text-gray-400">Loading runs…</div>}
                   {!runsLoading && filteredRuns.length === 0 && (
-                    <div className="text-center py-10 text-gray-400">
-                      <div className="text-3xl mb-2">⚡</div>
-                      <div>No workflow runs yet</div>
-                      <div className="text-sm mt-1">Runs will appear here when workflows execute</div>
+                    <div className="text-center py-16 px-4">
+                      <div className="text-5xl mb-4">⚡</div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Automate agent workflows</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+                        Define multi-step workflows with approval gates. Agents propose, you approve, they execute.
+                      </p>
+                      <button
+                        className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                        onClick={() => setShowTrigger(true)}
+                      >
+                        ⚡ Trigger Workflow
+                      </button>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+                        💡 Tip: Workflows power the Hire-an-Agent approval flow
+                      </p>
                     </div>
                   )}
                   {filteredRuns.map(run => (
