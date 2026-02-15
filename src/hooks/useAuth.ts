@@ -18,7 +18,7 @@ const getAuthInfoFromStorage = (): AuthInfo | null => {
     return {
       isAuthenticated: true,
       userId: session.user?.id || null,
-      userName: session.user?.user_metadata?.name || session.user?.email || null,
+      userName: session.user?.name || session.user?.user_metadata?.name || session.user?.email || null,
       userEmail: session.user?.email || null,
       accessToken: session.access_token || session.accessToken || null,
     };

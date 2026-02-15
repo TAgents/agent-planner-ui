@@ -13,7 +13,7 @@ tools:
     command: npx
     args: ["-y", "agent-planner-mcp"]
     env:
-      API_URL: https://api.agentplanner.io
+      API_URL: https://agentplanner.io/api
       USER_API_TOKEN: your_api_token_here`;
 
   const claudeDesktopConfig = `{
@@ -22,7 +22,7 @@ tools:
       "command": "npx",
       "args": ["-y", "agent-planner-mcp"],
       "env": {
-        "API_URL": "https://api.agentplanner.io",
+        "API_URL": "https://agentplanner.io/api",
         "USER_API_TOKEN": "your_api_token_here"
       }
     }
@@ -30,7 +30,7 @@ tools:
 }`;
 
   const claudeCodeConfig = `claude mcp add agent-planner npx agent-planner-mcp \\
-  -e API_URL=https://api.agentplanner.io \\
+  -e API_URL=https://agentplanner.io/api \\
   -e USER_API_TOKEN=your_api_token_here`;
 
   const steps = [

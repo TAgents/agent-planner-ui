@@ -69,7 +69,7 @@ export const NotificationBell: React.FC = () => {
       {/* Dropdown */}
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+          className="absolute left-0 bottom-full mb-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
           role="menu"
         >
           {/* Header */}

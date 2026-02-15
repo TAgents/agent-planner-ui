@@ -84,7 +84,7 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'https://api.agentplanner.io'}/plans/${plan.id}/clone`,
+        `${process.env.REACT_APP_API_URL || '/api'}/plans/${plan.id}/clone`,
         {
           method: 'POST',
           headers: {
