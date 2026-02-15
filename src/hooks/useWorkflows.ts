@@ -48,7 +48,7 @@ async function fetchApi(path: string) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/workflows${path}`, { headers });
+  const res = await fetch(`${API_BASE}/workflows${path}`, { headers });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
   return res.json();
 }

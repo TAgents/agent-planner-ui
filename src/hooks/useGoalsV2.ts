@@ -54,7 +54,7 @@ async function fetchApi(path: string, options?: any) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/goals${path}`, {
+  const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/goals/v2${path}`, {
     headers,
     ...options,
   });
