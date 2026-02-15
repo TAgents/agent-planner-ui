@@ -607,7 +607,7 @@ const PlansListSimplified: React.FC = () => {
   const { plans, isLoading, refetch } = usePlans(1, 100);
   const { subscribe } = useWebSocket();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'completed' | 'archived'>('active');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'completed' | 'archived'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState('updated_desc'); // Default to recently active
 

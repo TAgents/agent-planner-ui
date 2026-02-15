@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Edit3, ShieldCheck, Github, User, Mail, Building, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Save, Edit3, ShieldCheck, Github, User, Mail, Building, Calendar, Lock } from 'lucide-react';
 import { SettingsNav } from '../../components/settings/SettingsLayout';
 import CapabilityTags from '../../components/settings/CapabilityTags';
 import api from '../../services/api';
@@ -25,6 +25,11 @@ const ProfileSettings: React.FC = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -108,6 +113,38 @@ const ProfileSettings: React.FC = () => {
     }
   };
 
+  const handleChangePassword = useCallback(async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('Please fill in all password fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters');
+      return;
+    }
+    setPasswordLoading(true);
+    setError(null);
+    try {
+      await api.auth.changePassword(currentPassword, newPassword);
+      setSuccess('Password changed successfully');
+      setShowChangePassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  }, [currentPassword, newPassword, confirmPassword]);
+
+  const isChangePasswordEnabled = currentPassword.length > 0 && newPassword.length >= 8 && confirmPassword.length > 0 && newPassword === confirmPassword;
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -124,7 +161,7 @@ const ProfileSettings: React.FC = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage your account settings and preferences
+            Manage your API tokens and integrations
           </p>
         </div>
 
@@ -318,13 +355,83 @@ const ProfileSettings: React.FC = () => {
                       </p>
                     </div>
                     <button 
-                      disabled
-                      title="Coming soon"
-                      className="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-not-allowed opacity-60"
+                      onClick={() => setShowChangePassword(!showChangePassword)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       Change Password
                     </button>
                   </div>
+
+                  {showChangePassword && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          <Lock className="w-4 h-4" />
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter current password"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          <Lock className="w-4 h-4" />
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter new password (min 8 characters)"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          <Lock className="w-4 h-4" />
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            setShowChangePassword(false);
+                            setCurrentPassword('');
+                            setNewPassword('');
+                            setConfirmPassword('');
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleChangePassword}
+                          disabled={!isChangePasswordEnabled || passwordLoading}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {passwordLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Changing...
+                            </>
+                          ) : (
+                            'Update Password'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {userData?.github_id && (
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
