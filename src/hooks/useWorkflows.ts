@@ -37,7 +37,14 @@ export interface WorkflowEvent {
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 async function fetchApi(path: string) {
-  const token = localStorage.getItem('token');
+  const sessionStr = localStorage.getItem('auth_session');
+  let token: string | null = null;
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      token = session.access_token || session.accessToken || session;
+    } catch { token = sessionStr; }
+  }
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -63,14 +70,14 @@ export function useWorkflowRuns(filters?: { status?: string; limit?: number; off
   return useQuery<WorkflowRun[]>(['workflow-runs', filters], async () => {
     const data = await fetchApi(`/runs${qs ? `?${qs}` : ''}`);
     return data.rows || data || [];
-  }, { refetchInterval: 10000 });
+  }, { refetchInterval: 10000, refetchIntervalInBackground: false });
 }
 
 export function useWorkflowRun(runId: string | null) {
   return useQuery<WorkflowRun>(['workflow-run', runId], async () => {
     if (!runId) throw new Error('No run ID');
     return fetchApi(`/runs/${runId}`);
-  }, { enabled: !!runId, refetchInterval: 5000 });
+  }, { enabled: !!runId, refetchInterval: 5000, refetchIntervalInBackground: false });
 }
 
 export function useWorkflowEvents(filters?: { limit?: number; offset?: number }) {
@@ -82,5 +89,5 @@ export function useWorkflowEvents(filters?: { limit?: number; offset?: number })
   return useQuery<WorkflowEvent[]>('workflow-events', async () => {
     const data = await fetchApi(`/events${qs ? `?${qs}` : ''}`);
     return data.rows || data || [];
-  }, { refetchInterval: 15000 });
+  }, { refetchInterval: 15000, refetchIntervalInBackground: false });
 }

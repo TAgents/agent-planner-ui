@@ -201,7 +201,7 @@ const RecentPlansSection: React.FC<{ plans: RecentPlan[]; progressMap?: Record<s
           <FolderKanban className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
           <p className="text-gray-500 dark:text-gray-400 mb-3">No plans yet</p>
           <Link
-            to="/app/plans/ai-create"
+            to="/app/plans/create"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Sparkles className="w-4 h-4" />

@@ -25,7 +25,14 @@ export interface KnowledgeGraphData {
 const KNOWLEDGE_KEY = 'knowledge-v2';
 
 async function fetchApi(path: string, options?: any) {
-  const token = localStorage.getItem('token');
+  const sessionStr = localStorage.getItem('auth_session');
+  let token: string | null = null;
+  if (sessionStr) {
+    try {
+      const session = JSON.parse(sessionStr);
+      token = session.access_token || session.accessToken || session;
+    } catch { token = sessionStr; }
+  }
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -54,6 +61,7 @@ export function useKnowledgeItem(id: string | undefined) {
   );
 }
 
+// Legacy mutation-based search (kept for backward compat)
 export function useKnowledgeSearch() {
   return useMutation(
     (params: { query: string; limit?: number; scope?: string; scopeId?: string; entryType?: string; source?: string }) =>
@@ -61,6 +69,18 @@ export function useKnowledgeSearch() {
         results: d.results as KnowledgeEntry[],
         method: d.method as string,
       }))
+  );
+}
+
+// Query-based search with caching
+export function useKnowledgeSearchQuery(params: { query: string; limit?: number; scope?: string; entryType?: string } | null) {
+  return useQuery(
+    [KNOWLEDGE_KEY, 'search', params],
+    () => fetchApi('/search', { method: 'POST', body: JSON.stringify(params) }).then(d => ({
+      results: d.results as KnowledgeEntry[],
+      method: d.method as string,
+    })),
+    { enabled: !!params?.query?.trim(), staleTime: 30000 }
   );
 }
 
