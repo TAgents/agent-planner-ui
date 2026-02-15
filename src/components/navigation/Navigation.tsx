@@ -45,7 +45,7 @@ export const Navigation: React.FC = () => {
             {isAuthenticated ? (
               <>
                 {/* Main Navigation Links - New Plan, My Plans, Settings, Explore */}
-                <Link to="/app/plans/ai-create" className={navLinkClass('/app/plans/ai-create')}>
+                <Link to="/app/plans/create" className={navLinkClass('/app/plans/create')}>
                   New Plan
                 </Link>
 
