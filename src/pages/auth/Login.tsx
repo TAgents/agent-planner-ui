@@ -10,10 +10,12 @@ interface LocationState {
 }
 
 const Login: React.FC = () => {
+  // Initialize with empty values - never pre-fill with default/demo credentials
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  // Always start with password hidden for security
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
