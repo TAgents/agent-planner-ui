@@ -14,10 +14,13 @@ export const HeroSection: React.FC = () => {
       <div className="container mx-auto px-4 max-w-5xl relative">
         <div className="text-center">
           {/* OpenClaw Badge */}
-          <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-sm font-medium mb-6 gap-2">
+          <Link
+            to="/app/settings"
+            className="inline-flex items-center px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-sm font-medium mb-6 gap-2 hover:bg-purple-200 dark:hover:bg-purple-900/70 transition-colors cursor-pointer"
+          >
             <Bot className="w-4 h-4" />
-            Connect Your AI Agent
-          </div>
+            Connect Your AI Agent →
+          </Link>
 
           {/* Headline */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
@@ -43,13 +46,13 @@ export const HeroSection: React.FC = () => {
               <span>Start Planning</span>
             </Link>
             <a
-              href="https://api.agentplanner.io/api-docs/"
+              href="/api/api-docs/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold text-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
             >
               <Terminal className="w-5 h-5" />
-              <span>Setup Guide</span>
+              <span>API Reference</span>
             </a>
           </div>
 

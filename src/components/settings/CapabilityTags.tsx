@@ -132,6 +132,7 @@ const CapabilityTags: React.FC = () => {
             <button
               onClick={() => removeTag(tag)}
               className="hover:text-blue-900 dark:hover:text-blue-100"
+              aria-label={`Remove ${tag}`}
             >
               <X className="w-3 h-3" />
             </button>

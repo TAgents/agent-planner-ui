@@ -286,13 +286,13 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
-            {/* Goals - only for authenticated users */}
+            {/* Goals */}
             {isAuthenticated && (
               <Link
-                to="/app/goals"
+                to="/app/goals-v2"
                 onClick={handleNavClick}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/goals')
+                  isActive('/app/goals-v2') || isActive('/app/goals')
                     ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                 }`}
@@ -302,6 +302,21 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             )}
 
+            {/* Knowledge */}
+            {isAuthenticated && (
+              <Link
+                to="/app/knowledge-v2"
+                onClick={handleNavClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive('/app/knowledge-v2')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                <span className="text-sm">Knowledge</span>
+              </Link>
+            )}
 
             {/* Agent Activity - only for authenticated users */}
             {isAuthenticated && (

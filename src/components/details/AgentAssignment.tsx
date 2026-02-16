@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use the unified assignment dropdown in UnifiedNodeDetails instead.
+ * This component is kept for backward compatibility but should not be used in new code.
+ * Agent assignment is now part of the UnifiedAssignmentSelector component.
+ */
 import React, { useState, useEffect } from 'react';
 import { Bot, X, ChevronDown, Loader2, Tag } from 'lucide-react';
 import api from '../../services/api';

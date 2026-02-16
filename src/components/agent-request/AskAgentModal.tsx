@@ -21,7 +21,6 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
 }) => {
   const [requestType, setRequestType] = useState<RequestType>('custom');
   const [prompt, setPrompt] = useState('');
-  const [priority, setPriority] = useState<'normal' | 'urgent'>('normal');
   const [error, setError] = useState<string | null>(null);
 
   const createRequest = useCreateAgentRequest(planId);
@@ -41,13 +40,11 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
         data: {
           request_type: requestType,
           prompt: prompt.trim() || undefined,
-          priority,
         },
       });
       onClose();
       setPrompt('');
       setRequestType('custom');
-      setPriority('normal');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create request';
       setError(message);
@@ -132,37 +129,6 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
               }
               className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
             />
-          </div>
-
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Priority
-            </label>
-            <div className="flex gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="priority"
-                  value="normal"
-                  checked={priority === 'normal'}
-                  onChange={() => setPriority('normal')}
-                  className="text-indigo-600 focus:ring-indigo-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Normal</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="priority"
-                  value="urgent"
-                  checked={priority === 'urgent'}
-                  onChange={() => setPriority('urgent')}
-                  className="text-indigo-600 focus:ring-indigo-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Urgent</span>
-              </label>
-            </div>
           </div>
 
           {/* Error */}

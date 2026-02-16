@@ -155,12 +155,15 @@ export const authService = {
         });
       }
 
-      // Store the session in localStorage
+      // Store the session in localStorage (include user data for useAuth)
       if (response.session) {
         if (process.env.NODE_ENV === 'development') {
           console.log('Storing session in localStorage');
         }
-        localStorage.setItem('auth_session', JSON.stringify(response.session));
+        localStorage.setItem('auth_session', JSON.stringify({
+          ...response.session,
+          user: response.user,
+        }));
       } else if (process.env.NODE_ENV === 'development') {
         console.warn('No session in response');
       }
@@ -191,12 +194,15 @@ export const authService = {
         data: { email, password, name }
       });
 
-      // Store the session if registration is successful
+      // Store the session if registration is successful (include user data for useAuth)
       if (response.session) {
         if (process.env.NODE_ENV === 'development') {
           console.log('Registration successful, storing session');
         }
-        localStorage.setItem('auth_session', JSON.stringify(response.session));
+        localStorage.setItem('auth_session', JSON.stringify({
+          ...response.session,
+          user: response.user,
+        }));
       }
 
       return {

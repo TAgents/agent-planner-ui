@@ -199,14 +199,25 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
 
       {/* Assignee - TODO: Add when assignment feature is implemented */}
 
-      {/* MCP Badge - Show if this node has MCP-related metadata */}
-      {node.metadata && (node.metadata as any).isMCP && (
+      {/* Agent Indicator */}
+      {node.assigned_agent_id && (
         <span
-          className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 flex-shrink-0"
-          title="AI Agent via Model Context Protocol"
+          className="flex items-center gap-0.5 flex-shrink-0 text-sm"
+          title={
+            node.metadata && (node.metadata as any).agentStatus === 'working'
+              ? 'Agent actively working'
+              : node.metadata && (node.metadata as any).agentStatus === 'completed'
+              ? 'Agent completed work'
+              : 'Agent assigned'
+          }
         >
-          <span>🤖</span>
-          <span className="hidden md:inline">MCP</span>
+          {node.metadata && (node.metadata as any).agentStatus === 'working' ? (
+            <span className="text-amber-500">⚡</span>
+          ) : node.metadata && (node.metadata as any).agentStatus === 'completed' ? (
+            <span className="text-green-500">✅</span>
+          ) : (
+            <span>🤖</span>
+          )}
         </span>
       )}
 

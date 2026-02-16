@@ -11,14 +11,14 @@ const PublicLayout: React.FC = () => {
   // Show full sidebar with plans for logged-in users
   // Show simplified sidebar (no plans, with sign in) for logged-out users
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <AppSidebar 
         variant={isAuthenticated ? 'full' : 'public'} 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <button
@@ -44,7 +44,7 @@ const PublicLayout: React.FC = () => {
           <div className="w-10" />
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-h-0">
           <Outlet />
         </main>
       </div>

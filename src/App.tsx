@@ -22,12 +22,13 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
-import AICreatePlan from './pages/plans/AICreatePlan';
-import CreatePlanSelector from './pages/plans/CreatePlanSelector';
 import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
+import GoalsV2 from './pages/GoalsV2';
+import KnowledgeV2 from './pages/KnowledgeV2';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -82,13 +83,14 @@ const App: React.FC = () => {
                   <Route index element={<Dashboard />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="plans" element={<PlansList />} />
-                  <Route path="plans/create" element={<CreatePlanSelector />} />
-                  <Route path="plans/new" element={<CreatePlan />} />
-                  <Route path="plans/ai-create" element={<AICreatePlan />} />
+                  <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanVisualization />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<Goals />} />
                   <Route path="goals/:goalId" element={<GoalDetail />} />
+                  <Route path="goals-v2" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
+                  <Route path="goals-v2/:goalId" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
+                  <Route path="knowledge-v2" element={<ErrorBoundary><KnowledgeV2 /></ErrorBoundary>} />
                   <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />

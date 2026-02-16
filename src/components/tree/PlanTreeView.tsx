@@ -486,7 +486,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
             <div className="font-semibold text-gray-600 dark:text-gray-400">
               {stats.notStarted}
             </div>
-            <div className="text-gray-500 dark:text-gray-400 text-[10px]">Pending</div>
+            <div className="text-gray-500 dark:text-gray-400 text-[10px]">Not Started</div>
           </div>
           <div className="text-center p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
             <div className="font-semibold text-red-600 dark:text-red-400">
