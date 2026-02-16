@@ -196,9 +196,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.log('[WebSocket] Connection closed:', event.code, event.reason);
         stopPingInterval();
 
-        // Don't reconnect if token is expired/invalid (code 4001) - user needs to refresh/re-login
-        if (event.code === 4001) {
-          console.log('[WebSocket] Token expired - not reconnecting. Refresh the page to reconnect.');
+        // Don't reconnect on authentication/authorization failures
+        // 4001 = token expired, 4003 = forbidden, 1008 = policy violation
+        // Also check close reason for auth-related HTTP errors (401/403)
+        const isAuthError = 
+          event.code === 4001 || 
+          event.code === 4003 || 
+          event.code === 1008 ||
+          (event.reason && /\b(401|403|unauthorized|forbidden|authentication|auth)\b/i.test(event.reason));
+
+        if (isAuthError) {
+          console.log('[WebSocket] Authentication/authorization error - not reconnecting. User needs to re-login.');
+          shouldReconnectRef.current = false;
           setStatus(ConnectionStatus.DISCONNECTED);
           return;
         }
