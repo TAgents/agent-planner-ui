@@ -72,7 +72,7 @@ const EmptyStateGuide: React.FC<EmptyStateGuideProps> = ({ onCreateFirstNode, pl
               <div>
                 <h4 className="text-sm font-medium text-gray-900 dark:text-white">Set Dependencies</h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                  Connect related tasks to show workflow
+                  Connect related tasks to show dependencies
                 </p>
               </div>
             </div>
