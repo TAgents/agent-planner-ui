@@ -56,8 +56,15 @@ async function fetchApi(path: string) {
 export function useWorkflowTemplates() {
   return useQuery<WorkflowTemplate[]>('workflow-templates', async () => {
     const data = await fetchApi('/templates');
-    const wf = data.workflows;
-    return Array.isArray(wf) ? wf : wf?.rows || [];
+    // Hatchet returns { workflows: { rows: [...] } } or { workflows: [...] }
+    const raw = data.workflows;
+    const list = Array.isArray(raw) ? raw : (raw?.rows || []);
+    return list.map((w: any) => ({
+      id: w.id || w.metadata?.id || '',
+      name: w.name,
+      description: w.description,
+      version: w.version,
+    }));
   });
 }
 
@@ -70,14 +77,35 @@ export function useWorkflowRuns(filters?: { status?: string; limit?: number; off
 
   return useQuery<WorkflowRun[]>(['workflow-runs', filters], async () => {
     const data = await fetchApi(`/runs${qs ? `?${qs}` : ''}`);
-    return data.rows || data || [];
+    const rows = data.rows || data || [];
+    // Hatchet rows have metadata.id instead of top-level id
+    return rows.map((r: any) => ({
+      id: r.id || r.metadata?.id || r.workflowRunExternalId || r.taskExternalId || '',
+      workflowName: r.workflowName || '',
+      status: (r.status || 'pending').toLowerCase(),
+      startedAt: r.startedAt || r.createdAt || r.metadata?.createdAt || '',
+      finishedAt: r.finishedAt || r.metadata?.updatedAt,
+      steps: r.steps,
+      triggeredBy: r.triggeredBy,
+      metadata: r.metadata,
+    }));
   }, { refetchInterval: 10000, refetchIntervalInBackground: false });
 }
 
 export function useWorkflowRun(runId: string | null) {
   return useQuery<WorkflowRun>(['workflow-run', runId], async () => {
     if (!runId) throw new Error('No run ID');
-    return fetchApi(`/runs/${runId}`);
+    const r: any = await fetchApi(`/runs/${runId}`);
+    return {
+      id: r.id || r.metadata?.id || r.workflowRunExternalId || '',
+      workflowName: r.workflowName || '',
+      status: (r.status || 'pending').toLowerCase(),
+      startedAt: r.startedAt || r.createdAt || r.metadata?.createdAt || '',
+      finishedAt: r.finishedAt || r.metadata?.updatedAt,
+      steps: r.steps,
+      triggeredBy: r.triggeredBy,
+      metadata: r.metadata,
+    };
   }, { enabled: !!runId, refetchInterval: 5000, refetchIntervalInBackground: false });
 }
 
@@ -89,6 +117,12 @@ export function useWorkflowEvents(filters?: { limit?: number; offset?: number })
 
   return useQuery<WorkflowEvent[]>('workflow-events', async () => {
     const data = await fetchApi(`/events${qs ? `?${qs}` : ''}`);
-    return data.rows || data || [];
+    const rows = data.rows || data || [];
+    return rows.map((e: any) => ({
+      id: e.id || e.metadata?.id || '',
+      key: e.key || '',
+      payload: e.payload,
+      createdAt: e.createdAt || e.metadata?.createdAt || '',
+    }));
   }, { refetchInterval: 15000, refetchIntervalInBackground: false });
 }

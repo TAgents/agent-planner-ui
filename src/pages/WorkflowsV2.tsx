@@ -9,6 +9,7 @@ import {
 } from '../hooks/useWorkflows';
 
 const STATUS_COLORS: Record<string, { bg: string; fg: string; icon: string }> = {
+  queued: { bg: 'bg-gray-100 dark:bg-slate-700', fg: 'text-gray-600 dark:text-gray-400', icon: '○' },
   pending: { bg: 'bg-gray-100 dark:bg-slate-700', fg: 'text-gray-600 dark:text-gray-400', icon: '○' },
   running: { bg: 'bg-blue-100 dark:bg-blue-900/30', fg: 'text-blue-600 dark:text-blue-400', icon: '⏳' },
   succeeded: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', fg: 'text-emerald-600 dark:text-emerald-400', icon: '✅' },
