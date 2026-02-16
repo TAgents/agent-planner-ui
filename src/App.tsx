@@ -28,7 +28,6 @@ import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
 import GoalsV2 from './pages/GoalsV2';
 import KnowledgeV2 from './pages/KnowledgeV2';
-import WorkflowsV2 from './pages/WorkflowsV2';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
@@ -92,7 +91,6 @@ const App: React.FC = () => {
                   <Route path="goals-v2" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
                   <Route path="goals-v2/:goalId" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
                   <Route path="knowledge-v2" element={<ErrorBoundary><KnowledgeV2 /></ErrorBoundary>} />
-                  <Route path="workflows-v2" element={<ErrorBoundary><WorkflowsV2 /></ErrorBoundary>} />
                   <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />

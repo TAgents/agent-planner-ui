@@ -24,7 +24,7 @@ export interface GoalV2 {
 export interface GoalLink {
   id: string;
   goalId: string;
-  linkedType: 'plan' | 'task' | 'agent' | 'workflow';
+  linkedType: 'plan' | 'task' | 'agent';
   linkedId: string;
   createdAt: string;
 }
