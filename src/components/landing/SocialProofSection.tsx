@@ -1,70 +1,82 @@
-import React from 'react';
-import { FileText, Bot, CheckCircle, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { CodeBlock } from './CodeBlock';
 
 export const SocialProofSection: React.FC = () => {
-  const steps = [
-    {
-      icon: FileText,
-      emoji: '📝',
-      title: 'Describe',
-      description: 'Tell your agent what to build. Describe your project goals in natural language.',
-      color: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-    },
-    {
-      icon: Bot,
-      emoji: '🤖',
-      title: 'AI Plans',
-      description: 'Your agent breaks it into structured phases and tasks automatically.',
-      color: 'text-purple-600 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-900/20',
-    },
-    {
-      icon: CheckCircle,
-      emoji: '✅',
-      title: 'Execute',
-      description: 'Track progress, approve results, and let agents execute step by step.',
-      color: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-900/20',
-    },
+  const [configTab, setConfigTab] = useState<'claude-code' | 'claude-desktop' | 'openclaw'>('claude-code');
+
+  const claudeCodeConfig = `claude mcp add agent-planner npx agent-planner-mcp \\
+  -e API_URL=https://agentplanner.io/api \\
+  -e USER_API_TOKEN=your_api_token_here`;
+
+  const claudeDesktopConfig = `{
+  "mcpServers": {
+    "agent-planner": {
+      "command": "npx",
+      "args": ["-y", "agent-planner-mcp"],
+      "env": {
+        "API_URL": "https://agentplanner.io/api",
+        "USER_API_TOKEN": "your_api_token_here"
+      }
+    }
+  }
+}`;
+
+  const openclawConfig = `# openclaw config
+tools:
+  - name: agent-planner
+    type: mcp
+    command: npx
+    args: ["-y", "agent-planner-mcp"]
+    env:
+      API_URL: https://agentplanner.io/api
+      USER_API_TOKEN: your_api_token_here`;
+
+  const tabs = [
+    { key: 'claude-code' as const, label: 'Claude Code', lang: 'bash' },
+    { key: 'claude-desktop' as const, label: 'Claude Desktop', lang: 'json' },
+    { key: 'openclaw' as const, label: 'OpenClaw', lang: 'yaml' },
   ];
 
-  return (
-    <section className="py-12 md:py-16 bg-gray-50 dark:bg-gray-800 border-y border-gray-200 dark:border-gray-700">
-      <div className="container mx-auto px-4 max-w-5xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
-            How It Works
-          </h2>
-          <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            From idea to execution in three simple steps
-          </p>
-        </div>
+  const configs = { 'claude-code': claudeCodeConfig, 'claude-desktop': claudeDesktopConfig, openclaw: openclawConfig };
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {steps.map((step, index) => (
-            <div key={step.title} className="relative text-center">
-              {/* Arrow between steps (desktop only) */}
-              {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-12 -right-4 z-10">
-                  <ArrowRight className="w-6 h-6 text-gray-300 dark:text-gray-600" />
-                </div>
-              )}
-              
-              <div className={`w-16 h-16 ${step.bg} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
-                <span className="text-3xl">{step.emoji}</span>
-              </div>
-              <h3 className={`text-lg font-semibold ${step.color} mb-2`}>
-                {step.title}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                {step.description}
-              </p>
-            </div>
+  return (
+    <section className="py-10 md:py-14 bg-gray-50 dark:bg-gray-800/50 border-y border-gray-200 dark:border-gray-700/50">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+          Connect your agent
+        </h2>
+
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          1. <a href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Sign in</a> and generate an API token in{' '}
+          <a href="/app/settings" className="text-blue-600 dark:text-blue-400 hover:underline">Settings</a>.
+          <br />
+          2. Add the MCP server to your agent:
+        </p>
+
+        <div className="flex gap-1 mb-3">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setConfigTab(tab.key)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                configTab === tab.key
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
+
+        <CodeBlock
+          code={configs[configTab]}
+          language={tabs.find(t => t.key === configTab)!.lang}
+        />
+
+        <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
+          Then ask your agent: <code className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">"Create a plan for building a REST API"</code>
+        </p>
       </div>
     </section>
   );

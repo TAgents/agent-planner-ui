@@ -7,7 +7,10 @@ import {
   Minimize,
   HelpCircle,
   X,
-  Settings,
+  Check,
+  ChevronDown,
+  Lock,
+  Globe,
   GitBranch,
   List,
   MoreHorizontal,
@@ -23,7 +26,7 @@ import VisibilityToggle from '../components/plans/VisibilityToggle';
 import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
-import { PlanSettingsModal } from '../components/plan/PlanSettingsModal';
+
 import AgentStatusIndicator from '../components/agent/AgentStatusIndicator';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -133,6 +136,68 @@ const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
   );
 };
 
+// Plan Status Badge - inline dropdown for changing plan status
+const PlanStatusBadge: React.FC<{
+  status: PlanStatus;
+  isOwner: boolean;
+  onStatusChange: (status: PlanStatus) => void;
+}> = ({ status, isOwner, onStatusChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const statusConfig: Record<PlanStatus, { dot: string; bg: string; text: string; label: string }> = {
+    draft: { dot: 'bg-gray-400', bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-300', label: 'Draft' },
+    active: { dot: 'bg-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-300', label: 'Active' },
+    completed: { dot: 'bg-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-300', label: 'Completed' },
+    archived: { dot: 'bg-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-300', label: 'Archived' },
+  };
+
+  const config = statusConfig[status] || statusConfig.draft;
+  const statuses: PlanStatus[] = ['draft', 'active', 'completed', 'archived'];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => isOwner && setIsOpen(!isOpen)}
+        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${config.bg} ${config.text} ${
+          isOwner ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
+        }`}
+        title={isOwner ? 'Change plan status' : `Plan status: ${config.label}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+        {config.label}
+        {isOwner && <ChevronDown className="w-3 h-3 opacity-60" />}
+      </button>
+
+      {isOpen && isOwner && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[120px]">
+            {statuses.map((s) => {
+              const sc = statusConfig[s];
+              return (
+                <button
+                  key={s}
+                  onClick={() => {
+                    onStatusChange(s);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                    s === status ? 'font-medium' : ''
+                  } ${sc.text}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                  {sc.label}
+                  {s === status && <Check className="w-3 h-3 ml-auto" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const PlanVisualizationEnhanced: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const { state: uiState, toggleSidebar, openNodeDetails, closeNodeDetails } = useUI();
@@ -144,6 +209,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
     nodes: planNodes,
     isLoading: isNodesLoading,
     createNode,
+    updateNode,
     updateNodeStatus,
     moveNode,
     refetch: refetchNodes,
@@ -306,9 +372,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
   const [showDecisionPanel, setShowDecisionPanel] = useState(false);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   
-  // Settings modal state
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-
   // Overflow menu state
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   
@@ -460,7 +523,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
       key: 'Escape', 
       action: () => {
         if (showHelp) setShowHelp(false);
-        else if (showSettingsModal) setShowSettingsModal(false);
         else if (showDecisionPanel) setShowDecisionPanel(false);
         else if (selectedDecision) setSelectedDecision(null);
         else if (uiState.nodeDetails.isOpen) closeNodeDetails();
@@ -689,30 +751,31 @@ const PlanVisualizationEnhanced: React.FC = () => {
 
           {/* Right section — primary actions + overflow */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Visibility Toggle */}
-            <div className="hidden sm:block">
-              <VisibilityToggle
-                planId={planId || ''}
-                currentVisibility={plan.visibility || 'private'}
-                isOwner={isOwner}
-                onVisibilityChange={handleVisibilityChange}
-              />
-            </div>
+            {/* Plan Status Badge */}
+            <PlanStatusBadge
+              status={(plan.status as PlanStatus) || 'draft'}
+              isOwner={isOwner}
+              onStatusChange={async (status) => {
+                try {
+                  await planService.updatePlan(planId || '', { status });
+                  refetchPlan();
+                } catch (err: any) {
+                  console.error('Failed to update plan status:', err);
+                  const statusCode = err?.response?.status || err?.status;
+                  if (statusCode === 403) {
+                    alert('Only the plan owner can change this plan\'s status.');
+                  } else {
+                    alert('Failed to update plan status. Please try again.');
+                  }
+                }
+              }}
+            />
 
-            {/* GitHub Repo Badge */}
-            <div className="hidden md:block">
-              <GitHubRepoBadge
-                planId={planId || ''}
-                owner={plan.github_repo_owner}
-                name={plan.github_repo_name}
-                isOwner={isOwner}
-                onLinked={() => {
-                  const userId = getUserId();
-                  queryClient.invalidateQueries(['plan', userId, planId]);
-                }}
-                variant="compact"
-              />
-            </div>
+            {/* Decision Badge */}
+            <DecisionBadge
+              planId={planId || ''}
+              onClick={() => setShowDecisionPanel(true)}
+            />
 
             <div data-tour="share-button">
               <ShareButton
@@ -721,12 +784,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 variant="compact"
               />
             </div>
-
-            {/* Decision Badge */}
-            <DecisionBadge
-              planId={planId || ''}
-              onClick={() => setShowDecisionPanel(true)}
-            />
 
             {/* Overflow menu for secondary actions */}
             <div className="relative hidden sm:block">
@@ -746,14 +803,31 @@ const PlanVisualizationEnhanced: React.FC = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -4, scale: 0.95 }}
                       transition={{ duration: 0.12 }}
-                      className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+                      className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
                     >
-                      <button
-                        onClick={() => { setShowSettingsModal(true); setShowOverflowMenu(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      >
-                        <Settings className="w-3.5 h-3.5" /> Settings
-                      </button>
+                      {/* Visibility toggle as menu item */}
+                      <VisibilityToggle
+                        planId={planId || ''}
+                        currentVisibility={plan.visibility || 'private'}
+                        isOwner={isOwner}
+                        onVisibilityChange={handleVisibilityChange}
+                        variant="menuItem"
+                      />
+                      <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                      {/* GitHub Repo Link */}
+                      <div className="px-1">
+                        <GitHubRepoBadge
+                          planId={planId || ''}
+                          owner={plan.github_repo_owner}
+                          name={plan.github_repo_name}
+                          isOwner={isOwner}
+                          onLinked={() => {
+                            const userId = getUserId();
+                            queryClient.invalidateQueries(['plan', userId, planId]);
+                          }}
+                          variant="compact"
+                        />
+                      </div>
                       <button
                         onClick={() => { toggleFullScreen(); setShowOverflowMenu(false); }}
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
@@ -924,6 +998,10 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}
                 allNodes={planNodes}
+                onUpdateNode={async (nodeId, data) => {
+                  await updateNode.mutateAsync({ nodeId, data });
+                  refetchSelectedNode();
+                }}
               />
             </motion.aside>
           )}
@@ -951,6 +1029,10 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}
                 allNodes={planNodes}
+                onUpdateNode={async (nodeId, data) => {
+                  await updateNode.mutateAsync({ nodeId, data });
+                  refetchSelectedNode();
+                }}
               />
             </div>
           </div>
@@ -988,28 +1070,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
         />
       )}
 
-      {/* Plan Settings Modal */}
-      <PlanSettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        planId={planId || ''}
-        planTitle={plan.title}
-        planStatus={plan.status}
-        onUpdateStatus={async (status) => {
-          try {
-            await planService.updatePlan(planId || '', { status: status as PlanStatus });
-            refetchPlan();
-          } catch (err: any) {
-            console.error('Failed to update plan status:', err);
-            const statusCode = err?.response?.status || err?.status;
-            if (statusCode === 403) {
-              alert('You don\'t have permission to change this plan\'s status. Only the plan owner can do this.');
-            } else {
-              alert('Failed to update plan status. Please try again.');
-            }
-          }
-        }}
-      />
 
     </div>
   );

@@ -16,18 +16,30 @@ import {
   Loader2,
   AlertCircle,
   X,
+  GitBranch,
+  Brain,
+  Circle,
+  CheckCircle2,
+  Clock,
+  Ban,
 } from 'lucide-react';
 import { useGoal, SuccessMetric } from '../hooks/useGoals';
 import { Goal, LinkedPlan } from '../services/api';
 import StatusBadge from '../components/goals/shared/StatusBadge';
-import { 
-  calculateOverallProgress, 
-  calculateMetricProgress, 
-  isMetricComplete 
+import {
+  calculateOverallProgress,
+  calculateMetricProgress,
+  isMetricComplete
 } from '../utils/goalHelpers';
+import {
+  useGoalPath,
+  useGoalProgress,
+  useGoalKnowledgeGaps,
+  GoalPathNode,
+} from '../hooks/useGoalsV2';
 
 // Tab types
-type TabType = 'overview' | 'plans' | 'knowledge' | 'activity';
+type TabType = 'overview' | 'plans' | 'path' | 'knowledge' | 'activity';
 
 // Notification state type
 interface Notification {
@@ -266,6 +278,173 @@ const ActivityTab: React.FC<{ goalId: string }> = ({ goalId }) => {
   );
 };
 
+// Status icon helper
+const StatusIcon: React.FC<{ status: string; className?: string }> = ({ status, className = 'w-4 h-4' }) => {
+  switch (status) {
+    case 'completed': return <CheckCircle2 className={`${className} text-green-500`} />;
+    case 'in_progress': return <Clock className={`${className} text-blue-500`} />;
+    case 'blocked': return <Ban className={`${className} text-red-500`} />;
+    default: return <Circle className={`${className} text-gray-400`} />;
+  }
+};
+
+// Dependency Path Tab Content
+const DependencyPathTab: React.FC<{ goalId: string }> = ({ goalId }) => {
+  const { data: pathData, isLoading: pathLoading } = useGoalPath(goalId);
+  const { data: progressData } = useGoalProgress(goalId);
+  const { data: gapsData } = useGoalKnowledgeGaps(goalId);
+
+  if (pathLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  const nodes = pathData?.nodes || [];
+  const stats = pathData?.stats;
+  const progress = progressData?.progress ?? 0;
+  const directProgress = progressData?.direct_progress ?? 0;
+  const gaps = gapsData?.gaps || [];
+  const coverage = gapsData?.coverage;
+
+  if (nodes.length === 0) {
+    return (
+      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="text-center py-8">
+          <GitBranch className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <p className="text-gray-500 dark:text-gray-400 mb-2">No dependency path yet</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            Link tasks to this goal using "achieves" edges to build a dependency path.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  // Group by depth
+  const byDepth = new Map<number, GoalPathNode[]>();
+  for (const node of nodes) {
+    const list = byDepth.get(node.depth) || [];
+    list.push(node);
+    byDepth.set(node.depth, list);
+  }
+  const depths = Array.from(byDepth.keys()).sort((a, b) => a - b);
+
+  return (
+    <div className="space-y-4">
+      {/* Progress from graph */}
+      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <GitBranch className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            Graph Progress
+          </h3>
+          <span className="text-lg font-bold text-gray-900 dark:text-white">{progress}%</span>
+        </div>
+        <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+          {stats && (
+            <>
+              <span>{stats.completed} completed</span>
+              <span>{stats.in_progress} in progress</span>
+              <span>{stats.blocked} blocked</span>
+              <span>{stats.not_started} not started</span>
+            </>
+          )}
+        </div>
+        {directProgress !== progress && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Direct achievers: {directProgress}%
+          </p>
+        )}
+      </section>
+
+      {/* Knowledge coverage */}
+      {coverage && coverage.total > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              Knowledge Coverage
+            </h3>
+            <span className={`text-sm font-medium ${coverage.percentage >= 80 ? 'text-green-600' : coverage.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {coverage.percentage}%
+            </span>
+          </div>
+          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
+            <div
+              className={`h-full rounded-full transition-all ${coverage.percentage >= 80 ? 'bg-green-500' : coverage.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+              style={{ width: `${coverage.percentage}%` }}
+            />
+          </div>
+          {gaps.length > 0 && (
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {gaps.length} task{gaps.length !== 1 ? 's' : ''} missing knowledge coverage
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* Task tree by depth */}
+      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+          Task Path ({nodes.length} tasks)
+        </h3>
+        <div className="space-y-3">
+          {depths.map((depth) => {
+            const depthNodes = byDepth.get(depth)!;
+            const label = depth === 1 ? 'Direct achievers' : `Depth ${depth} (upstream)`;
+            return (
+              <div key={depth}>
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5 ml-1">
+                  {label}
+                </p>
+                <div className="space-y-1">
+                  {depthNodes.map((node) => {
+                    const hasGap = gaps.some(g => g.node_id === node.node_id);
+                    return (
+                      <div
+                        key={node.node_id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 text-sm"
+                      >
+                        <StatusIcon status={node.status} />
+                        <Link
+                          to={`/app/plans/${node.plan_id}`}
+                          className="flex-1 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate"
+                        >
+                          {node.title}
+                        </Link>
+                        <span className="text-[10px] text-gray-400 capitalize">{node.status.replace('_', ' ')}</span>
+                        {hasGap && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
+                            no knowledge
+                          </span>
+                        )}
+                        {node.dependency_type === 'achieves' && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
+                            achieves
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+};
+
 // Delete Confirmation Modal
 const DeleteModal: React.FC<{
   goalTitle: string;
@@ -352,7 +531,7 @@ const GoalDetail: React.FC = () => {
   // Set initial tab from URL
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
-    if (tab && ['overview', 'plans', 'knowledge', 'activity'].includes(tab)) {
+    if (tab && ['overview', 'plans', 'path', 'knowledge', 'activity'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -428,6 +607,7 @@ const GoalDetail: React.FC = () => {
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'overview', label: 'Overview', icon: <Target className="w-4 h-4" /> },
+    { id: 'path', label: 'Dependency Path', icon: <GitBranch className="w-4 h-4" /> },
     { id: 'plans', label: 'Linked Plans', icon: <FolderKanban className="w-4 h-4" />, count: goal.linked_plans?.length || 0 },
     { id: 'knowledge', label: 'Knowledge', icon: <BookOpen className="w-4 h-4" />, count: goal.knowledge_entries_count || 0 },
     { id: 'activity', label: 'Activity', icon: <Activity className="w-4 h-4" /> },
@@ -542,6 +722,7 @@ const GoalDetail: React.FC = () => {
         {/* Tab Content */}
         <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
           {activeTab === 'overview' && <OverviewTab goal={goal} />}
+          {activeTab === 'path' && <DependencyPathTab goalId={goalId!} />}
           {activeTab === 'plans' && <PlansTab goal={goal} onUnlink={handleUnlinkPlan} onError={handleError} />}
           {activeTab === 'knowledge' && <KnowledgeTab goalId={goalId!} />}
           {activeTab === 'activity' && <ActivityTab goalId={goalId!} />}

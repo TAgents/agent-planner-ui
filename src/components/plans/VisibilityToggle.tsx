@@ -8,6 +8,7 @@ interface VisibilityToggleProps {
   currentVisibility: PlanVisibility;
   isOwner: boolean;
   onVisibilityChange?: (newVisibility: PlanVisibility) => void;
+  variant?: 'button' | 'menuItem';
 }
 
 const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
@@ -15,6 +16,7 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
   currentVisibility,
   isOwner,
   onVisibilityChange,
+  variant = 'button',
 }) => {
   const [visibility, setVisibility] = useState<PlanVisibility>(currentVisibility);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -72,6 +74,48 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
       setIsUpdating(false);
     }
   };
+
+  if (variant === 'menuItem') {
+    return (
+      <button
+        onClick={async () => {
+          if (!isOwner || isUpdating) return;
+          const newVisibility: PlanVisibility = visibility === 'public' ? 'private' : 'public';
+          const previousVisibility = visibility;
+          setVisibility(newVisibility);
+          setIsUpdating(true);
+          try {
+            await planService.updatePlanVisibility(planId, newVisibility);
+            onVisibilityChange?.(newVisibility);
+          } catch (error) {
+            console.error('Failed to update visibility:', error);
+            setVisibility(previousVisibility);
+          } finally {
+            setIsUpdating(false);
+          }
+        }}
+        disabled={!isOwner || isUpdating}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50"
+      >
+        {isUpdating ? (
+          <Loader className="w-3.5 h-3.5 animate-spin" />
+        ) : visibility === 'public' ? (
+          <Globe className="w-3.5 h-3.5 text-blue-500" />
+        ) : (
+          <Lock className="w-3.5 h-3.5" />
+        )}
+        <span className="flex-1 text-left">{visibility === 'public' ? 'Public' : 'Private'}</span>
+        {/* Toggle switch visual */}
+        <div className={`relative w-7 h-4 rounded-full transition-colors ${
+          visibility === 'public' ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+        }`}>
+          <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
+            visibility === 'public' ? 'translate-x-3.5' : 'translate-x-0.5'
+          }`} />
+        </div>
+      </button>
+    );
+  }
 
   // If not owner, just show read-only badge
   if (!isOwner) {

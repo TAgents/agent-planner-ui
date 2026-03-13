@@ -2,9 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Outside @layer so it has higher specificity — prevents white flash and overscroll */
+html {
+  background-color: #ffffff;
+}
+html.dark {
+  background-color: #030712; /* gray-950 */
+}
+
 @layer base {
   body {
-    @apply text-gray-900 dark:text-white;
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-white;
   }
 
   /* For improved accessibility and focus states */

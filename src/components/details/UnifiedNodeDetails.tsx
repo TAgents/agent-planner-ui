@@ -38,7 +38,7 @@ import {
   Clock,
   GitBranch
 } from 'lucide-react';
-import { PlanNode, NodeStatus, User as UserType } from '../../types';
+import { PlanNode, NodeStatus, NodeType, TaskMode, User as UserType } from '../../types';
 import { formatDate } from '../../utils/planUtils';
 import { useNodeLogs } from '../../hooks/useNodeLogs';
 import { useCollaborators } from '../../hooks/useCollaborators';
@@ -68,6 +68,7 @@ interface UnifiedNodeDetailsProps {
   onClose?: () => void;
   /** All nodes in the plan, for dependency picker */
   allNodes?: PlanNode[];
+  onUpdateNode?: (nodeId: string, data: Partial<PlanNode>) => Promise<void>;
 }
 
 type ActivityType =
@@ -1041,6 +1042,186 @@ const CollapsibleSection: React.FC<{
   );
 };
 
+// Inline editable field component
+const InlineEditField: React.FC<{
+  value: string;
+  placeholder?: string;
+  onSave: (value: string) => Promise<void>;
+  multiline?: boolean;
+  className?: string;
+  editClassName?: string;
+  readClassName?: string;
+}> = ({ value, placeholder = 'Click to add...', onSave, multiline = false, className = '', editClassName = '', readClassName = '' }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value);
+  const [isSaving, setIsSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = async () => {
+    const trimmed = editValue.trim();
+    if (trimmed === value) {
+      setIsEditing(false);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSave(trimmed);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to save:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditValue(value);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      handleCancel();
+    }
+    if (!multiline && e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    }
+    if (multiline && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
+  if (isEditing) {
+    const sharedClasses = `w-full bg-white dark:bg-gray-800 border border-blue-400 dark:border-blue-500 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${editClassName}`;
+    return (
+      <div className={`relative ${className}`}>
+        {multiline ? (
+          <textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className={`${sharedClasses} min-h-[60px] resize-y text-xs text-gray-700 dark:text-gray-300`}
+            disabled={isSaving}
+          />
+        ) : (
+          <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className={`${sharedClasses} text-sm font-semibold text-gray-900 dark:text-white`}
+            disabled={isSaving}
+          />
+        )}
+        {isSaving && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const hasValue = value && value.trim().length > 0;
+  return (
+    <div
+      onClick={() => setIsEditing(true)}
+      className={`group cursor-pointer rounded-md transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${className} ${readClassName}`}
+      title="Click to edit"
+    >
+      {hasValue ? (
+        <div className="flex items-start gap-1">
+          <span className="flex-1">{value}</span>
+          <Edit3 className="w-3 h-3 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
+        </div>
+      ) : (
+        <span className="italic text-gray-400 dark:text-gray-500 flex items-center gap-1">
+          {placeholder}
+          <Edit3 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </span>
+      )}
+    </div>
+  );
+};
+
+// Inline select component for dropdowns (node type, task mode)
+const InlineSelect: React.FC<{
+  value: string;
+  options: { value: string; label: string }[];
+  onSave: (value: string) => Promise<void>;
+  className?: string;
+}> = ({ value, options, onSave, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSelect = async (newValue: string) => {
+    if (newValue === value) {
+      setIsOpen(false);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSave(newValue);
+    } catch (err) {
+      console.error('Failed to save:', err);
+    } finally {
+      setIsSaving(false);
+      setIsOpen(false);
+    }
+  };
+
+  const currentLabel = options.find(o => o.value === value)?.label || value;
+
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={isSaving}
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium capitalize bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+      >
+        {isSaving ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : currentLabel}
+        <ChevronDown className="w-2.5 h-2.5" />
+      </button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[100px]">
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleSelect(opt.value)}
+                className={`w-full text-left px-3 py-1 text-[11px] hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                  opt.value === value ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 // Main Component
 const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   node,
@@ -1056,6 +1237,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onUnassignUser,
   onClose,
   allNodes = [],
+  onUpdateNode,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions' | 'dependencies' | 'knowledge'>('overview');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
@@ -1342,14 +1524,9 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
     alert('Node ID copied to clipboard');
   };
 
-  const handleEdit = () => {
-    // Create a simple inline edit experience
-    const newTitle = prompt('Edit node title:', node.title);
-    if (newTitle && newTitle !== node.title) {
-      // TODO: Call API to update node title
-      console.log('Update title to:', newTitle);
-      alert('Edit functionality is not fully implemented yet. This would update the node title to: ' + newTitle);
-    }
+  const handleFieldUpdate = async (field: string, value: any) => {
+    if (!onUpdateNode) return;
+    await onUpdateNode(node.id, { [field]: value });
   };
 
   const handleDelete = () => {
@@ -1366,9 +1543,20 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
         <div className="flex items-center justify-between gap-1.5">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <NodeTypeIcon nodeType={node.node_type} />
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={node.title}>
-              {node.title}
-            </h2>
+            {onUpdateNode ? (
+              <InlineEditField
+                value={node.title}
+                placeholder="Untitled"
+                onSave={(val) => handleFieldUpdate('title', val)}
+                className="flex-1 min-w-0"
+                readClassName="text-sm font-semibold text-gray-900 dark:text-white truncate"
+                editClassName=""
+              />
+            ) : (
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={node.title}>
+                {node.title}
+              </h2>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
@@ -1387,7 +1575,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               </span>
             )}
             <ActionsMenu
-              onEdit={handleEdit}
               onCopyId={handleCopyId}
               onDelete={handleDelete}
             />
@@ -1537,7 +1724,16 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           <div className="flex-1 overflow-y-auto p-3 flex flex-col">
             <div className="flex-1 space-y-2">
               {/* Description */}
-              {node.description ? (
+              {onUpdateNode ? (
+                <InlineEditField
+                  value={node.description || ''}
+                  placeholder="Add a description..."
+                  onSave={(val) => handleFieldUpdate('description', val)}
+                  multiline
+                  className=""
+                  readClassName="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed"
+                />
+              ) : node.description ? (
                 <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
                   {node.description}
                 </p>
@@ -1546,15 +1742,73 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               )}
 
               {/* Context */}
-              {node.context && (
+              {onUpdateNode ? (
+                <div>
+                  <label className="block text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-0.5 uppercase tracking-wider">Context</label>
+                  <InlineEditField
+                    value={node.context || ''}
+                    placeholder="Add context..."
+                    onSave={(val) => handleFieldUpdate('context', val)}
+                    multiline
+                    className=""
+                    readClassName="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed"
+                  />
+                </div>
+              ) : node.context ? (
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed">
                   {node.context}
                 </p>
-              )}
+              ) : null}
 
-              {/* Compact metadata row */}
+              {/* Due date */}
+              {onUpdateNode ? (
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <Calendar className="w-3 h-3 text-gray-400" />
+                  <span className="text-gray-400 dark:text-gray-500">Due:</span>
+                  <input
+                    type="date"
+                    value={node.due_date ? new Date(node.due_date).toISOString().split('T')[0] : ''}
+                    onChange={async (e) => {
+                      const val = e.target.value ? new Date(e.target.value).toISOString() : null;
+                      await handleFieldUpdate('due_date', val);
+                    }}
+                    className="bg-transparent border-none text-[11px] text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 focus:outline-none"
+                  />
+                </div>
+              ) : node.due_date ? (
+                <div className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+                  <Calendar className="w-3 h-3" />
+                  <span>Due: {formatDate(node.due_date)}</span>
+                </div>
+              ) : null}
+
+              {/* Compact metadata row with inline dropdowns */}
               <div className="flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-500 pt-1">
-                <span className="capitalize">{node.node_type}</span>
+                {onUpdateNode ? (
+                  <InlineSelect
+                    value={node.node_type}
+                    options={[
+                      { value: 'phase', label: 'Phase' },
+                      { value: 'task', label: 'Task' },
+                      { value: 'milestone', label: 'Milestone' },
+                    ]}
+                    onSave={(val) => handleFieldUpdate('node_type', val)}
+                  />
+                ) : (
+                  <span className="capitalize">{node.node_type}</span>
+                )}
+                {onUpdateNode && node.node_type === 'task' ? (
+                  <InlineSelect
+                    value={node.task_mode || 'free'}
+                    options={[
+                      { value: 'free', label: 'Free' },
+                      { value: 'research', label: 'Research' },
+                      { value: 'plan', label: 'Plan' },
+                      { value: 'implement', label: 'Implement' },
+                    ]}
+                    onSave={(val) => handleFieldUpdate('task_mode', val)}
+                  />
+                ) : null}
                 {node.created_at && (
                   <span className="flex items-center gap-1">
                     <Clock className="w-2.5 h-2.5" />
@@ -1575,13 +1829,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               >
                 <Edit3 className="w-3 h-3" />
                 Add Log
-              </button>
-              <button
-                onClick={handleEdit}
-                className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-1"
-              >
-                <Edit3 className="w-3 h-3" />
-                Edit Details
               </button>
             </div>
           </div>

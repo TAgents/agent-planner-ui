@@ -130,3 +130,113 @@ export function useAddEvaluation() {
     { onSuccess: () => qc.invalidateQueries(GOALS_KEY) }
   );
 }
+
+// ─── Goal Dependency Hooks ────────────────────────────────────
+
+export interface GoalPathNode {
+  node_id: string;
+  dependency_type: string;
+  weight: number;
+  depth: number;
+  title: string;
+  status: string;
+  node_type: string;
+  task_mode: string;
+  plan_id: string;
+}
+
+export interface GoalPathResult {
+  nodes: GoalPathNode[];
+  stats: {
+    total: number;
+    completed: number;
+    blocked: number;
+    in_progress: number;
+    not_started: number;
+    completion_percentage: number;
+  };
+}
+
+export interface GoalProgressResult {
+  goal_id: string;
+  progress: number;
+  direct_progress: number;
+  stats: GoalPathResult['stats'];
+}
+
+export interface GoalAchiever {
+  dependency_id: string;
+  node_id: string;
+  title: string;
+  status: string;
+  node_type: string;
+  dependency_type: string;
+  weight: number;
+}
+
+export interface KnowledgeGapTask {
+  node_id: string;
+  title: string;
+  status: string;
+  depth: number;
+  fact_count: number;
+  has_knowledge: boolean;
+  top_facts: string[];
+}
+
+export interface KnowledgeGapsResult {
+  available: boolean;
+  tasks: KnowledgeGapTask[];
+  gaps: KnowledgeGapTask[];
+  coverage: { total: number; covered: number; percentage: number };
+}
+
+export function useGoalPath(goalId: string | undefined) {
+  return useQuery(
+    [GOALS_KEY, 'path', goalId],
+    () => fetchApi(`/${goalId}/path`) as Promise<GoalPathResult>,
+    { enabled: !!goalId }
+  );
+}
+
+export function useGoalProgress(goalId: string | undefined) {
+  return useQuery(
+    [GOALS_KEY, 'progress', goalId],
+    () => fetchApi(`/${goalId}/progress`) as Promise<GoalProgressResult>,
+    { enabled: !!goalId }
+  );
+}
+
+export function useGoalAchievers(goalId: string | undefined) {
+  return useQuery(
+    [GOALS_KEY, 'achievers', goalId],
+    () => fetchApi(`/${goalId}/achievers`).then(d => d as { tasks: GoalAchiever[]; count: number }),
+    { enabled: !!goalId }
+  );
+}
+
+export function useGoalKnowledgeGaps(goalId: string | undefined) {
+  return useQuery(
+    [GOALS_KEY, 'knowledge-gaps', goalId],
+    () => fetchApi(`/${goalId}/knowledge-gaps`) as Promise<KnowledgeGapsResult>,
+    { enabled: !!goalId }
+  );
+}
+
+export function useAddAchiever() {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ goalId, nodeId, weight }: { goalId: string; nodeId: string; weight?: number }) =>
+      fetchApi(`/${goalId}/achievers`, { method: 'POST', body: JSON.stringify({ source_node_id: nodeId, weight }) }),
+    { onSuccess: () => qc.invalidateQueries(GOALS_KEY) }
+  );
+}
+
+export function useRemoveAchiever() {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ goalId, depId }: { goalId: string; depId: string }) =>
+      fetchApi(`/${goalId}/achievers/${depId}`, { method: 'DELETE' }),
+    { onSuccess: () => qc.invalidateQueries(GOALS_KEY) }
+  );
+}

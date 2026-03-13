@@ -2078,4 +2078,11 @@ export const graphitiService = {
       data: { content, name },
     });
   },
+
+  deleteEpisode: async (episodeId: string) => {
+    return request<{ deleted: boolean }>({
+      method: 'DELETE',
+      url: `/knowledge/episodes/${episodeId}`,
+    });
+  },
 };

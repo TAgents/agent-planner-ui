@@ -128,3 +128,18 @@ export function useCreateGraphitiEpisode() {
     }
   );
 }
+
+/**
+ * Delete an episode by ID
+ */
+export function useDeleteEpisode() {
+  const qc = useQueryClient();
+  return useMutation(
+    (episodeId: string) => graphitiService.deleteEpisode(episodeId),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries([GRAPHITI_KEY, 'episodes']);
+      },
+    }
+  );
+}
