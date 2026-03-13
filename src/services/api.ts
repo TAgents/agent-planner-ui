@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission } from '../types';
+import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission, Dependency, DependencyType, CriticalPathResult, ImpactAnalysis } from '../types';
 
 // API Configuration - only needs the API URL
 const API_CONFIG = {
@@ -1909,6 +1909,173 @@ export const slackService = {
     return request<{ success: boolean }>({
       method: 'POST',
       url: '/integrations/slack/test',
+    });
+  },
+};
+
+// Dependency API
+export const dependencyService = {
+  listPlanDependencies: async (planId: string) => {
+    return request<{ edges: Dependency[]; count: number }>({
+      method: 'GET',
+      url: `/plans/${planId}/dependencies`,
+    });
+  },
+
+  listNodeDependencies: async (planId: string, nodeId: string, direction: 'upstream' | 'downstream' | 'both' = 'both') => {
+    return request<{ upstream?: Dependency[]; downstream?: Dependency[]; edges?: Dependency[]; count?: number }>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/dependencies`,
+      params: { direction },
+    });
+  },
+
+  createDependency: async (planId: string, data: {
+    source_node_id: string;
+    target_node_id: string;
+    dependency_type?: DependencyType;
+    weight?: number;
+    metadata?: Record<string, any>;
+  }) => {
+    return request<Dependency>({
+      method: 'POST',
+      url: `/plans/${planId}/dependencies`,
+      data,
+    });
+  },
+
+  deleteDependency: async (planId: string, depId: string) => {
+    return request<{ deleted: boolean; id: string }>({
+      method: 'DELETE',
+      url: `/plans/${planId}/dependencies/${depId}`,
+    });
+  },
+
+  getCriticalPath: async (planId: string) => {
+    return request<CriticalPathResult>({
+      method: 'GET',
+      url: `/plans/${planId}/critical-path`,
+    });
+  },
+
+  getImpact: async (planId: string, nodeId: string, scenario: 'delay' | 'block' | 'remove' = 'block') => {
+    return request<ImpactAnalysis>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/impact`,
+      params: { scenario },
+    });
+  },
+
+  getUpstream: async (planId: string, nodeId: string, maxDepth = 10) => {
+    return request<{ nodes: any[]; count: number }>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/upstream`,
+      params: { max_depth: maxDepth },
+    });
+  },
+
+  getDownstream: async (planId: string, nodeId: string, maxDepth = 10) => {
+    return request<{ nodes: any[]; count: number }>({
+      method: 'GET',
+      url: `/plans/${planId}/nodes/${nodeId}/downstream`,
+      params: { max_depth: maxDepth },
+    });
+  },
+};
+
+// Graphiti Knowledge Graph Types
+export interface GraphitiStatus {
+  available: boolean;
+  status: { status: string };
+}
+
+export interface GraphitiEpisode {
+  uuid: string;
+  name: string;
+  content: string;
+  source_description?: string;
+  created_at: string;
+  valid_at?: string;
+  entity_edges?: Array<{ relation_type: string; source_entity_name: string; target_entity_name: string }>;
+}
+
+export interface GraphitiFact {
+  uuid: string;
+  fact: string;
+  name?: string;
+  created_at: string;
+  valid_at?: string;
+  invalid_at?: string;
+  source_node_name?: string;
+  target_node_name?: string;
+  source_node_uuid?: string;
+  target_node_uuid?: string;
+  episodes?: string[];
+}
+
+export interface GraphitiEntity {
+  uuid: string;
+  name: string;
+  entity_type?: string;
+  summary?: string;
+  created_at: string;
+  group_id?: string;
+}
+
+export interface GraphitiContradiction {
+  uuid: string;
+  fact: string;
+  created_at: string;
+  valid_at?: string;
+  invalid_at?: string;
+}
+
+// Graphiti Knowledge Graph API
+export const graphitiService = {
+  getStatus: async () => {
+    return request<GraphitiStatus>({
+      method: 'GET',
+      url: '/knowledge/graphiti/status',
+    });
+  },
+
+  getEpisodes: async (maxEpisodes = 20) => {
+    return request<{ episodes: { episodes: GraphitiEpisode[] }; group_id: string }>({
+      method: 'GET',
+      url: '/knowledge/episodes',
+      params: { max_episodes: maxEpisodes },
+    });
+  },
+
+  searchFacts: async (query: string, maxResults = 10) => {
+    return request<{ results: { facts: GraphitiFact[] }; group_id: string; method: string }>({
+      method: 'POST',
+      url: '/knowledge/graph-search',
+      data: { query, max_results: maxResults },
+    });
+  },
+
+  searchEntities: async (query: string, maxResults = 20) => {
+    return request<{ entities: { nodes: GraphitiEntity[] }; group_id: string }>({
+      method: 'POST',
+      url: '/knowledge/entities',
+      data: { query, max_results: maxResults },
+    });
+  },
+
+  findContradictions: async (query: string, maxResults = 10) => {
+    return request<{ current: GraphitiContradiction[]; superseded: GraphitiContradiction[]; contradictions_found: boolean }>({
+      method: 'POST',
+      url: '/knowledge/contradictions',
+      data: { query, max_results: maxResults },
+    });
+  },
+
+  createEpisode: async (content: string, name: string) => {
+    return request<any>({
+      method: 'POST',
+      url: '/knowledge/episodes',
+      data: { content, name },
     });
   },
 };

@@ -7,6 +7,7 @@ import {
   ChevronUp,
   X,
   Plus,
+  Folder,
 } from 'lucide-react';
 import {
   DndContext,
@@ -19,7 +20,7 @@ import {
   closestCenter,
   DragOverEvent,
 } from '@dnd-kit/core';
-import { PlanNode, NodeStatus, NodeType } from '../../types';
+import { PlanNode, NodeStatus, NodeType, Dependency } from '../../types';
 import { TreeNodeItem } from './TreeNodeItem';
 import { InlineTaskInput } from './InlineTaskInput';
 
@@ -31,6 +32,8 @@ interface PlanTreeViewProps {
   onNodeCreate?: (parentId: string | null) => void;
   onNodeCreateInline?: (parentId: string, title: string, nodeType: NodeType) => Promise<void>;
   onNodeMove?: (nodeId: string, newParentId: string | null, newOrderIndex?: number) => void;
+  /** Plan dependencies for showing indicators on tree nodes */
+  dependencies?: Dependency[];
   className?: string;
 }
 
@@ -42,6 +45,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
   onNodeCreate,
   onNodeCreateInline,
   onNodeMove,
+  dependencies = [],
   className = ''
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
@@ -108,6 +112,19 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
 
     return Boolean(matchesSearch && matchesStatus && matchesType);
   }, [searchTerm, statusFilter, typeFilter]);
+
+  // Compute dependency counts per node (upstream = things blocking me, downstream = things I block)
+  const depCounts = useMemo(() => {
+    const upstream = new Map<string, number>();
+    const downstream = new Map<string, number>();
+    for (const dep of dependencies) {
+      // target_node_id has an upstream dependency (source blocks target)
+      upstream.set(dep.target_node_id, (upstream.get(dep.target_node_id) || 0) + 1);
+      // source_node_id has a downstream dependent
+      downstream.set(dep.source_node_id, (downstream.get(dep.source_node_id) || 0) + 1);
+    }
+    return { upstream, downstream };
+  }, [dependencies]);
 
   // Calculate statistics
   const stats = useMemo(() => ({
@@ -313,6 +330,8 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
           isDragging={isDragging}
           isDropTarget={isDropTarget}
           canDrag={!!onNodeMove}
+          upstreamCount={depCounts.upstream.get(node.id) || 0}
+          downstreamCount={depCounts.downstream.get(node.id) || 0}
         />
         {/* Inline task input - shown when adding to this node */}
         {isAddingHere && (
@@ -337,7 +356,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
         )}
       </div>
     );
-  }, [expandedNodes, selectedNodeId, getChildren, filterNode, handleToggleExpand, onNodeSelect, onNodeStatusChange, activeId, overId, canDrop, onNodeMove, addingToNodeId, onNodeCreateInline]);
+  }, [expandedNodes, selectedNodeId, getChildren, filterNode, handleToggleExpand, onNodeSelect, onNodeStatusChange, activeId, overId, canDrop, onNodeMove, addingToNodeId, onNodeCreateInline, depCounts]);
 
   // Get active node for drag overlay
   const activeNode = activeId ? nodes.find(n => n.id === activeId) : null;
@@ -350,62 +369,69 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className={`plan-tree-view flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
+      <div className={`plan-tree-view flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
         {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Plan Structure
-          </h3>
-          <div className="flex items-center gap-1">
+      <div className="flex-shrink-0 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-800">
+        {/* Top row: title + actions */}
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Plan Structure
+            </h3>
+            <span className="text-[10px] tabular-nums text-gray-400 dark:text-gray-500">
+              {stats.total} nodes
+            </span>
+          </div>
+          <div className="flex items-center gap-0.5">
             <button
               onClick={handleExpandAll}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
               title="Expand All"
             >
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
             </button>
             <button
               onClick={handleCollapseAll}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
               title="Collapse All"
             >
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1 rounded-md transition-colors ${
                 showFilters || statusFilter !== 'all' || typeFilter !== 'all'
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
               }`}
               title="Filters"
             >
-              <Filter className="w-4 h-4" />
+              <Filter className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="relative mb-2.5">
+          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
             ref={searchInputRef}
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search nodes... (⌘F)"
-            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
-              focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white
+            className="w-full pl-8 pr-7 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg
+              focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50
+              dark:bg-gray-800 dark:text-white placeholder-gray-400
               transition-all"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1
-                hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5
+                hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             >
-              <X className="w-3.5 h-3.5 text-gray-400" />
+              <X className="w-3 h-3 text-gray-400" />
             </button>
           )}
         </div>
@@ -416,15 +442,15 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="space-y-2 mb-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+            className="space-y-2 mb-2.5 p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50"
           >
             <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Status</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full mt-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600
-                  rounded focus:outline-none focus:ring-2 focus:ring-blue-500
+                className="w-full mt-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600
+                  rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500/50
                   dark:bg-gray-800 dark:text-white"
               >
                 <option value="all">All Statuses</option>
@@ -435,12 +461,12 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Type</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Type</label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full mt-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600
-                  rounded focus:outline-none focus:ring-2 focus:ring-blue-500
+                className="w-full mt-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600
+                  rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500/50
                   dark:bg-gray-800 dark:text-white"
               >
                 <option value="all">All Types</option>
@@ -452,81 +478,75 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
           </motion.div>
         )}
 
-        {/* Progress Bar */}
-        <div className="mb-3">
-          <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1.5">
-            <span className="font-medium">Overall Progress</span>
-            <span className="font-semibold">{progress}%</span>
+        {/* Condensed Stats + Segmented Progress Bar */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="font-medium text-gray-700 dark:text-gray-300">{stats.completed}</span>
+              <span className="mx-1">/</span>
+              <span>{stats.total} done</span>
+              {stats.inProgress > 0 && (
+                <span className="text-amber-500 dark:text-amber-400 ml-1.5">{stats.inProgress} active</span>
+              )}
+              {stats.blocked > 0 && (
+                <span className="text-red-500 dark:text-red-400 ml-1.5">{stats.blocked} blocked</span>
+              )}
+            </span>
+            <span className="text-[11px] font-semibold tabular-nums text-gray-600 dark:text-gray-300">{progress}%</span>
           </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            />
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-2 text-xs">
-          <div className="text-center p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="font-semibold text-green-600 dark:text-green-400">
-              {stats.completed}
-            </div>
-            <div className="text-gray-500 dark:text-gray-400 text-[10px]">Done</div>
-          </div>
-          <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="font-semibold text-blue-600 dark:text-blue-400">
-              {stats.inProgress}
-            </div>
-            <div className="text-gray-500 dark:text-gray-400 text-[10px]">Active</div>
-          </div>
-          <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="font-semibold text-gray-600 dark:text-gray-400">
-              {stats.notStarted}
-            </div>
-            <div className="text-gray-500 dark:text-gray-400 text-[10px]">Not Started</div>
-          </div>
-          <div className="text-center p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <div className="font-semibold text-red-600 dark:text-red-400">
-              {stats.blocked}
-            </div>
-            <div className="text-gray-500 dark:text-gray-400 text-[10px]">Blocked</div>
+          {/* Segmented progress bar */}
+          <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
+            {stats.completed > 0 && (
+              <motion.div
+                className="h-full bg-emerald-500 dark:bg-emerald-400"
+                initial={{ width: 0 }}
+                animate={{ width: `${(stats.completed / stats.total) * 100}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            )}
+            {stats.inProgress > 0 && (
+              <motion.div
+                className="h-full bg-amber-400 dark:bg-amber-400"
+                initial={{ width: 0 }}
+                animate={{ width: `${(stats.inProgress / stats.total) * 100}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+              />
+            )}
+            {stats.blocked > 0 && (
+              <motion.div
+                className="h-full bg-red-400 dark:bg-red-400"
+                initial={{ width: 0 }}
+                animate={{ width: `${(stats.blocked / stats.total) * 100}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Tree View - Optimized for performance */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+      {/* Tree View */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {rootNodes.length > 0 ? (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {rootNodes.map(node => renderTree(node, 0))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="text-gray-300 dark:text-gray-600 text-5xl mb-3">📁</div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">No nodes in this plan yet</p>
+          <div className="text-center py-16">
+            <Folder className="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
+            <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">No nodes in this plan yet</p>
             {onNodeCreate && (
               <button
                 onClick={() => onNodeCreate(null)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg
-                  hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg
+                  hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 Create First Node
               </button>
             )}
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      {nodes.length > 0 && (
-        <div className="flex-shrink-0 p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 text-center">
-          {nodes.length} {nodes.length === 1 ? 'node' : 'nodes'} total
-        </div>
-      )}
       </div>
 
       {/* Drag Overlay - Shows the dragged item */}

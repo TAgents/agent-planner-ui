@@ -20,7 +20,8 @@ export interface Plan {
 
 // Node Types
 export type NodeType = 'root' | 'phase' | 'task' | 'milestone';
-export type NodeStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked';
+export type NodeStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'plan_ready';
+export type TaskMode = 'free' | 'research' | 'plan' | 'implement';
 
 export interface PlanNode {
   id: string;
@@ -42,6 +43,7 @@ export interface PlanNode {
   assigned_agent_id?: string;
   assigned_agent_at?: string;
   assigned_agent_by?: string;
+  task_mode?: TaskMode;
 }
 
 // Comment Types
@@ -82,6 +84,37 @@ export interface Activity {
     id: string;
     name: string;
   };
+}
+
+// Dependency Types
+export type DependencyType = 'blocks' | 'requires' | 'relates_to';
+
+export interface Dependency {
+  id: string;
+  source_node_id: string;
+  target_node_id: string;
+  dependency_type: DependencyType;
+  weight: number;
+  metadata?: Record<string, any>;
+  created_by: string;
+  created_at: string;
+  updated_at?: string;
+  source_title?: string;
+  node_title?: string;
+}
+
+export interface CriticalPathResult {
+  path: Array<{ node_id: string; title: string; status: string; node_type: string }>;
+  total_weight: number;
+  length: number;
+}
+
+export interface ImpactAnalysis {
+  scenario: string;
+  source_node_id: string;
+  affected_count: number;
+  direct: Array<{ node_id: string; title: string; status: string; node_type: string }>;
+  transitive: Array<{ node_id: string; title: string; status: string; node_type: string; depth: number }>;
 }
 
 // Edge Types for semantic connections

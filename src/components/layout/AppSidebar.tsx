@@ -29,17 +29,24 @@ interface AppSidebarProps {
 }
 
 const statusColors: Record<PlanStatus, string> = {
-  draft: 'bg-gray-400',
-  active: 'bg-blue-500',
-  completed: 'bg-green-500',
-  archived: 'bg-amber-500',
+  draft: 'bg-gray-400 dark:bg-gray-500',
+  active: 'bg-amber-500',
+  completed: 'bg-emerald-500',
+  archived: 'bg-gray-300 dark:bg-gray-600',
 };
 
-const AppSidebar: React.FC<AppSidebarProps> = ({ 
-  className = '', 
+const statusBorderColors: Record<PlanStatus, string> = {
+  draft: 'border-l-gray-300 dark:border-l-gray-600',
+  active: 'border-l-amber-400',
+  completed: 'border-l-emerald-400',
+  archived: 'border-l-gray-300 dark:border-l-gray-600',
+};
+
+const AppSidebar: React.FC<AppSidebarProps> = ({
+  className = '',
   variant = 'full',
   isOpen = true,
-  onClose 
+  onClose
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,12 +61,12 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   // Filter and sort plans: active first, then drafts, exclude archived/completed
   const filteredPlans = useMemo((): Plan[] => {
     if (!plans) return [];
-    
+
     // Exclude archived and completed plans from sidebar
-    const visiblePlans = plans.filter((p: Plan) => 
+    const visiblePlans = plans.filter((p: Plan) =>
       p.status !== 'archived' && p.status !== 'completed'
     );
-    
+
     // Sort: active plans first, then drafts, then by updated_at descending
     const sorted = [...visiblePlans].sort((a, b) => {
       const statusOrder: Record<string, number> = { active: 0, draft: 1 };
@@ -68,7 +75,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
       if (aOrder !== bOrder) return aOrder - bOrder;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
-    
+
     if (!searchQuery.trim()) return sorted.slice(0, 10);
     return sorted
       .filter((plan: Plan) =>
@@ -99,11 +106,26 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
     onClose?.();
   };
 
+  // Primary nav items (most used)
+  const primaryNav = [
+    { to: '/app', label: 'Home', icon: Home, isActiveFn: () => location.pathname === '/app' || location.pathname === '/app/dashboard' },
+    { to: '/app/plans', label: 'Plans', icon: FolderKanban, isActiveFn: () => isActive('/app/plans') },
+    { to: '/app/goals-v2', label: 'Goals', icon: Target, isActiveFn: () => isActive('/app/goals-v2') || isActive('/app/goals') },
+  ];
+
+  // Secondary nav items (less used)
+  const secondaryNav = [
+    { to: '/app/knowledge', label: 'Knowledge', icon: BookOpen, isActiveFn: () => isActive('/app/knowledge') },
+    { to: '/app/agents', label: 'Agents', icon: Bot, isActiveFn: () => isActive('/app/agents') },
+    { to: '/explore', label: 'Explore', icon: Compass, isActiveFn: () => isActive('/explore'), alwaysShow: true },
+    { to: '/app/settings', label: 'Settings', icon: Settings, isActiveFn: () => isActive('/app/settings') },
+  ];
+
   return (
     <>
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity"
           onClick={onClose}
         />
@@ -113,85 +135,85 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
       <aside
         className={`
           fixed md:relative inset-y-0 left-0 z-50
-          w-64 h-screen flex flex-col 
-          bg-white dark:bg-gray-900 
-          border-r border-gray-200 dark:border-gray-800
+          w-56 h-screen flex flex-col
+          bg-white dark:bg-gray-950
+          border-r border-gray-200/80 dark:border-gray-800/80
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           ${className}
         `}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800">
+        {/* Header — compact */}
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100 dark:border-gray-800/60">
           <Link to="/" className="flex items-center gap-2" onClick={handleNavClick}>
             <img
               src="/logo.png"
               alt="Agent Planner"
-              className="w-7 h-7 rounded-lg"
+              className="w-6 h-6 rounded-md"
             />
-            <span className="font-semibold text-gray-900 dark:text-white">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight">
               Agent Planner
             </span>
           </Link>
-          
+
           {/* Mobile close button */}
           <button
             onClick={onClose}
-            className="md:hidden p-2 -mr-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="md:hidden p-1.5 -mr-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
             aria-label="Close menu"
           >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
-        {/* New Plan Button */}
-        <div className="p-3">
+        {/* New Plan — quieter, ghost style */}
+        <div className="px-2.5 pt-2.5 pb-1">
           <Link
             to={isAuthenticated ? "/app/plans/create" : "/login"}
             onClick={handleNavClick}
-            className="flex items-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"
           >
-            <Plus className="w-5 h-5" />
-            <span className="font-medium">New Plan</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Plan</span>
           </Link>
         </div>
 
-        {/* Search - only when showing plans */}
+        {/* Search — only when showing plans */}
         {showPlans && (
-          <div className="px-3 pb-3">
+          <div className="px-2.5 py-1.5">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search plans..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-500"
+                className="w-full pl-8 pr-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-colors"
               />
             </div>
           </div>
         )}
 
-        {/* Plans List - only when showing plans */}
+        {/* Plans List */}
         {showPlans && (
           <div className="flex-1 overflow-y-auto">
-            <div className="px-3 py-2">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                My Plans
+            <div className="px-3 pt-2 pb-1">
+              <h3 className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                Plans
               </h3>
             </div>
 
-            <nav className="px-2 space-y-1">
+            <nav className="px-2 space-y-0.5">
               {isLoading ? (
-                <div className="px-3 py-4">
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="px-2 py-3">
+                  <div className="animate-pulse space-y-1.5">
+                    <div className="h-7 bg-gray-100 dark:bg-gray-800 rounded-md"></div>
+                    <div className="h-7 bg-gray-100 dark:bg-gray-800 rounded-md"></div>
+                    <div className="h-7 bg-gray-100 dark:bg-gray-800 rounded-md"></div>
                   </div>
                 </div>
               ) : filteredPlans.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-gray-500 dark:text-gray-400">
+                <div className="px-2 py-3 text-xs text-gray-400 dark:text-gray-500">
                   {searchQuery ? 'No plans found' : 'No plans yet'}
                 </div>
               ) : (
@@ -200,34 +222,27 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                     key={plan.id}
                     to={`/app/plans/${plan.id}`}
                     onClick={handleNavClick}
-                    className={`flex flex-col gap-1 px-3 py-2 rounded-lg transition-colors ${
+                    className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-all border-l-2 ${
                       isPlanActive(plan.id)
-                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? `bg-gray-100 dark:bg-gray-800/80 ${statusBorderColors[plan.status]}`
+                        : `border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:${statusBorderColors[plan.status]}`
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          statusColors[plan.status]
-                        }`}
-                        title={plan.status}
-                      />
-                      <span className="text-sm truncate flex-1" title={plan.title}>{plan.title}</span>
-                      {typeof plan.progress === 'number' && plan.progress > 0 && (
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
-                          {plan.progress}%
-                        </span>
-                      )}
-                    </div>
-                    {/* Mini progress bar */}
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                        statusColors[plan.status]
+                      }`}
+                      title={plan.status}
+                    />
+                    <span className={`text-xs truncate flex-1 ${
+                      isPlanActive(plan.id)
+                        ? 'font-medium text-gray-900 dark:text-white'
+                        : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200'
+                    }`} title={plan.title}>{plan.title}</span>
                     {typeof plan.progress === 'number' && plan.progress > 0 && (
-                      <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300"
-                          style={{ width: `${plan.progress}%` }}
-                        />
-                      </div>
+                      <span className="text-[9px] tabular-nums text-gray-400 dark:text-gray-500 flex-shrink-0">
+                        {plan.progress}%
+                      </span>
                     )}
                   </Link>
                 ))
@@ -238,10 +253,10 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 <Link
                   to="/app/plans"
                   onClick={handleNavClick}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors"
                 >
-                  <span>View all plans</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span>View all</span>
+                  <ChevronRight className="w-3 h-3" />
                 </Link>
               )}
             </nav>
@@ -251,185 +266,106 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         {/* Spacer when not showing plans */}
         {!showPlans && <div className="flex-1" />}
 
-        {/* Bottom Navigation */}
-        <div className="border-t border-gray-200 dark:border-gray-800">
-          <nav className="p-2 space-y-1">
-            {/* Home/Dashboard - only for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/app"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  location.pathname === '/app' || location.pathname === '/app/dashboard'
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Home className="w-5 h-5" />
-                <span className="text-sm">Home</span>
-              </Link>
-            )}
+        {/* Navigation */}
+        <div className="border-t border-gray-100 dark:border-gray-800/60">
+          {/* Primary nav */}
+          {isAuthenticated && (
+            <nav className="px-2 pt-2 pb-1 space-y-0.5">
+              {primaryNav.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={handleNavClick}
+                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors ${
+                    item.isActiveFn()
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+          )}
 
-            {/* My Plans - only for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/app/plans"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/plans')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <FolderKanban className="w-5 h-5" />
-                <span className="text-sm">My Plans</span>
-              </Link>
-            )}
-
-            {/* Goals */}
-            {isAuthenticated && (
-              <Link
-                to="/app/goals-v2"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/goals-v2') || isActive('/app/goals')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Target className="w-5 h-5" />
-                <span className="text-sm">Goals</span>
-              </Link>
-            )}
-
-            {/* Knowledge */}
-            {isAuthenticated && (
-              <Link
-                to="/app/knowledge-v2"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/knowledge-v2')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <BookOpen className="w-5 h-5" />
-                <span className="text-sm">Knowledge</span>
-              </Link>
-            )}
-
-            {/* Agent Activity - only for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/app/agents"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/agents')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Bot className="w-5 h-5" />
-                <span className="text-sm">Agents</span>
-              </Link>
-            )}
-
-            <Link
-              to="/explore"
-              onClick={handleNavClick}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                isActive('/explore')
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Compass className="w-5 h-5" />
-              <span className="text-sm">Explore</span>
-            </Link>
-
-            {/* Settings - only for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/app/settings"
-                onClick={handleNavClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive('/app/settings')
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Settings className="w-5 h-5" />
-                <span className="text-sm">Settings</span>
-              </Link>
-            )}
+          {/* Secondary nav — smaller, muted */}
+          <nav className="px-2 pb-2 pt-0.5 space-y-0.5">
+            {secondaryNav
+              .filter(item => item.alwaysShow || isAuthenticated)
+              .map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={handleNavClick}
+                  className={`flex items-center gap-2.5 px-2.5 py-1 rounded-md transition-colors ${
+                    item.isActiveFn()
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                      : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <item.icon className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">{item.label}</span>
+                </Link>
+              ))}
           </nav>
 
-          {/* User Section - for authenticated users */}
+          {/* User Section — for authenticated users */}
           {isAuthenticated && (
-            <div className="p-3 border-t border-gray-200 dark:border-gray-800">
-              {/* Theme Toggle & Notification Bell - Desktop only */}
-              <div className="hidden md:flex items-center justify-between mb-2 px-2">
-                <div className="flex items-center gap-2">
-                  <ThemeToggle size="sm" />
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                    Theme
-                  </span>
-                </div>
-                <NotificationBell />
-              </div>
-              
-              <Link
-                to="/app/settings/profile"
-                onClick={handleNavClick}
-                className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <div className="relative">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
-                      {(userName || userEmail || 'U').charAt(0).toUpperCase()}
-                    </span>
+            <div className="px-2.5 py-2 border-t border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/app/settings/profile"
+                  onClick={handleNavClick}
+                  className="flex items-center gap-2 flex-1 min-w-0 px-1 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="relative flex-shrink-0">
+                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/50 dark:to-blue-900/50 rounded-full flex items-center justify-center">
+                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-300">
+                        {(userName || userEmail || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="absolute -bottom-px -right-px w-2 h-2 bg-emerald-500 border border-white dark:border-gray-950 rounded-full" />
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                     {userName || userEmail || 'User'}
-                  </p>
-                </div>
-              </Link>
+                  </span>
+                </Link>
 
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-3 w-full px-2 py-2 mt-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Sign Out</span>
-              </button>
+                {/* Compact utility row */}
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <ThemeToggle size="sm" />
+                  <NotificationBell />
+                  <button
+                    onClick={handleSignOut}
+                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Sign In Section - for public/unauthenticated users */}
+          {/* Sign In Section — for public/unauthenticated users */}
           {!isAuthenticated && (
-            <div className="p-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
-              {/* Theme Toggle for unauthenticated users */}
-              <div className="flex items-center justify-between px-2 mb-2">
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  Theme
-                </span>
+            <div className="px-2.5 py-2 border-t border-gray-100 dark:border-gray-800/60 space-y-1.5">
+              <div className="flex items-center justify-between px-1 mb-1">
                 <ThemeToggle size="sm" />
               </div>
               <Link
                 to="/login"
                 onClick={handleNavClick}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium"
+                className="flex items-center justify-center gap-1.5 w-full px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors font-medium"
               >
-                <LogIn className="w-5 h-5" />
+                <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
               </Link>
               <Link
                 to="/register"
                 onClick={handleNavClick}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-medium"
+                className="flex items-center justify-center gap-1.5 w-full px-2.5 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors font-medium"
               >
                 <span>Get Started</span>
               </Link>

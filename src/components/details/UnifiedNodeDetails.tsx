@@ -35,7 +35,8 @@ import {
   Zap,
   Tag,
   MessageSquare,
-  Clock
+  Clock,
+  GitBranch
 } from 'lucide-react';
 import { PlanNode, NodeStatus, User as UserType } from '../../types';
 import { formatDate } from '../../utils/planUtils';
@@ -48,6 +49,8 @@ import { AgentResponsePanel } from '../agent-request/AgentResponsePanel';
 import { useTaskAgentRequests, useCreateAgentRequest } from '../../hooks/useAgentRequests';
 import { AgentRequest } from '../../services/api';
 import api from '../../services/api';
+import NodeDependenciesTab from './NodeDependenciesTab';
+import NodeKnowledgeTab from './NodeKnowledgeTab';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -63,6 +66,8 @@ interface UnifiedNodeDetailsProps {
   onAssignUser?: (userId: string) => void;
   onUnassignUser?: (userId: string) => void;
   onClose?: () => void;
+  /** All nodes in the plan, for dependency picker */
+  allNodes?: PlanNode[];
 }
 
 type ActivityType =
@@ -162,14 +167,15 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
     not_started: { icon: Circle, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-200' },
     in_progress: { icon: PlayCircle, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-800 dark:text-blue-200' },
     completed: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-200' },
-    blocked: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-200' }
+    blocked: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-200' },
+    plan_ready: { icon: FileText, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/50', text: 'text-purple-800 dark:text-purple-200' }
   };
 
-  const Icon = statusConfig[displayStatus].icon;
+  const Icon = (statusConfig[displayStatus] || statusConfig.not_started).icon;
 
   if (!onChange) {
     return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[displayStatus].bg} ${statusConfig[displayStatus].text}`}>
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${(statusConfig[displayStatus] || statusConfig.not_started).bg} ${(statusConfig[displayStatus] || statusConfig.not_started).text}`}>
         <Icon className="w-3.5 h-3.5" />
         <span className="capitalize">{displayStatus.replace('_', ' ')}</span>
       </span>
@@ -180,7 +186,7 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[displayStatus].bg} ${statusConfig[displayStatus].text} hover:opacity-90 transition-all duration-200`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${(statusConfig[displayStatus] || statusConfig.not_started).bg} ${(statusConfig[displayStatus] || statusConfig.not_started).text} hover:opacity-90 transition-all duration-200`}
       >
         <Icon className="w-3.5 h-3.5" />
         <span className="capitalize">{displayStatus.replace('_', ' ')}</span>
@@ -189,7 +195,7 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
 
       {isOpen && (
         <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[9999] min-w-[160px]">
-          {(['not_started', 'in_progress', 'completed', 'blocked'] as NodeStatus[]).map(s => {
+          {(['not_started', 'in_progress', 'completed', 'blocked', 'plan_ready'] as NodeStatus[]).map(s => {
             const SIcon = statusConfig[s].icon;
             return (
               <button
@@ -199,7 +205,7 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
                   onChange(s);
                   setIsOpen(false);
                 }}
-                className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left transition-colors duration-200"
+                className="flex items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left transition-colors duration-200"
               >
                 <SIcon className={`w-3.5 h-3.5 ${statusConfig[s].color}`} />
                 <span className="capitalize">{s.replace('_', ' ')}</span>
@@ -287,11 +293,11 @@ const ActionsMenu: React.FC<{
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
+        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-150"
         title="More actions"
         aria-label="More actions"
       >
-        <MoreHorizontal className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <MoreHorizontal className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
       </button>
 
       {isOpen && (
@@ -647,43 +653,27 @@ const ActivityItem: React.FC<{
     switch (activity.type) {
       case 'log':
         return (
-          <div className="flex gap-3">
-            <Avatar user={activity.actor} size="sm" />
-            <div className="flex-1 space-y-1">
+          <div className="flex gap-2">
+            <Avatar user={activity.actor} size="xs" />
+            <div className="flex-1 space-y-0.5">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm text-gray-900 dark:text-white">{activity.actor.name}</span>
+                <span className="font-medium text-xs text-gray-900 dark:text-white">{activity.actor.name}</span>
                 <LogTypeIcon logType={activity.data.logType} />
-                <span className="text-xs text-gray-500 dark:text-gray-400">{activity.data.logType}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">{activity.data.logType}</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 ml-auto">{formatTimeAgo(activity.timestamp)}</span>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                 {activity.data.content}
               </p>
               {activity.data.tags && activity.data.tags.length > 0 && (
                 <div className="flex gap-1 flex-wrap">
                   {activity.data.tags.map((tag: string, i: number) => (
-                    <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs text-gray-600 dark:text-gray-400">
+                    <span key={i} className="px-1.5 py-0 bg-gray-100 dark:bg-gray-800 rounded-full text-[10px] text-gray-600 dark:text-gray-400">
                       #{tag}
                     </span>
                   ))}
                 </div>
               )}
-
-              {/* Actions */}
-              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                <button
-                  onClick={() => onReact?.('👍')}
-                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
-                >
-                  React
-                </button>
-                <button
-                  onClick={() => setShowReply(!showReply)}
-                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
-                >
-                  Reply
-                </button>
-              </div>
             </div>
           </div>
         );
@@ -778,66 +768,68 @@ const ActivityItem: React.FC<{
 // Component: Log Composer
 const LogComposer: React.FC<{
   onLogAdd: (content: string, logType: string, tags?: string[]) => void;
-}> = ({ onLogAdd }) => {
+  showAgentRequestButton?: boolean;
+  onAgentRequest?: () => void;
+}> = ({ onLogAdd, showAgentRequestButton, onAgentRequest }) => {
   const [logContent, setLogContent] = useState('');
   const [logType, setLogType] = useState<LogType>('progress');
-  const [tags, setTags] = useState('');
 
   const handleSubmit = () => {
     if (logContent.trim()) {
-      // Parse tags
-      const tagList = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-      onLogAdd(logContent, logType, tagList);
+      onLogAdd(logContent, logType);
       setLogContent('');
-      setTags('');
     }
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 bg-gray-50 dark:bg-gray-900">
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <select
-            value={logType}
-            onChange={(e) => setLogType(e.target.value as LogType)}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 min-h-[44px]"
-          >
-            <option value="progress">Progress</option>
-            <option value="reasoning">Reasoning</option>
-            <option value="challenge">Challenge</option>
-            <option value="decision">Decision</option>
-          </select>
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="Tags (comma separated)"
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200 min-h-[44px]"
-          />
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <textarea
-            value={logContent}
-            onChange={(e) => setLogContent(e.target.value)}
-            placeholder="Write a log entry... (Ctrl+Enter to submit)"
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-colors duration-200"
-            rows={3}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.ctrlKey) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-          />
+    <div className="border-t border-gray-100 dark:border-gray-800/60 px-3 py-2 bg-white dark:bg-gray-900">
+      <div className="flex items-end gap-1.5">
+        <select
+          value={logType}
+          onChange={(e) => setLogType(e.target.value as LogType)}
+          className="appearance-none text-[10px] text-gray-500 dark:text-gray-400 bg-transparent border-0 py-1 pr-4 cursor-pointer focus:ring-0 focus:outline-none flex-shrink-0"
+        >
+          <option value="progress">Progress</option>
+          <option value="reasoning">Reasoning</option>
+          <option value="challenge">Challenge</option>
+          <option value="decision">Decision</option>
+        </select>
+        <textarea
+          value={logContent}
+          onChange={(e) => setLogContent(e.target.value)}
+          placeholder="Write a log..."
+          className="flex-1 px-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 dark:text-white placeholder-gray-400 resize-none"
+          rows={1}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          style={{ minHeight: '32px', maxHeight: '120px' }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+          }}
+        />
+        {showAgentRequestButton && onAgentRequest && (
           <button
-            onClick={handleSubmit}
-            disabled={!logContent.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium min-h-[44px] flex items-center justify-center"
-            aria-label="Send log entry"
+            onClick={onAgentRequest}
+            className="p-1.5 text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 rounded transition-colors flex-shrink-0"
+            title="New agent request"
           >
-            <Send className="w-4 h-4" />
+            <Bot className="w-3.5 h-3.5" />
           </button>
-        </div>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={!logContent.trim()}
+          className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 disabled:opacity-30 rounded transition-colors flex-shrink-0"
+          aria-label="Send"
+        >
+          <Send className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
@@ -903,15 +895,14 @@ const AgentInstructionsTab: React.FC<{
   const renderContent = () => {
     if (!instructions && !isEditing) {
       return (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
-          <Code2 className="w-12 h-12 mb-3" />
-          <p className="text-sm mb-4">No agent instructions defined</p>
+        <div className="py-8 text-center text-gray-400 dark:text-gray-500">
+          <p className="text-[11px] italic">No instructions defined</p>
           {!readOnly && (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors duration-200 font-medium"
+              className="mt-1 text-[11px] text-blue-500 dark:text-blue-400 hover:underline"
             >
-              Add Instructions
+              + Add
             </button>
           )}
         </div>
@@ -921,48 +912,26 @@ const AgentInstructionsTab: React.FC<{
     if (isEditing) {
       return (
         <div className="space-y-3">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">Editing Agent Instructions</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors hidden lg:block"
-                title={showPreview ? "Hide preview" : "Show preview"}
-              >
-                {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              <Code2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+              <span className="text-xs font-medium text-gray-900 dark:text-white">Editing Instructions</span>
             </div>
           </div>
 
-          <div className={showPreview ? "grid lg:grid-cols-2 gap-4" : ""}>
-            <div>
-              <textarea
-                ref={textareaRef}
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Enter detailed instructions for AI agents working on this task...\n\nYou can include:\n• Task objectives and goals\n• Step-by-step procedures\n• Code examples and templates (use markdown)\n• Important constraints or requirements\n• Expected outputs and formats\n\nSupports markdown formatting: **bold**, *italic*, `code`, ```code blocks```"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-mono border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white resize-none"
-                style={{ minHeight: '400px' }}
-              />
-            </div>
+          <textarea
+            ref={textareaRef}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder="Enter instructions for AI agents..."
+            className="w-full px-3 py-2 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-800 dark:text-white resize-none"
+            style={{ minHeight: '200px' }}
+          />
 
-            {showPreview && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 overflow-auto hidden lg:block">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview</div>
-                <pre className="text-xs sm:text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
-                  {instructions || 'Instructions will appear here...'}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-end gap-2">
+          <div className="flex justify-end gap-2">
             <button
               onClick={handleCancel}
-              className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
               disabled={isSaving}
             >
               Cancel
@@ -970,16 +939,16 @@ const AgentInstructionsTab: React.FC<{
             <button
               onClick={handleSave}
               disabled={isSaving || instructions === node.agent_instructions}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-colors duration-200 font-medium min-h-[44px]"
+              className="px-3 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center gap-1.5 transition-colors font-medium"
             >
               {isSaving ? (
                 <>
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3 h-3 border-2 border-white dark:border-gray-900 border-t-transparent rounded-full animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3 h-3" />
                   Save
                 </>
               )}
@@ -991,63 +960,44 @@ const AgentInstructionsTab: React.FC<{
 
     // Read-only view
     return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Code2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">Agent Instructions</span>
-          </div>
-          <div className="flex items-center gap-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={handleCopy}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded relative transition-colors"
+            title="Copy to clipboard"
+            aria-label="Copy to clipboard"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3 h-3 text-green-500 dark:text-green-400" />
+                <span className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap shadow-lg">
+                  Copied!
+                </span>
+              </>
+            ) : (
+              <Copy className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+            )}
+          </button>
+          {!readOnly && (
             <button
-              onClick={handleCopy}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative transition-colors duration-200"
-              title="Copy to clipboard"
-              aria-label="Copy to clipboard"
+              onClick={() => setIsEditing(true)}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+              title="Edit instructions"
+              aria-label="Edit instructions"
             >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
-                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg">
-                    Copied!
-                  </span>
-                </>
-              ) : (
-                <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-              )}
+              <Edit3 className="w-3 h-3 text-gray-400 dark:text-gray-500" />
             </button>
-            {!readOnly && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                title="Edit instructions"
-                aria-label="Edit instructions"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 max-h-[600px] overflow-y-auto">
-          <pre className="text-sm whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300 leading-relaxed">
-            {instructions}
-          </pre>
-        </div>
+        <pre className="text-xs whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300 leading-relaxed max-h-[600px] overflow-y-auto">
+          {instructions}
+        </pre>
 
-        {/* Metadata about instructions */}
-        {node.agent_instructions && (
-          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-4">
-            <span>
-              {instructions.length} characters
-            </span>
-            <span>
-              {instructions.split('\n').length} lines
-            </span>
-            {node.updated_at && (
-              <span>
-                Last updated: {formatTimeAgo(node.updated_at)}
-              </span>
-            )}
+        {node.updated_at && (
+          <div className="text-[10px] text-gray-400 dark:text-gray-500">
+            Last updated: {formatTimeAgo(node.updated_at)}
           </div>
         )}
       </div>
@@ -1071,19 +1021,19 @@ const CollapsibleSection: React.FC<{
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-3 sm:px-4 py-2.5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 min-h-[44px]"
+        className="w-full py-1.5 flex items-center justify-between hover:opacity-80 transition-opacity duration-150"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {icon}
-          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">{title}</h4>
+          <h4 className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h4>
         </div>
-        {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />}
+        {isExpanded ? <ChevronDown className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" /> : <ChevronRight className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />}
       </button>
       {isExpanded && (
-        <div className="p-3 sm:p-4 bg-white dark:bg-gray-900">
+        <div className="pb-2">
           {children}
         </div>
       )}
@@ -1104,14 +1054,16 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   onActivityReply,
   onAssignUser,
   onUnassignUser,
-  onClose
+  onClose,
+  allNodes = [],
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions' | 'dependencies' | 'knowledge'>('overview');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [assignedUser, setAssignedUser] = useState<any>(null);
   const [suggestedAgents, setSuggestedAgents] = useState<AgentOption[]>([]);
   const [assignedAgent, setAssignedAgent] = useState<AgentOption | null>(null);
   const [agentsLoading, setAgentsLoading] = useState(false);
+  const [showAgentModal, setShowAgentModal] = useState(false);
 
   // Reset tab when node changes
   React.useEffect(() => {
@@ -1409,17 +1361,31 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
-      {/* SIMPLIFIED HEADER */}
-      <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+      {/* COMPACT HEADER */}
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <NodeTypeIcon nodeType={node.node_type} />
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate" title={node.title}>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={node.title}>
               {node.title}
             </h2>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1">
             <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
+            {node.task_mode && node.task_mode !== 'free' && (
+              <span
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
+                  node.task_mode === 'research'
+                    ? 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400'
+                    : node.task_mode === 'plan'
+                    ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'
+                    : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                }`}
+                title={`Task mode: ${node.task_mode}`}
+              >
+                {node.task_mode}
+              </span>
+            )}
             <ActionsMenu
               onEdit={handleEdit}
               onCopyId={handleCopyId}
@@ -1428,11 +1394,11 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 md:hidden"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-150 md:hidden"
                 title="Close (ESC)"
                 aria-label="Close details panel"
               >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               </button>
             )}
           </div>
@@ -1440,25 +1406,25 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
       </div>
 
       {/* COMPACT METADATA BAR */}
-      <div className="px-3 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
         {/* Progress Bar */}
-        <div className="mb-2">
-          <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+        <div className="mb-1.5">
+          <div className="flex justify-between items-center text-[11px] text-gray-500 dark:text-gray-400 mb-1">
             <span className="font-medium">Progress</span>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">{progress}%</span>
+            <span className="font-semibold tabular-nums text-gray-600 dark:text-gray-300">{progress}%</span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 shadow-inner overflow-hidden">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 transition-all duration-500 rounded-full"
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-500 dark:to-blue-600 transition-all duration-500 rounded-full"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         {/* Assignment and Due Date */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500 dark:text-gray-400">Assigned to:</span>
+        <div className="flex items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 dark:text-gray-500">Assigned to:</span>
             <UnifiedAssignmentSelector
               assignedUser={assignedUser}
               assignedAgent={assignedAgent}
@@ -1498,92 +1464,124 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
       {/* TABBED CONTENT AREA */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Tab Navigation */}
-        <div className="px-2 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+        <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'overview'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-3 h-3" />
               <span>Overview</span>
             </button>
             <button
               onClick={() => setActiveTab('activity')}
-              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'activity'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              <Activity className="w-3.5 h-3.5" />
+              <Activity className="w-3 h-3" />
               <span>Activity</span>
               {activities.length > 0 && (
-                <span className="ml-0.5 sm:ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                <span className="ml-0.5 px-1 py-0 bg-gray-200 dark:bg-gray-700 rounded-full text-[10px] tabular-nums">
                   {activities.length}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('instructions')}
-              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 sm:gap-1.5 relative whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 relative whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'instructions'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              <Code2 className="w-3.5 h-3.5" />
+              <Code2 className="w-3 h-3" />
               <span>Context & Instructions</span>
               {node.agent_instructions && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full" />
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full" />
               )}
+            </button>
+            <button
+              onClick={() => setActiveTab('dependencies')}
+              className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'dependencies'
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <GitBranch className="w-3 h-3" />
+              <span>Dependencies</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('knowledge')}
+              className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'knowledge'
+                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Brain className="w-3 h-3" />
+              <span>Knowledge</span>
             </button>
           </div>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
-            {/* Description */}
-            {node.description && (
-              <CollapsibleSection title="DESCRIPTION" defaultExpanded={true}>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col">
+            <div className="flex-1 space-y-2">
+              {/* Description */}
+              {node.description ? (
+                <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
                   {node.description}
                 </p>
-              </CollapsibleSection>
-            )}
+              ) : (
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 italic">No description</p>
+              )}
 
-            {/* Context */}
-            {node.context && (
-              <CollapsibleSection title="CONTEXT" defaultExpanded={false}>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+              {/* Context */}
+              {node.context && (
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed">
                   {node.context}
                 </p>
-              </CollapsibleSection>
-            )}
+              )}
 
-            {/* Quick Actions */}
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              {/* Compact metadata row */}
+              <div className="flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-500 pt-1">
+                <span className="capitalize">{node.node_type}</span>
+                {node.created_at && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    {formatDate(node.created_at)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Ghost-style action buttons at bottom */}
+            <div className="flex gap-1.5 pt-3 mt-auto border-t border-gray-100 dark:border-gray-800/60">
               <button
                 onClick={() => {
                   setActivityFilter('logs');
                   setActiveTab('activity');
                 }}
-                className="px-4 py-2.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
+                className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-1"
               >
-                <Edit3 className="w-3.5 h-3.5" />
+                <Edit3 className="w-3 h-3" />
                 Add Log
               </button>
               <button
                 onClick={handleEdit}
-                className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-600 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium min-h-[44px]"
+                className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-1"
               >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Edit Details</span>
-                <span className="sm:hidden">Edit</span>
+                <Edit3 className="w-3 h-3" />
+                Edit Details
               </button>
             </div>
           </div>
@@ -1591,38 +1589,31 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
         {activeTab === 'activity' && (
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
-            {/* Activity List */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2">
               {logsLoading ? (
-                <div className="text-center py-8">
-                  <div className="w-8 h-8 border-3 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Loading activity...</p>
+                <div className="flex justify-center py-8">
+                  <div className="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
                 </div>
               ) : filteredActivities.length > 0 ? (
                 filteredActivities.map(activity => (
-                  <ActivityItem
-                    key={activity.id}
-                    activity={activity}
-                    onReact={(emoji) => onActivityReact?.(activity.id, emoji)}
-                    onReply={(text) => onActivityReply?.(activity.id, text)}
-                  />
+                  <ActivityItem key={activity.id} activity={activity} />
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-                  No logs yet. Add your first log entry!
-                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8">No activity yet</p>
               )}
             </div>
-
-            {/* New Agent Request button + Log Composer */}
-            <div className="flex-shrink-0">
-              {node.node_type === 'task' && (
-                <NewAgentRequestButton planId={planId} taskId={node.id} taskTitle={node.title} />
-              )}
-              <LogComposer
-                onLogAdd={handleLogAdd}
-              />
-            </div>
+            <LogComposer
+              onLogAdd={handleLogAdd}
+              showAgentRequestButton={node.node_type === 'task'}
+              onAgentRequest={() => setShowAgentModal(true)}
+            />
+            <AskAgentModal
+              isOpen={showAgentModal}
+              onClose={() => setShowAgentModal(false)}
+              planId={planId}
+              taskId={node.id}
+              taskTitle={node.title}
+            />
           </div>
         )}
 
@@ -1630,6 +1621,23 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           <AgentInstructionsTab
             node={node}
             onUpdate={updateInstructions}
+          />
+        )}
+
+        {activeTab === 'dependencies' && (
+          <NodeDependenciesTab
+            planId={planId}
+            nodeId={node.id}
+            nodeTitle={node.title}
+            allNodes={allNodes}
+          />
+        )}
+
+        {activeTab === 'knowledge' && (
+          <NodeKnowledgeTab
+            nodeTitle={node.title}
+            planId={planId}
+            nodeId={node.id}
           />
         )}
 

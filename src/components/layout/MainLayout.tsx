@@ -8,7 +8,7 @@ const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
       {/* Sidebar */}
       <AppSidebar 
         isOpen={isSidebarOpen} 
@@ -42,7 +42,7 @@ const MainLayout: React.FC = () => {
           <NotificationBell />
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
           <Outlet />
         </main>
       </div>

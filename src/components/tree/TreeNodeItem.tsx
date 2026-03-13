@@ -3,7 +3,11 @@ import { motion } from 'framer-motion';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { PlanNode, NodeStatus } from '../../types';
 import { StatusBadge, getNextStatus } from './StatusBadge';
-import { GripVertical, Plus } from 'lucide-react';
+import {
+  GripVertical, Plus, ArrowUp, ArrowDown, ChevronRight,
+  Layers, CheckSquare, Flag, FolderOpen, Folder,
+  Zap, CheckCircle2, Bot, MessageSquare
+} from 'lucide-react';
 
 interface TreeNodeItemProps {
   node: PlanNode;
@@ -18,6 +22,10 @@ interface TreeNodeItemProps {
   isDragging?: boolean;
   isDropTarget?: boolean;
   canDrag?: boolean;
+  /** Number of upstream (blocking) dependencies */
+  upstreamCount?: number;
+  /** Number of downstream (blocked by this) dependencies */
+  downstreamCount?: number;
 }
 
 export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
@@ -32,9 +40,10 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   onAddChild,
   isDragging = false,
   isDropTarget = false,
-  canDrag = true
+  canDrag = true,
+  upstreamCount = 0,
+  downstreamCount = 0,
 }) => {
-  // Check if this node type can have children added
   const canAddChildren = node.node_type === 'phase' || node.node_type === 'root';
   const [isHovered, setIsHovered] = useState(false);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -61,34 +70,39 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   const indentPx = depth * 24;
 
   // Get node type specific styling
+  const isPhaseOrRoot = node.node_type === 'phase' || node.node_type === 'root';
+
   const getNodeTypeStyle = () => {
     switch (node.node_type) {
       case 'root':
-        return 'text-gray-900 dark:text-white text-base font-semibold';
+        return 'text-gray-900 dark:text-white text-sm font-semibold tracking-tight';
       case 'phase':
-        return 'text-gray-900 dark:text-white text-base font-semibold';
+        return 'text-gray-900 dark:text-gray-100 text-sm font-semibold tracking-tight';
       case 'task':
-        return 'text-gray-800 dark:text-gray-200 text-sm';
+        return 'text-gray-700 dark:text-gray-300 text-sm';
       case 'milestone':
-        return 'text-gray-700 dark:text-gray-300 text-sm italic';
+        return 'text-gray-600 dark:text-gray-400 text-sm font-medium';
       default:
-        return 'text-gray-800 dark:text-gray-200 text-sm';
+        return 'text-gray-700 dark:text-gray-300 text-sm';
     }
   };
 
-  // Get icon for node type
+  // Get Lucide icon for node type
   const getNodeTypeIcon = () => {
+    const iconClass = 'w-4 h-4 flex-shrink-0';
     switch (node.node_type) {
       case 'root':
-        return '📁';
+        return <Folder className={`${iconClass} text-blue-500 dark:text-blue-400`} />;
       case 'phase':
-        return hasChildren && isExpanded ? '📂' : '📁';
+        return hasChildren && isExpanded
+          ? <FolderOpen className={`${iconClass} text-blue-500 dark:text-blue-400`} />
+          : <Layers className={`${iconClass} text-blue-500 dark:text-blue-400`} />;
       case 'task':
-        return '📄';
+        return <CheckSquare className={`${iconClass} text-gray-400 dark:text-gray-500`} />;
       case 'milestone':
-        return '🏁';
+        return <Flag className={`${iconClass} text-amber-500 dark:text-amber-400`} />;
       default:
-        return '📄';
+        return <CheckSquare className={`${iconClass} text-gray-400 dark:text-gray-500`} />;
     }
   };
 
@@ -105,7 +119,6 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
 
   // Combine refs using callback ref pattern
   const setRefs = useCallback((element: HTMLDivElement | null) => {
-    // Use a mutable object instead of directly assigning to nodeRef.current
     if (element) {
       (nodeRef as any).current = element;
     }
@@ -126,35 +139,38 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       ref={setRefs}
       data-node-id={node.id}
       className={`
-        flex items-center gap-2 py-2 px-3 rounded-lg transition-all cursor-pointer
+        group flex items-center gap-2 py-1.5 px-3 rounded-lg transition-all duration-150 cursor-pointer
+        border-l-2
         ${isSelected
-          ? 'bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-400 dark:ring-blue-600'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+          ? 'bg-blue-50/80 dark:bg-blue-500/10 border-l-blue-500 dark:border-l-blue-400'
+          : isPhaseOrRoot
+            ? 'border-l-transparent hover:bg-gray-50/80 dark:hover:bg-white/[0.03] hover:border-l-gray-300 dark:hover:border-l-gray-600'
+            : 'border-l-transparent hover:bg-gray-50/60 dark:hover:bg-white/[0.02]'
         }
-        ${node.status === 'blocked' ? 'border-l-4 border-red-500' : ''}
-        ${isDragging ? 'opacity-50' : ''}
-        ${isOver && isDropTarget ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20' : ''}
-        ${isOver && !isDropTarget ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-900/20' : ''}
+        ${node.status === 'blocked' ? '!border-l-red-500 dark:!border-l-red-400' : ''}
+        ${isDragging ? 'opacity-40 scale-[0.98]' : ''}
+        ${isOver && isDropTarget ? 'ring-1 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-500/5' : ''}
+        ${isOver && !isDropTarget ? 'ring-1 ring-red-500/50 bg-red-50/50 dark:bg-red-500/5' : ''}
       `}
       style={style}
       onClick={() => onSelect(node.id)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      initial={{ opacity: 0, x: -10 }}
+      initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
     >
       {/* Drag Handle */}
       {canDrag && (
         <div
           {...listeners}
           {...attributes}
-          className={`drag-handle flex-shrink-0 cursor-grab active:cursor-grabbing transition-opacity ${
-            isHovered ? 'opacity-100' : 'opacity-0'
+          className={`drag-handle flex-shrink-0 cursor-grab active:cursor-grabbing transition-opacity duration-150 ${
+            isHovered ? 'opacity-60' : 'opacity-0'
           }`}
           title="Drag to move"
         >
-          <GripVertical className="w-4 h-4 text-gray-400" />
+          <GripVertical className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
         </div>
       )}
 
@@ -165,44 +181,55 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             e.stopPropagation();
             onToggle(node.id);
           }}
-          className="flex-shrink-0 text-gray-400 text-sm transition-transform duration-200 hover:text-gray-600 dark:hover:text-gray-300"
+          className="flex-shrink-0 p-0.5 rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50"
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
-          <motion.span
+          <motion.div
             animate={{ rotate: isExpanded ? 90 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="inline-block"
+            transition={{ duration: 0.15, ease: 'easeOut' }}
           >
-            ▶
-          </motion.span>
+            <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+          </motion.div>
         </button>
       ) : (
         <div className="w-4" />
       )}
 
       {/* Node Type Icon */}
-      <span className="text-base flex-shrink-0" role="img" aria-label={node.node_type}>
-        {getNodeTypeIcon()}
-      </span>
+      {getNodeTypeIcon()}
 
-      {/* Status Badge - clickable when onStatusChange is provided */}
-      <StatusBadge 
-        status={node.status} 
-        compact 
+      {/* Status Badge */}
+      <StatusBadge
+        status={node.status}
+        compact
         onClick={onStatusChange ? () => onStatusChange(node.id, getNextStatus(node.status)) : undefined}
       />
+
+      {/* Task Mode Badge */}
+      {node.task_mode && node.task_mode !== 'free' && (
+        <span
+          className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider flex-shrink-0 ${
+            node.task_mode === 'research'
+              ? 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400'
+              : node.task_mode === 'plan'
+              ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'
+              : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+          }`}
+          title={`Task mode: ${node.task_mode}`}
+        >
+          {node.task_mode === 'research' ? 'R' : node.task_mode === 'plan' ? 'P' : 'I'}
+        </span>
+      )}
 
       {/* Title */}
       <span className={`${getNodeTypeStyle()} flex-grow truncate`} title={node.title}>
         {node.title}
       </span>
 
-      {/* Assignee - TODO: Add when assignment feature is implemented */}
-
       {/* Agent Indicator */}
       {node.assigned_agent_id && (
         <span
-          className="flex items-center gap-0.5 flex-shrink-0 text-sm"
+          className="flex items-center gap-0.5 flex-shrink-0"
           title={
             node.metadata && (node.metadata as any).agentStatus === 'working'
               ? 'Agent actively working'
@@ -212,32 +239,49 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           }
         >
           {node.metadata && (node.metadata as any).agentStatus === 'working' ? (
-            <span className="text-amber-500">⚡</span>
+            <Zap className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
           ) : node.metadata && (node.metadata as any).agentStatus === 'completed' ? (
-            <span className="text-green-500">✅</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
           ) : (
-            <span>🤖</span>
+            <Bot className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
           )}
         </span>
       )}
 
+      {/* Dependency Indicators */}
+      {(upstreamCount > 0 || downstreamCount > 0) && (
+        <div className="flex items-center gap-0.5 flex-shrink-0" title={`${upstreamCount} upstream, ${downstreamCount} downstream dependencies`}>
+          {upstreamCount > 0 && (
+            <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[10px] font-medium bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400">
+              <ArrowUp className="w-2.5 h-2.5" />
+              {upstreamCount}
+            </span>
+          )}
+          {downstreamCount > 0 && (
+            <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400">
+              <ArrowDown className="w-2.5 h-2.5" />
+              {downstreamCount}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Due Date */}
       {node.due_date && (
-        <span className="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline flex-shrink-0">
+        <span className="text-[11px] text-gray-400 dark:text-gray-500 hidden lg:inline flex-shrink-0 tabular-nums">
           {formatDate(node.due_date)}
         </span>
       )}
 
-      {/* Activity indicators */}
+      {/* Comment count */}
       {(node.comment_count ?? 0) > 0 && (
-        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-          <span className="flex items-center gap-0.5" title={`${node.comment_count} comments`}>
-            💬 {node.comment_count}
-          </span>
+        <div className="flex items-center gap-0.5 text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+          <MessageSquare className="w-3 h-3" />
+          <span>{node.comment_count}</span>
         </div>
       )}
 
-      {/* Add Child Button - only show for phases/root on hover */}
+      {/* Add Child Button */}
       {canAddChildren && onAddChild && (
         <button
           onClick={(e) => {
@@ -245,14 +289,14 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             onAddChild(node.id);
           }}
           className={`
-            p-1 rounded transition-all flex-shrink-0
-            text-gray-400 hover:text-blue-600 hover:bg-blue-50 
-            dark:hover:text-blue-400 dark:hover:bg-blue-900/30
+            p-0.5 rounded-md transition-all duration-150 flex-shrink-0
+            text-gray-400 hover:text-blue-500 hover:bg-blue-50
+            dark:hover:text-blue-400 dark:hover:bg-blue-500/10
             ${isHovered ? 'opacity-100' : 'opacity-0'}
           `}
           title="Add task"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
       )}
     </motion.div>

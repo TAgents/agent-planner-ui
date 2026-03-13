@@ -24,7 +24,11 @@ import {
   Bot,
   MessageSquare,
   Plug,
-  ExternalLink
+  ExternalLink,
+  Circle,
+  RotateCw,
+  Check,
+  Archive
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
@@ -37,12 +41,20 @@ import { PLAN_EVENTS } from '../types/websocket';
 
 // Sort options
 const SORT_OPTIONS = [
-  { value: 'updated_desc', label: 'Recently Active' },
-  { value: 'created_desc', label: 'Newest First' },
-  { value: 'created_asc', label: 'Oldest First' },
+  { value: 'updated_desc', label: 'Recent' },
+  { value: 'created_desc', label: 'Newest' },
+  { value: 'created_asc', label: 'Oldest' },
   { value: 'title_asc', label: 'A-Z' },
-  { value: 'progress_desc', label: 'Most Progress' },
+  { value: 'progress_desc', label: 'Progress' },
 ];
+
+// Status accent colors for left border
+const statusAccentColors: Record<string, string> = {
+  active: 'border-l-amber-400',
+  completed: 'border-l-emerald-400',
+  draft: 'border-l-gray-300 dark:border-l-gray-600',
+  archived: 'border-l-gray-300 dark:border-l-gray-500',
+};
 
 // Hook to batch fetch pending decision counts for all plans
 // DISABLED: Causes 429 rate limiting when fetching for many plans simultaneously
@@ -201,10 +213,43 @@ const EmptyPlansGuide: React.FC = () => {
   );
 };
 
+// Confirmation modal component (shared by delete/restore)
+const ConfirmModal: React.FC<{
+  title: string;
+  message: string;
+  confirmLabel: string;
+  loadingLabel: string;
+  isLoading: boolean;
+  variant: 'danger' | 'success';
+  onConfirm: (e: React.MouseEvent) => void;
+  onCancel: (e: React.MouseEvent) => void;
+}> = ({ title, message, confirmLabel, loadingLabel, isLoading, variant, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={onCancel}>
+    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-5 max-w-sm mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1.5">{title}</h3>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{message}</p>
+      <div className="flex gap-2 justify-end">
+        <button onClick={onCancel} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={isLoading}
+          className={`px-3 py-1.5 text-xs font-medium text-white rounded-md transition-colors ${
+            variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+          }`}
+        >
+          {isLoading ? loadingLabel : confirmLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 // Enhanced Plan card component that fetches its own node data
-const PlanCard: React.FC<{ 
-  plan: Plan; 
-  viewMode: 'grid' | 'list'; 
+const PlanCard: React.FC<{
+  plan: Plan;
+  viewMode: 'grid' | 'list';
   pendingDecisionsCount?: number;
 }> = ({ plan, viewMode, pendingDecisionsCount = 0 }) => {
   const { nodes, isLoading } = useNodes(plan.id);
@@ -213,7 +258,6 @@ const PlanCard: React.FC<{
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   const isArchived = plan.status === 'archived';
-  const needsAttention = pendingDecisionsCount > 0;
 
   // Extract visibility information
   const isPublic = plan.visibility === 'public' || plan.metadata?.is_public === true;
@@ -222,486 +266,187 @@ const PlanCard: React.FC<{
   const nodeCount = nodes?.length || 0;
   const completedNodes = nodes?.filter(n => n.status === 'completed').length || 0;
   const inProgressNodes = nodes?.filter(n => n.status === 'in_progress').length || 0;
+  const blockedNodes = nodes?.filter(n => n.status === 'blocked').length || 0;
   const progress = nodeCount > 0 ? Math.round((completedNodes / nodeCount) * 100) : 0;
 
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowDeleteConfirm(true);
-  };
+  const handleDelete = async (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setShowDeleteConfirm(true); };
+  const handleRestore = async (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setShowRestoreConfirm(true); };
+  const confirmDelete = async (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); try { await deletePlan.mutateAsync(plan.id); } catch (error) { console.error('Failed to archive plan:', error); } setShowDeleteConfirm(false); };
+  const confirmRestore = async (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); try { await updatePlan.mutateAsync({ planId: plan.id, data: { status: 'active' } }); } catch (error) { console.error('Failed to restore plan:', error); } setShowRestoreConfirm(false); };
+  const cancelDelete = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setShowDeleteConfirm(false); };
+  const cancelRestore = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setShowRestoreConfirm(false); };
 
-  const handleRestore = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowRestoreConfirm(true);
-  };
-
-  const confirmDelete = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await deletePlan.mutateAsync(plan.id);
-    } catch (error) {
-      console.error('Failed to archive plan:', error);
-    }
-    setShowDeleteConfirm(false);
-  };
-
-  const confirmRestore = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await updatePlan.mutateAsync({
-        planId: plan.id,
-        data: { status: 'active' }
-      });
-    } catch (error) {
-      console.error('Failed to restore plan:', error);
-    }
-    setShowRestoreConfirm(false);
-  };
-
-  const cancelDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowDeleteConfirm(false);
-  };
-
-  const cancelRestore = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowRestoreConfirm(false);
-  };
-
-  // Determine status color classes
-  const getStatusClasses = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      case 'archived':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
+  // Segmented progress bar widths
+  const completedWidth = nodeCount > 0 ? (completedNodes / nodeCount) * 100 : 0;
+  const inProgressWidth = nodeCount > 0 ? (inProgressNodes / nodeCount) * 100 : 0;
+  const blockedWidth = nodeCount > 0 ? (blockedNodes / nodeCount) * 100 : 0;
 
   if (viewMode === 'list') {
     return (
       <div className="relative group">
         <Link
           to={`/app/plans/${plan.id}`}
-          className={`block bg-white dark:bg-gray-800 rounded-xl border-2 hover:shadow-lg transition-all duration-200 overflow-hidden ${
-            needsAttention
-              ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-400 dark:hover:border-amber-600'
-              : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
-          }`}
+          className={`block bg-white dark:bg-gray-900/80 rounded-lg border border-gray-200/80 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm transition-all duration-150 overflow-hidden border-l-[3px] ${statusAccentColors[plan.status] || 'border-l-gray-300'}`}
         >
-          <div className="p-4">
-            {/* Mobile layout: stacked vertically */}
-            <div className="flex flex-col gap-3 sm:hidden">
-              {/* Title row - most prominent */}
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <FolderOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white leading-tight line-clamp-2" title={plan.title}>
-                    {plan.title}
-                  </h3>
-                  {plan.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mt-0.5" title={plan.description}>
-                      {plan.description}
-                    </p>
-                  )}
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5" />
+          <div className="px-4 py-3">
+            {/* Mobile layout */}
+            <div className="flex flex-col gap-2 sm:hidden">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-sm text-gray-900 dark:text-white leading-tight line-clamp-1 flex-1" title={plan.title}>
+                  {plan.title}
+                </h3>
+                <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0" />
               </div>
-              {/* Stats row */}
-              <div className="flex items-center gap-2 ml-11 flex-wrap">
-                <span className={`px-2 py-0.5 text-xs font-medium rounded whitespace-nowrap ${getStatusClasses(plan.status)}`}>
-                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-lg border whitespace-nowrap ${
-                    isPublic
-                      ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
-                      : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                  }`}
-                >
-                  {isPublic ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                  {isPublic ? 'Public' : 'Private'}
-                </span>
-                {!isLoading && (
-                  <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{nodeCount} nodes</span>
-                )}
-                {pendingDecisionsCount > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    <HelpCircle className="w-3 h-3" />
-                    {pendingDecisionsCount}
-                  </span>
-                )}
-              </div>
-              {/* Progress bar */}
-              <div className="flex items-center gap-2 ml-11">
-                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 shadow-inner overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 transition-all duration-500 rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 w-8 text-right">
-                  {isLoading ? '-' : `${progress}%`}
-                </span>
+              {plan.description && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{plan.description}</p>
+              )}
+              <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500">
+                <span>{nodeCount} nodes</span>
+                <span>{formatDistanceToNow(plan.updated_at)}</span>
+                <span className="tabular-nums font-medium">{progress}%</span>
               </div>
             </div>
 
-            {/* Desktop layout: single row */}
+            {/* Desktop layout */}
             <div className="hidden sm:flex items-center gap-4">
-              {/* Icon */}
-              <div className="flex-shrink-0">
-                <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-
-              {/* Title and Description */}
+              {/* Title + Description */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
-                  {plan.title}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={plan.title}>
+                    {plan.title}
+                  </h3>
+                  {isPublic && (
+                    <span title="Public"><Unlock className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" /></span>
+                  )}
+                </div>
                 {plan.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mt-1" title={plan.description}>
-                    {plan.description}
-                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{plan.description}</p>
                 )}
               </div>
 
-              {/* Stats Section */}
-              <div className="flex items-center gap-4 flex-shrink-0">
-                {/* Visibility Badge */}
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border-2 whitespace-nowrap ${
-                    isPublic
-                      ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
-                      : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                  }`}
-                  title={isPublic ? 'Public plan - anyone can view' : 'Private plan'}
-                >
-                  {isPublic ? (
-                    <>
-                      <Unlock className="w-3.5 h-3.5" />
-                      <span>Public</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Private</span>
-                    </>
-                  )}
+              {/* Stats — compact */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">
+                  {nodeCount} nodes
                 </span>
 
-                {/* Node Count */}
-                <div className="text-sm text-gray-600 dark:text-gray-400 min-w-[70px] text-right">
-                  {isLoading ? (
-                    <span className="inline-block w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                  ) : (
-                    <span className="font-medium">{nodeCount} nodes</span>
-                  )}
-                </div>
-
-                {/* Last Activity */}
-                <div className="text-sm text-gray-500 dark:text-gray-400 min-w-[80px] hidden lg:block" title={`Updated ${formatDate(plan.updated_at)}`}>
+                <span className="text-[11px] text-gray-400 dark:text-gray-500 hidden lg:block" title={formatDate(plan.updated_at)}>
                   {formatDistanceToNow(plan.updated_at)}
-                </div>
+                </span>
 
-                {/* Progress Bar */}
-                <div className="flex items-center gap-2">
-                  <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 shadow-inner overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 transition-all duration-500 rounded-full"
-                      style={{ width: `${progress}%` }}
-                    />
+                {/* Segmented progress bar */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
+                    {completedWidth > 0 && <div className="h-full bg-emerald-400 transition-all duration-500" style={{ width: `${completedWidth}%` }} />}
+                    {inProgressWidth > 0 && <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${inProgressWidth}%` }} />}
+                    {blockedWidth > 0 && <div className="h-full bg-red-400 transition-all duration-500" style={{ width: `${blockedWidth}%` }} />}
                   </div>
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 w-10 text-right">
+                  <span className="text-[11px] tabular-nums font-medium text-gray-500 dark:text-gray-400 w-7 text-right">
                     {isLoading ? '-' : `${progress}%`}
                   </span>
                 </div>
 
-                {/* Pending Decisions Indicator */}
                 {pendingDecisionsCount > 0 && (
-                  <span 
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                    title={`${pendingDecisionsCount} pending decision${pendingDecisionsCount !== 1 ? 's' : ''}`}
-                  >
-                    <HelpCircle className="w-3.5 h-3.5" />
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                    <HelpCircle className="w-3 h-3" />
                     {pendingDecisionsCount}
                   </span>
                 )}
 
-                {/* Status Badge */}
-                <span className={`px-2.5 py-1 text-xs font-medium rounded whitespace-nowrap ${getStatusClasses(plan.status)}`}>
-                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                </span>
-
-                {/* Delete/Restore Button */}
+                {/* Archive/Restore */}
                 {isArchived ? (
-                  <button
-                    onClick={handleRestore}
-                    className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    title="Restore plan"
-                  >
-                    <RotateCcw className="w-4 h-4" />
+                  <button onClick={handleRestore} className="p-1 text-gray-300 hover:text-emerald-500 dark:text-gray-600 dark:hover:text-emerald-400 rounded transition-colors opacity-0 group-hover:opacity-100" title="Restore">
+                    <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 ) : (
-                  <button
-                    onClick={handleDelete}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    title="Archive plan"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                  <button onClick={handleDelete} className="p-1 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 rounded transition-colors opacity-0 group-hover:opacity-100" title="Archive">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
 
-                {/* Chevron */}
-                <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" />
               </div>
             </div>
           </div>
         </Link>
 
-        {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelDelete}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Archive Plan?</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                This will archive "{plan.title}". You can restore it later from archived plans.
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={cancelDelete}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                  disabled={deletePlan.isLoading}
-                >
-                  {deletePlan.isLoading ? 'Archiving...' : 'Archive'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfirmModal title="Archive Plan?" message={`This will archive "${plan.title}". You can restore it later.`}
+            confirmLabel="Archive" loadingLabel="Archiving..." isLoading={deletePlan.isLoading} variant="danger"
+            onConfirm={confirmDelete} onCancel={cancelDelete} />
         )}
-
-        {/* Restore Confirmation Modal */}
         {showRestoreConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelRestore}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Restore Plan?</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                This will restore "{plan.title}" and set its status to Active.
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={cancelRestore}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmRestore}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                  disabled={updatePlan.isLoading}
-                >
-                  {updatePlan.isLoading ? 'Restoring...' : 'Restore'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfirmModal title="Restore Plan?" message={`This will restore "${plan.title}" and set it to Active.`}
+            confirmLabel="Restore" loadingLabel="Restoring..." isLoading={updatePlan.isLoading} variant="success"
+            onConfirm={confirmRestore} onCancel={cancelRestore} />
         )}
       </div>
     );
   }
 
+  // Grid view
   return (
     <div className="relative group">
       <Link
         to={`/app/plans/${plan.id}`}
-        className="block p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 hover:-translate-y-1 transition-all duration-200"
+        className={`block p-4 bg-white dark:bg-gray-900/80 rounded-lg border border-gray-200/80 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 border-l-[3px] ${statusAccentColors[plan.status] || 'border-l-gray-300'}`}
       >
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            {/* Visibility Badge */}
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border-2 whitespace-nowrap ${
-                isPublic
-                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
-                  : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-              }`}
-              title={isPublic ? 'Public plan - anyone can view' : 'Private plan'}
-            >
-              {isPublic ? (
-                <>
-                  <Unlock className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Public</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Private</span>
-                </>
-              )}
-            </span>
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            {isPublic && <span title="Public"><Unlock className="w-3 h-3 text-gray-400" /></span>}
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-1 text-xs font-medium rounded ${getStatusClasses(plan.status)}`}>
-              {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-            </span>
+          <div className="flex items-center gap-1">
             {isArchived ? (
-              <button
-                onClick={handleRestore}
-                className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                title="Restore plan"
-              >
-                <RotateCcw className="w-4 h-4" />
+              <button onClick={handleRestore} className="p-1 text-gray-300 hover:text-emerald-500 dark:text-gray-600 rounded transition-colors opacity-0 group-hover:opacity-100" title="Restore">
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
             ) : (
-              <button
-                onClick={handleDelete}
-                className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                title="Archive plan"
-              >
-                <Trash2 className="w-4 h-4" />
+              <button onClick={handleDelete} className="p-1 text-gray-300 hover:text-red-500 dark:text-gray-600 rounded transition-colors opacity-0 group-hover:opacity-100" title="Archive">
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         </div>
 
-        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 leading-tight" title={plan.title}>
+        <h3 className="font-medium text-sm text-gray-900 dark:text-white mb-1 line-clamp-2 leading-snug" title={plan.title}>
           {plan.title}
         </h3>
 
         {plan.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 leading-relaxed" title={plan.description}>
-            {plan.description}
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">{plan.description}</p>
         )}
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-              <span className="font-medium">Progress</span>
-              <span className="font-semibold text-gray-700 dark:text-gray-300">{isLoading ? '...' : `${progress}%`}</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 shadow-inner overflow-hidden">
-              {isLoading ? (
-                <div className="h-2.5 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse" />
-              ) : (
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 transition-all duration-500 rounded-full"
-                  style={{ width: `${progress}%` }}
-                />
-              )}
-            </div>
+        <div className="space-y-2">
+          {/* Segmented progress bar */}
+          <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
+            {completedWidth > 0 && <div className="h-full bg-emerald-400 transition-all duration-500" style={{ width: `${completedWidth}%` }} />}
+            {inProgressWidth > 0 && <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${inProgressWidth}%` }} />}
+            {blockedWidth > 0 && <div className="h-full bg-red-400 transition-all duration-500" style={{ width: `${blockedWidth}%` }} />}
           </div>
 
-          <div className="flex justify-between text-xs">
-            <div className="text-gray-600 dark:text-gray-400">
-              {isLoading ? (
-                <span className="inline-block w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              ) : (
-                <span>
-                  {nodeCount > 0 ? (
-                    <>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">{nodeCount}</span> nodes
-                      {completedNodes > 0 && (
-                        <span className="text-green-600 dark:text-green-400 ml-2">
-                          • {completedNodes} done
-                        </span>
-                      )}
-                      {inProgressNodes > 0 && (
-                        <span className="text-blue-600 dark:text-blue-400 ml-2">
-                          • {inProgressNodes} active
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    'No nodes yet'
-                  )}
-                </span>
+          <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
+            <span>
+              {isLoading ? '...' : (
+                <>
+                  {completedNodes}/{nodeCount} done
+                  {inProgressNodes > 0 && <span className="text-amber-500 ml-1.5">{inProgressNodes} active</span>}
+                </>
               )}
-            </div>
-            <span className="text-gray-500 dark:text-gray-400 font-medium">
-              {formatDate(plan.updated_at)}
             </span>
+            <span>{formatDistanceToNow(plan.updated_at)}</span>
           </div>
         </div>
       </Link>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelDelete}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Archive Plan?</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              This will archive "{plan.title}". You can restore it later from archived plans.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={cancelDelete}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                disabled={deletePlan.isLoading}
-              >
-                {deletePlan.isLoading ? 'Archiving...' : 'Archive'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal title="Archive Plan?" message={`This will archive "${plan.title}". You can restore it later.`}
+          confirmLabel="Archive" loadingLabel="Archiving..." isLoading={deletePlan.isLoading} variant="danger"
+          onConfirm={confirmDelete} onCancel={cancelDelete} />
       )}
-
-      {/* Restore Confirmation Modal */}
       {showRestoreConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={cancelRestore}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Restore Plan?</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              This will restore "{plan.title}" and set its status to Active.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={cancelRestore}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRestore}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                disabled={updatePlan.isLoading}
-              >
-                {updatePlan.isLoading ? 'Restoring...' : 'Restore'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal title="Restore Plan?" message={`This will restore "${plan.title}" and set it to Active.`}
+          confirmLabel="Restore" loadingLabel="Restoring..." isLoading={updatePlan.isLoading} variant="success"
+          onConfirm={confirmRestore} onCancel={cancelRestore} />
       )}
     </div>
   );
@@ -800,151 +545,136 @@ const PlansListSimplified: React.FC = () => {
     return sorted;
   }, [filteredPlans, sortBy]);
 
+  // Status filter counts
+  const statusCounts = useMemo(() => ({
+    all: plans.filter((p: Plan) => p.status !== 'archived').length,
+    active: plans.filter((p: Plan) => p.status === 'active').length,
+    draft: plans.filter((p: Plan) => p.status === 'draft').length,
+    completed: plans.filter((p: Plan) => p.status === 'completed').length,
+    archived: plans.filter((p: Plan) => p.status === 'archived').length,
+  }), [plans]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="spinner w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-600 dark:text-gray-400 font-medium">Loading your plans...</p>
+          <div className="w-8 h-8 border-2 border-gray-300 dark:border-gray-600 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Loading plans...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-        <div className="container mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 sm:mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Plans</h1>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-                {plans.length > 0
-                  ? `${plans.length} plan${plans.length !== 1 ? 's' : ''} in your workspace`
-                  : 'Create your first plan to get started'
-                }
-              </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Header — compact, integrated */}
+      <div className="border-b border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          {/* Title + search row */}
+          <div className="flex items-center gap-4 py-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <h1 className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight">Plans</h1>
+              <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">
+                {plans.length}
+              </span>
             </div>
 
-          </div>
-
-          {/* Search and Filters */}
-          {plans.length > 0 && (
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            {/* Search — inline, grows */}
+            {plans.length > 0 && (
+              <div className="flex-1 relative max-w-xs">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search plans..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-colors"
                 />
               </div>
+            )}
 
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Status Filter */}
-                <div className="flex overflow-x-auto bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700 max-w-full">
-                  {(['all', 'active', 'draft', 'completed', 'archived'] as const).map(status => {
-                    // Count plans for each status
-                    const count = status === 'all'
-                      ? plans.filter((p: Plan) => p.status !== 'archived').length
-                      : plans.filter((p: Plan) => p.status === status).length;
+            {/* Right side controls */}
+            {plans.length > 0 && (
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                {/* Sort */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none text-[11px] text-gray-500 dark:text-gray-400 bg-transparent border-0 pr-4 py-1 cursor-pointer focus:ring-0 focus:outline-none"
+                >
+                  {SORT_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
 
-                    return (
-                      <button
-                        key={status}
-                        onClick={() => setFilterStatus(status)}
-                        className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all capitalize whitespace-nowrap ${
-                          filterStatus === status
-                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                        }`}
-                      >
-                        {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-                        {count > 0 && (
-                          <span className="ml-1.5 text-xs opacity-60">({count})</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Sort Dropdown */}
-                <div className="relative">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                  >
-                    {SORT_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ArrowUpDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-
-                {/* View Mode Toggle - hidden on mobile (forced list view) */}
-                <div className="hidden sm:flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border-2 border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition-all ${
-                      viewMode === 'grid'
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-800'
-                    }`}
-                    title="Grid view"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-md transition-all ${
-                      viewMode === 'list'
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-800'
-                    }`}
-                    title="List view"
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* View toggle — only show when > 2 plans */}
+                {plans.length > 2 && (
+                  <div className="hidden sm:flex bg-gray-100 dark:bg-gray-800/50 rounded-md p-0.5 border border-gray-200/60 dark:border-gray-800/60">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400'}`}
+                      title="Grid"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-1 rounded transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400'}`}
+                      title="List"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
+            )}
+          </div>
+
+          {/* Filter pills — single row, tight */}
+          {plans.length > 0 && (
+            <div className="flex items-center gap-1 pb-2.5 -mt-0.5 overflow-x-auto">
+              {(['all', 'active', 'draft', 'completed', 'archived'] as const).map(status => {
+                const count = statusCounts[status];
+                const isSelected = filterStatus === status;
+                return (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                    {count > 0 && <span className={`ml-1 tabular-nums ${isSelected ? 'opacity-70' : 'opacity-50'}`}>{count}</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-4 sm:py-8">
-        {/* Plans Grid/List or Empty State */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
         {plans.length === 0 ? (
           <EmptyPlansGuide />
         ) : sortedPlans.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Search className="w-10 h-10 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              No plans found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Try adjusting your search or filters
-            </p>
+          <div className="text-center py-16">
+            <Search className="w-6 h-6 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">No plans match your search</p>
           </div>
         ) : (
           <div className={viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-            : 'space-y-3'
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'
+            : 'space-y-1.5'
           }>
             {sortedPlans.map((plan: Plan) => (
-              <PlanCard 
-                key={plan.id} 
-                plan={plan} 
-                viewMode={viewMode} 
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                viewMode={viewMode}
                 pendingDecisionsCount={pendingDecisionCounts[plan.id] || 0}
               />
             ))}

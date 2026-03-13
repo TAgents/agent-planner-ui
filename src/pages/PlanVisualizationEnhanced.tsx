@@ -8,7 +8,11 @@ import {
   HelpCircle,
   X,
   Settings,
+  GitBranch,
+  List,
+  MoreHorizontal,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Import new components
 import EmptyStateGuide from '../components/visualization/EmptyStateGuide';
@@ -41,6 +45,10 @@ import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
+
+// Import dependency graph
+import DependencyGraph from '../components/visualization/DependencyGraph';
+import { useDependencies, useCriticalPath } from '../hooks/useDependencies';
 
 // Enhanced Help Modal Component with keyboard shortcuts
 const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -256,6 +264,36 @@ const PlanVisualizationEnhanced: React.FC = () => {
     },
   });
 
+  // View mode: tree (default) or dependencies
+  const [viewMode, setViewMode] = useState<'tree' | 'dependencies'>('tree');
+
+  // Dependency data
+  const {
+    dependencies,
+    isLoading: isDepsLoading,
+    createDependency,
+    deleteDependency,
+  } = useDependencies(planId || '');
+
+  const { criticalPath } = useCriticalPath(planId || '', viewMode === 'dependencies');
+
+  const criticalPathNodeIds = useMemo(() => {
+    if (!criticalPath?.path) return new Set<string>();
+    return new Set(criticalPath.path.map((n: any) => n.node_id));
+  }, [criticalPath]);
+
+  const handleDeleteDependency = useCallback((depId: string) => {
+    deleteDependency.mutate(depId);
+  }, [deleteDependency]);
+
+  const handleCreateDependency = useCallback((sourceId: string, targetId: string, type: 'blocks' | 'requires' | 'relates_to') => {
+    createDependency.mutate({
+      source_node_id: sourceId,
+      target_node_id: targetId,
+      dependency_type: type,
+    });
+  }, [createDependency]);
+
   // UI state
   const [showHelp, setShowHelp] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -270,6 +308,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
   
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Overflow menu state
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   
   // Handle activity actions
   const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
@@ -532,6 +573,13 @@ const PlanVisualizationEnhanced: React.FC = () => {
     );
   }, [planId, moveNode, refetchNodes]);
 
+  // Progress calculation for header ring
+  const headerProgress = useMemo(() => {
+    if (planNodes.length === 0) return 0;
+    const completed = planNodes.filter(n => n.status === 'completed').length;
+    return Math.round((completed / planNodes.length) * 100);
+  }, [planNodes]);
+
   // Loading state
   if (isPlanLoading || isNodesLoading) {
     return (
@@ -570,19 +618,66 @@ const PlanVisualizationEnhanced: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Enhanced Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm z-10 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-950">
+      {/* Compact Header */}
+      <header className="bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+        <div className="px-3 sm:px-4 h-12 flex items-center justify-between gap-2">
           {/* Left section */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <Link to="/app/plans" className="p-2 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0">
-              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Link to="/app/plans" className="p-1.5 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors flex-shrink-0">
+              <ArrowLeft className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </Link>
-            <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
+
+            {/* Progress Ring */}
+            <div className="flex-shrink-0" title={`${headerProgress}% complete`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" className="transform -rotate-90">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-100 dark:text-gray-800" />
+                <circle
+                  cx="12" cy="12" r="10" fill="none" strokeWidth="2"
+                  strokeDasharray={`${headerProgress * 0.628} 62.8`}
+                  strokeLinecap="round"
+                  className="text-emerald-500 dark:text-emerald-400 transition-all duration-700"
+                />
+              </svg>
+            </div>
+
+            <h1 className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={plan.title}>
               {plan.title}
             </h1>
-            
+
+            {/* View mode toggle */}
+            <div className="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('tree')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150 ${
+                  viewMode === 'tree'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+                title="Tree view"
+              >
+                <List className="w-3.5 h-3.5" />
+                Tree
+              </button>
+              <button
+                onClick={() => { setViewMode('dependencies'); closeNodeDetails(); }}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150 ${
+                  viewMode === 'dependencies'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+                title="Dependency graph"
+              >
+                <GitBranch className="w-3.5 h-3.5" />
+                Dependencies
+                {dependencies.length > 0 && (
+                  <span className="ml-0.5 px-1 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] tabular-nums">
+                    {dependencies.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
             {/* Show active viewers */}
             {planViewers.length > 0 && (
               <div className="hidden sm:block">
@@ -592,9 +687,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
             )}
           </div>
 
-          {/* Right section */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Visibility Toggle - hidden on mobile */}
+          {/* Right section — primary actions + overflow */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Visibility Toggle */}
             <div className="hidden sm:block">
               <VisibilityToggle
                 planId={planId || ''}
@@ -604,7 +699,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
               />
             </div>
 
-            {/* GitHub Repository Badge - hidden on mobile */}
+            {/* GitHub Repo Badge */}
             <div className="hidden md:block">
               <GitHubRepoBadge
                 planId={planId || ''}
@@ -627,50 +722,68 @@ const PlanVisualizationEnhanced: React.FC = () => {
               />
             </div>
 
-            {/* Decision Badge - shows pending decisions count */}
+            {/* Decision Badge */}
             <DecisionBadge
               planId={planId || ''}
               onClick={() => setShowDecisionPanel(true)}
             />
 
-            {/* Settings button */}
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Plan Settings"
-            >
-              <Settings className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            </button>
-
-            {/* WebSocket connection status indicator - hidden on mobile */}
-            <div className="hidden sm:flex px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg" title="Real-time updates">
-              <WebSocketStatus showDetails={false} />
+            {/* Overflow menu for secondary actions */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                title="More actions"
+              >
+                <MoreHorizontal className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </button>
+              <AnimatePresence>
+                {showOverflowMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowOverflowMenu(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+                    >
+                      <button
+                        onClick={() => { setShowSettingsModal(true); setShowOverflowMenu(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <Settings className="w-3.5 h-3.5" /> Settings
+                      </button>
+                      <button
+                        onClick={() => { toggleFullScreen(); setShowOverflowMenu(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+                        {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                      </button>
+                      <button
+                        onClick={() => { setShowHelp(true); setShowOverflowMenu(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" /> Keyboard Shortcuts
+                      </button>
+                      <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                      <div className="px-3 py-1.5 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <WebSocketStatus showDetails={false} />
+                        <span>Real-time</span>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
-
-            {/* Fullscreen button - hidden on mobile (most mobile browsers don't support it well) */}
-            <button
-              onClick={toggleFullScreen}
-              className="hidden sm:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Fullscreen"
-            >
-              {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-            </button>
-            
-            {/* Help button - hidden on mobile (keyboard shortcuts aren't relevant) */}
-            <button
-              onClick={() => setShowHelp(true)}
-              className="hidden sm:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Help (?)"
-            >
-              <HelpCircle className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </header>
 
       {/* Breadcrumb Navigation - shows when a node is selected */}
       {uiState.nodeDetails.selectedNodeId && (
-        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-4 py-1.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
           <PlanBreadcrumb
             planId={planId || ''}
             planTitle={plan.title}
@@ -683,22 +796,39 @@ const PlanVisualizationEnhanced: React.FC = () => {
 
       {/* Main Content - Split Pane Layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Tree View - Takes remaining space with independent scrolling */}
-        <div className="flex-1 min-w-0 overflow-hidden border-r border-gray-200 dark:border-gray-700">
-          {planNodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
-            <EmptyStateGuide
-              planTitle={plan.title}
-              onCreateFirstNode={handleCreateNode}
-            />
+        {/* Main view area - Tree or Dependency Graph */}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          {viewMode === 'tree' ? (
+            // Tree View
+            planNodes.length === 0 && !isPlanLoading && !isNodesLoading ? (
+              <EmptyStateGuide
+                planTitle={plan.title}
+                onCreateFirstNode={handleCreateNode}
+              />
+            ) : (
+              <PlanTreeView
+                nodes={planNodes}
+                selectedNodeId={uiState.nodeDetails.selectedNodeId}
+                onNodeSelect={handleNodeSelect}
+                onNodeStatusChange={handleStatusChange}
+                onNodeCreate={() => handleCreateNode()}
+                onNodeCreateInline={handleInlineNodeCreate}
+                onNodeMove={handleNodeMove}
+                dependencies={dependencies}
+                className="h-full"
+              />
+            )
           ) : (
-            <PlanTreeView
+            // Dependency Graph View
+            <DependencyGraph
+              planId={planId}
               nodes={planNodes}
-              selectedNodeId={uiState.nodeDetails.selectedNodeId}
-              onNodeSelect={handleNodeSelect}
-              onNodeStatusChange={handleStatusChange}
-              onNodeCreate={() => handleCreateNode()}
-              onNodeCreateInline={handleInlineNodeCreate}
-              onNodeMove={handleNodeMove}
+              dependencies={dependencies}
+              criticalPathNodeIds={criticalPathNodeIds}
+              onNodeClick={handleNodeSelect}
+              onDeleteDependency={handleDeleteDependency}
+              onCreateDependency={handleCreateDependency}
+              isLoading={isDepsLoading}
               className="h-full"
             />
           )}
@@ -773,21 +903,31 @@ const PlanVisualizationEnhanced: React.FC = () => {
         )}
 
         {/* Sidebar - Desktop & Tablet (Fixed width split pane) */}
-        {uiState.sidebar.isOpen && uiState.nodeDetails.isOpen && selectedNode && (
-          <aside className="hidden md:flex flex-col flex-shrink-0 w-[480px] lg:w-[560px] xl:w-[640px] border-l border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
-            <UnifiedNodeDetails
-              node={selectedNode}
-              planId={planId || ''}
-              currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
-              activeUsers={[]}
-              onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
-              onLogAdd={handleLogAdd}
-              onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
-              onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
-              onClose={closeNodeDetails}
-            />
-          </aside>
-        )}
+        <AnimatePresence mode="wait">
+          {uiState.sidebar.isOpen && uiState.nodeDetails.isOpen && selectedNode && (
+            <motion.aside
+              key="detail-panel"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 35, mass: 0.8 }}
+              className="hidden md:flex flex-col flex-shrink-0 w-[320px] lg:w-[380px] xl:w-[420px] border-l border-gray-200 dark:border-gray-800 overflow-hidden"
+            >
+              <UnifiedNodeDetails
+                node={selectedNode}
+                planId={planId || ''}
+                currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
+                activeUsers={[]}
+                onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
+                onLogAdd={handleLogAdd}
+                onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
+                onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
+                onClose={closeNodeDetails}
+                allNodes={planNodes}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
         {/* Node Details Modal - Mobile Only */}
         {uiState.nodeDetails.isOpen && selectedNode && (
@@ -810,6 +950,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
                 onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}
+                allNodes={planNodes}
               />
             </div>
           </div>

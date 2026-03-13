@@ -1,25 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-  ExternalLink,
-  Copy,
-  BookOpen,
-  MessageSquare,
-  Check,
-  X,
-  AlertCircle,
-  RefreshCw,
-  Hash,
-  Unplug,
-} from 'lucide-react';
+import { Copy, MessageSquare, Check, X, AlertCircle, RefreshCw, Hash, Unplug, BookOpen, ExternalLink } from 'lucide-react';
 import { SettingsNav } from '../../components/settings/SettingsLayout';
 import { slackService, SlackStatus, SlackChannel } from '../../services/api';
 
 const IntegrationsSettings: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
-  // Slack state
   const [slackStatus, setSlackStatus] = useState<SlackStatus | null>(null);
   const [slackLoading, setSlackLoading] = useState(true);
   const [channels, setChannels] = useState<SlackChannel[]>([]);
@@ -28,7 +15,7 @@ const IntegrationsSettings: React.FC = () => {
 
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), 4000);
   };
 
   const fetchSlackStatus = useCallback(async () => {
@@ -36,59 +23,33 @@ const IntegrationsSettings: React.FC = () => {
       setSlackLoading(true);
       const data = await slackService.getStatus();
       setSlackStatus(data);
-    } catch {
-      setSlackStatus({ connected: false });
-    } finally {
-      setSlackLoading(false);
-    }
+    } catch { setSlackStatus({ connected: false }); }
+    finally { setSlackLoading(false); }
   }, []);
 
-  useEffect(() => {
-    fetchSlackStatus();
-  }, [fetchSlackStatus]);
+  useEffect(() => { fetchSlackStatus(); }, [fetchSlackStatus]);
 
-  // Handle OAuth callback result
   useEffect(() => {
     const slackResult = searchParams.get('slack');
-    if (slackResult === 'success') {
-      showNotification('Slack connected successfully!', 'success');
-      fetchSlackStatus();
-    } else if (slackResult === 'error') {
-      const reason = searchParams.get('reason') || 'Unknown error';
-      showNotification(`Slack connection failed: ${reason}`, 'error');
-    }
+    if (slackResult === 'success') { showNotification('Slack connected', 'success'); fetchSlackStatus(); }
+    else if (slackResult === 'error') { showNotification(`Slack failed: ${searchParams.get('reason') || 'Unknown'}`, 'error'); }
   }, [searchParams, fetchSlackStatus]);
 
   const handleSlackInstall = async () => {
-    try {
-      const data = await slackService.getInstallUrl();
-      window.location.href = data.url;
-    } catch {
-      showNotification('Failed to start Slack installation', 'error');
-    }
+    try { const data = await slackService.getInstallUrl(); window.location.href = data.url; }
+    catch { showNotification('Failed to start Slack install', 'error'); }
   };
 
   const handleSlackDisconnect = async () => {
-    if (!window.confirm('Are you sure you want to disconnect Slack?')) return;
-    try {
-      await slackService.disconnect();
-      setSlackStatus({ connected: false });
-      showNotification('Slack disconnected', 'success');
-    } catch {
-      showNotification('Failed to disconnect Slack', 'error');
-    }
+    if (!window.confirm('Disconnect Slack?')) return;
+    try { await slackService.disconnect(); setSlackStatus({ connected: false }); showNotification('Slack disconnected', 'success'); }
+    catch { showNotification('Failed to disconnect', 'error'); }
   };
 
   const handleLoadChannels = async () => {
-    try {
-      setChannelsLoading(true);
-      const data = await slackService.listChannels();
-      setChannels(data.channels);
-    } catch {
-      showNotification('Failed to load channels', 'error');
-    } finally {
-      setChannelsLoading(false);
-    }
+    try { setChannelsLoading(true); const data = await slackService.listChannels(); setChannels(data.channels); }
+    catch { showNotification('Failed to load channels', 'error'); }
+    finally { setChannelsLoading(false); }
   };
 
   const handleSelectChannel = async (channel: SlackChannel) => {
@@ -97,244 +58,180 @@ const IntegrationsSettings: React.FC = () => {
       setSlackStatus(prev => prev ? { ...prev, channel_id: channel.id, channel_name: channel.name } : prev);
       setChannels([]);
       showNotification(`Channel set to #${channel.name}`, 'success');
-    } catch {
-      showNotification('Failed to set channel', 'error');
-    }
+    } catch { showNotification('Failed to set channel', 'error'); }
   };
 
   const handleTestMessage = async () => {
-    try {
-      setTestSending(true);
-      await slackService.sendTestMessage();
-      showNotification('Test message sent!', 'success');
-    } catch {
-      showNotification('Failed to send test message', 'error');
-    } finally {
-      setTestSending(false);
-    }
+    try { setTestSending(true); await slackService.sendTestMessage(); showNotification('Test sent', 'success'); }
+    catch { showNotification('Failed to send test', 'error'); }
+    finally { setTestSending(false); }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    showNotification('Copied to clipboard', 'success');
+    showNotification('Copied', 'success');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage your API tokens and integrations
-          </p>
-        </div>
-
-        <SettingsNav />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <SettingsNav />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 space-y-4">
 
         {/* Notification */}
         {notification && (
-          <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs ${
             notification.type === 'success'
-              ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
-              : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
           }`}>
-            {notification.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            <span className="text-sm">{notification.message}</span>
-            <button onClick={() => setNotification(null)} className="ml-auto">
-              <X className="w-4 h-4" />
-            </button>
+            {notification.type === 'success' ? <Check className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+            <span className="flex-1">{notification.message}</span>
+            <button onClick={() => setNotification(null)} className="opacity-50 hover:opacity-100"><X className="w-3 h-3" /></button>
           </div>
         )}
 
-        {/* Slack Integration */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
-              <MessageSquare className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Slack Integration
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Receive agent requests and decision notifications in Slack
-              </p>
+        {/* Slack */}
+        <div className="bg-white dark:bg-gray-900/80 rounded-lg border border-gray-200/80 dark:border-gray-800/80">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800/60">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
+              <span className="text-xs font-semibold text-gray-900 dark:text-white">Slack</span>
             </div>
             {slackStatus?.connected && (
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-full">
+              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded font-medium">
                 Connected
               </span>
             )}
           </div>
 
-          {slackLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />
-            </div>
-          ) : slackStatus?.connected ? (
-            <div className="space-y-4">
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3">
+          <div className="p-4">
+            {slackLoading ? (
+              <div className="flex justify-center py-4">
+                <RefreshCw className="w-4 h-4 animate-spin text-gray-400" />
+              </div>
+            ) : slackStatus?.connected ? (
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      Workspace: {slackStatus.team_name}
-                    </p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-white">{slackStatus.team_name}</p>
                     {slackStatus.channel_name ? (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                        <Hash className="w-3 h-3" />
-                        {slackStatus.channel_name}
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Hash className="w-2.5 h-2.5" /> {slackStatus.channel_name}
                       </p>
                     ) : (
-                      <p className="text-sm text-amber-600 dark:text-amber-400">
-                        No channel selected — pick one below
-                      </p>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">No channel selected</p>
                     )}
                   </div>
                   <button
                     onClick={handleSlackDisconnect}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 text-[11px] text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                   >
-                    <Unplug className="w-4 h-4" />
-                    Disconnect
+                    <Unplug className="w-3 h-3" /> Disconnect
                   </button>
                 </div>
-              </div>
 
-              {/* Channel picker */}
-              <div>
-                <button
-                  onClick={handleLoadChannels}
-                  disabled={channelsLoading}
-                  className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  {channelsLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Hash className="w-4 h-4" />}
-                  {slackStatus.channel_name ? 'Change Channel' : 'Select Channel'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleLoadChannels}
+                    disabled={channelsLoading}
+                    className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {channelsLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Hash className="w-3 h-3" />}
+                    {slackStatus.channel_name ? 'Change' : 'Select Channel'}
+                  </button>
+                  {slackStatus.channel_id && (
+                    <button
+                      onClick={handleTestMessage}
+                      disabled={testSending}
+                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors disabled:opacity-50"
+                    >
+                      {testSending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
+                      Test
+                    </button>
+                  )}
+                </div>
 
                 {channels.length > 0 && (
-                  <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg divide-y divide-gray-200 dark:divide-gray-600">
+                  <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded-md divide-y divide-gray-100 dark:divide-gray-800/60">
                     {channels.map(ch => (
                       <button
                         key={ch.id}
                         onClick={() => handleSelectChannel(ch)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-2 ${
-                          ch.id === slackStatus.channel_id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                        className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1.5 ${
+                          ch.id === slackStatus.channel_id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
-                        <Hash className="w-3 h-3 text-gray-400" />
+                        <Hash className="w-2.5 h-2.5 text-gray-400" />
                         {ch.name}
-                        {ch.is_private && <span className="text-xs text-gray-400">🔒</span>}
-                        {ch.id === slackStatus.channel_id && <Check className="w-3 h-3 ml-auto text-blue-600" />}
+                        {ch.is_private && <span className="text-[9px] text-gray-400 ml-1">private</span>}
+                        {ch.id === slackStatus.channel_id && <Check className="w-2.5 h-2.5 ml-auto text-blue-500" />}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-
-              {/* Test message */}
-              {slackStatus.channel_id && (
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Get notified when agents request help or decisions are needed.
+                </p>
                 <button
-                  onClick={handleTestMessage}
-                  disabled={testSending}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  onClick={handleSlackInstall}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
                 >
-                  {testSending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                  Send Test Message
+                  <MessageSquare className="w-3 h-3" />
+                  Connect Slack
                 </button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Connect Slack to receive real-time notifications when agents request help, decisions are needed, or tasks change status.
-              </p>
-              <button
-                onClick={handleSlackInstall}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Connect Slack
-              </button>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* OpenClaw Setup Guide */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-              <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                OpenClaw Setup Guide
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Connect your OpenClaw agent to receive real-time updates
-              </p>
-            </div>
+        {/* OpenClaw */}
+        <div className="bg-white dark:bg-gray-900/80 rounded-lg border border-gray-200/80 dark:border-gray-800/80">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800/60">
+            <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+            <span className="text-xs font-semibold text-gray-900 dark:text-white">OpenClaw</span>
           </div>
 
-          <div className="space-y-4">
-            {/* Step 1 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">
-                1
+          <div className="p-4 space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-start gap-2.5">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-[9px] font-bold">1</span>
+                <div>
+                  <p className="text-[11px] font-medium text-gray-900 dark:text-white">Add the AgentPlanner skill</p>
+                  <div className="mt-1 bg-gray-950 dark:bg-black rounded-md px-3 py-1.5 flex items-center justify-between group">
+                    <code className="text-[10px] font-mono text-gray-300">skills/agent-planner/SKILL.md</code>
+                    <button onClick={() => copyToClipboard('skills/agent-planner/SKILL.md')} className="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Copy className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  Add the AgentPlanner skill
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Install the AgentPlanner skill in your OpenClaw workspace:
-                </p>
-                <div className="mt-2 bg-gray-900 dark:bg-gray-950 rounded-lg p-3 font-mono text-sm text-gray-100 flex items-center justify-between">
-                  <code>skills/agent-planner/SKILL.md</code>
-                  <button
-                    onClick={() => copyToClipboard('skills/agent-planner/SKILL.md')}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+              <div className="flex items-start gap-2.5">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-[9px] font-bold">2</span>
+                <div>
+                  <p className="text-[11px] font-medium text-gray-900 dark:text-white">Set your API token</p>
+                  <div className="mt-1 bg-gray-950 dark:bg-black rounded-md px-3 py-1.5">
+                    <code className="text-[10px] font-mono text-gray-300">AGENTPLANNER_TOKEN=your_token_here</code>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    <Link to="/app/settings" className="text-blue-500 hover:text-blue-600">Create a token</Link> on the Tokens tab
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Step 2 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">
-                2
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  Set your API token
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Add your AgentPlanner API token as an environment variable:
-                </p>
-                <div className="mt-2 bg-gray-900 dark:bg-gray-950 rounded-lg p-3 font-mono text-sm text-gray-100">
-                  <code>AGENTPLANNER_TOKEN=your_token_here</code>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  <Link to="/app/settings" className="text-blue-600 hover:underline">
-                    Create an API token here →
-                  </Link>
-                </p>
-              </div>
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800/60">
+              <a
+                href="https://docs.openclaw.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-500 transition-colors"
+              >
+                <ExternalLink className="w-2.5 h-2.5" /> OpenClaw Docs
+              </a>
             </div>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <a
-              href="https://docs.openclaw.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm"
-            >
-              <ExternalLink className="w-4 h-4" />
-              View OpenClaw Documentation
-            </a>
           </div>
         </div>
       </div>
