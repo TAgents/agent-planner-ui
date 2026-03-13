@@ -47,10 +47,10 @@ import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
+import { useDependencies, useCriticalPath } from '../hooks/useDependencies';
 
 // Lazy-load dependency graph (heavy React Flow component)
 const DependencyGraph = React.lazy(() => import('../components/visualization/DependencyGraph'));
-import { useDependencies, useCriticalPath } from '../hooks/useDependencies';
 
 // Enhanced Help Modal Component with keyboard shortcuts
 const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {

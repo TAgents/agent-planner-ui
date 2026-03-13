@@ -34,14 +34,12 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Lazy-load heavy pages (ReactFlow, agent dashboard)
 const Knowledge = React.lazy(() => import('./pages/Knowledge'));
 const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
 const AgentDashboard = React.lazy(() => import('./pages/AgentDashboard'));
-
-// Auth
-import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Create a React Query client
 const queryClient = new QueryClient({
