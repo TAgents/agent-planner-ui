@@ -60,7 +60,7 @@ interface UnifiedNodeDetailsProps {
   activeUsers?: UserType[];
   typingUsers?: UserType[];
   onStatusChange: (status: NodeStatus) => void;
-  onLogAdd: (content: string, logType: string, tags?: string[]) => void;
+  onLogAdd?: (content: string, logType: string, tags?: string[]) => void;
   onActivityReact?: (activityId: string, emoji: string) => void;
   onActivityReply?: (activityId: string, text: string) => void;
   onAssignUser?: (userId: string) => void;

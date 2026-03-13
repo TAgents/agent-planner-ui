@@ -27,7 +27,6 @@ import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
 import GoalsV2 from './pages/GoalsV2';
-import Knowledge from './pages/Knowledge';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
@@ -35,7 +34,11 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
-import AgentDashboard from './pages/AgentDashboard';
+
+// Lazy-load heavy pages (ReactFlow, agent dashboard)
+const Knowledge = React.lazy(() => import('./pages/Knowledge'));
+const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
+const AgentDashboard = React.lazy(() => import('./pages/AgentDashboard'));
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -57,6 +60,7 @@ const App: React.FC = () => {
         <PresenceProvider>
         <UIProvider>
           <BrowserRouter>
+            <React.Suspense fallback={null}>
             <Routes>
               {/* Public Pages with sidebar for logged-in users, top nav for logged-out */}
               <Route element={<PublicLayout />}>
@@ -91,6 +95,7 @@ const App: React.FC = () => {
                   <Route path="goals-v2" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
                   <Route path="goals-v2/:goalId" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
                   <Route path="knowledge" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
+                  <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
@@ -102,6 +107,7 @@ const App: React.FC = () => {
               {/* 404 Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </React.Suspense>
           </BrowserRouter>
         </UIProvider>
         </PresenceProvider>

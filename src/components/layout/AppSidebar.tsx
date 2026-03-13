@@ -14,6 +14,7 @@ import {
   BookOpen,
   Home,
   Bot,
+  Network,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
@@ -115,6 +116,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
 
   // Secondary nav items (less used)
   const secondaryNav = [
+    { to: '/app/portfolio', label: 'Portfolio', icon: Network, isActiveFn: () => isActive('/app/portfolio') },
     { to: '/app/knowledge', label: 'Knowledge', icon: BookOpen, isActiveFn: () => isActive('/app/knowledge') },
     { to: '/app/agents', label: 'Agents', icon: Bot, isActiveFn: () => isActive('/app/agents') },
     { to: '/explore', label: 'Explore', icon: Compass, isActiveFn: () => isActive('/explore'), alwaysShow: true },

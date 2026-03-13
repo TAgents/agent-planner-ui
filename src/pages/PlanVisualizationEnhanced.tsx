@@ -39,7 +39,6 @@ import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
 import { planService } from '../services/api';
 import { useNodes, useNode } from '../hooks/useNodes';
-import { usePlanActivity } from '../hooks/usePlanActivity';
 import { usePlanEvents } from '../hooks/useWebSocket';
 import { NodeType, NodeStatus, Decision, PlanStatus } from '../types';
 
@@ -234,7 +233,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
     }
     return selectedNodeFromAPI || nodeFromList;
   }, [planNodes, selectedNodeFromAPI, uiState.nodeDetails.selectedNodeId]);
-  usePlanActivity(planId || '', 1, 5);
 
   // Track presence for this plan (shows who is viewing)
   const { viewers: planViewers } = useViewPresence('plan', planId);
@@ -247,24 +245,23 @@ const PlanVisualizationEnhanced: React.FC = () => {
       const session = JSON.parse(sessionStr);
       return session.user?.id || session.user?.email || 'anonymous';
     } catch (e) {
-      console.error('Error parsing session:', e);
       return 'anonymous';
     }
   }, []);
+  // Cache the user ID so WebSocket handlers don't re-parse localStorage on every event
+  const userId = useMemo(() => getUserId(), [getUserId]);
 
   // Check if current user is the plan owner
   const isOwner = useMemo(() => {
     if (!plan) return false;
-    const currentUserId = getUserId();
-    return plan.owner_id === currentUserId;
-  }, [plan, getUserId]);
+    return plan.owner_id === userId;
+  }, [plan, userId]);
 
   // Subscribe to real-time WebSocket updates for this plan
   const handleNodeEvent = useCallback(() => {
-    const userId = getUserId();
     queryClient.invalidateQueries(['nodes', userId, planId]);
     queryClient.invalidateQueries(['planActivity', planId]);
-  }, [planId, queryClient, getUserId]);
+  }, [planId, queryClient, userId]);
 
   const handleActivityEvent = useCallback(() => {
     queryClient.invalidateQueries(['planActivity', planId]);
@@ -278,9 +275,8 @@ const PlanVisualizationEnhanced: React.FC = () => {
     onNodeStatusChanged: handleNodeEvent,
 
     onPlanUpdated: useCallback(() => {
-      const userId = getUserId();
       queryClient.invalidateQueries(['plan', userId, planId]);
-    }, [planId, queryClient, getUserId]),
+    }, [planId, queryClient, userId]),
 
     onCommentAdded: handleActivityEvent,
     onLogAdded: handleActivityEvent,
@@ -348,64 +344,15 @@ const PlanVisualizationEnhanced: React.FC = () => {
   // Overflow menu state
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   
-  // Handle activity actions
-  const handleLogAdd = useCallback((content: string, logType: string, tags?: string[]) => {
-    console.log('Adding log:', content, 'Type:', logType, 'Tags:', tags);
-    // The hook will handle the API call
-  }, []);
-
   // Handle visibility change
   const handleVisibilityChange = useCallback((newVisibility: 'public' | 'private') => {
-    console.log('Visibility changed to:', newVisibility);
-    // Invalidate plan query to refresh the plan data
-    const userId = getUserId();
     queryClient.invalidateQueries(['plan', userId, planId]);
-  }, [planId, queryClient, getUserId]);
+  }, [planId, queryClient, userId]);
 
   // Scroll to top when plan loads
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [planId]);
-
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // ESC to close node details
-      if (e.key === 'Escape') {
-        if (uiState.nodeDetails.isOpen) {
-          closeNodeDetails();
-          return;
-        }
-        if (showHelp) {
-          setShowHelp(false);
-          return;
-        }
-        if (isCreatingNode) {
-          setIsCreatingNode(false);
-          return;
-        }
-      }
-
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      // Help
-      if (e.key === '?') {
-        setShowHelp(!showHelp);
-      }
-
-      // Quick actions
-      if (e.key === 'n' || e.key === 'N') {
-        setIsCreatingNode(true);
-      }
-      if (e.key === 's' || e.key === 'S') {
-        toggleSidebar();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showHelp, toggleSidebar, uiState.nodeDetails.isOpen, closeNodeDetails, isCreatingNode]);
 
 
   // Handle node selection (from tree)
@@ -788,7 +735,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
                           name={plan.github_repo_name}
                           isOwner={isOwner}
                           onLinked={() => {
-                            const userId = getUserId();
                             queryClient.invalidateQueries(['plan', userId, planId]);
                           }}
                           variant="compact"
@@ -961,9 +907,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
                 activeUsers={[]}
                 onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
-                onLogAdd={handleLogAdd}
-                onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
-                onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}
                 allNodes={planNodes}
                 onUpdateNode={async (nodeId, data) => {
@@ -992,9 +935,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 currentUser={{ id: '1', name: 'Current User', email: 'user@example.com', role: 'user' }}
                 activeUsers={[]}
                 onStatusChange={(newStatus) => handleStatusChange(selectedNode.id, newStatus)}
-                onLogAdd={handleLogAdd}
-                onActivityReact={(activityId, emoji) => console.log('React:', activityId, emoji)}
-                onActivityReply={(activityId, text) => console.log('Reply:', activityId, text)}
                 onClose={closeNodeDetails}
                 allNodes={planNodes}
                 onUpdateNode={async (nodeId, data) => {
