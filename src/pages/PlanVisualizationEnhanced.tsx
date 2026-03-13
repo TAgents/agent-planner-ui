@@ -49,8 +49,8 @@ import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
 
-// Import dependency graph
-import DependencyGraph from '../components/visualization/DependencyGraph';
+// Lazy-load dependency graph (heavy React Flow component)
+const DependencyGraph = React.lazy(() => import('../components/visualization/DependencyGraph'));
 import { useDependencies, useCriticalPath } from '../hooks/useDependencies';
 
 // Enhanced Help Modal Component with keyboard shortcuts
@@ -260,57 +260,30 @@ const PlanVisualizationEnhanced: React.FC = () => {
   }, [plan, getUserId]);
 
   // Subscribe to real-time WebSocket updates for this plan
+  const handleNodeEvent = useCallback(() => {
+    const userId = getUserId();
+    queryClient.invalidateQueries(['nodes', userId, planId]);
+    queryClient.invalidateQueries(['planActivity', planId]);
+  }, [planId, queryClient, getUserId]);
+
+  const handleActivityEvent = useCallback(() => {
+    queryClient.invalidateQueries(['planActivity', planId]);
+  }, [planId, queryClient]);
+
   usePlanEvents(planId || null, {
-    onNodeCreated: useCallback(() => {
-      const userId = getUserId();
-      queryClient.invalidateQueries(['nodes', userId, planId]);
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Node created - refreshing nodes');
-    }, [planId, queryClient, getUserId]),
-
-    onNodeUpdated: useCallback(() => {
-      const userId = getUserId();
-      queryClient.invalidateQueries(['nodes', userId, planId]);
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Node updated - refreshing nodes');
-    }, [planId, queryClient, getUserId]),
-
-    onNodeDeleted: useCallback(() => {
-      const userId = getUserId();
-      queryClient.invalidateQueries(['nodes', userId, planId]);
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Node deleted - refreshing nodes');
-    }, [planId, queryClient, getUserId]),
-
-    onNodeMoved: useCallback(() => {
-      const userId = getUserId();
-      queryClient.invalidateQueries(['nodes', userId, planId]);
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Node moved - refreshing nodes');
-    }, [planId, queryClient, getUserId]),
-
-    onNodeStatusChanged: useCallback(() => {
-      const userId = getUserId();
-      queryClient.invalidateQueries(['nodes', userId, planId]);
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Node status changed - refreshing nodes');
-    }, [planId, queryClient, getUserId]),
+    onNodeCreated: handleNodeEvent,
+    onNodeUpdated: handleNodeEvent,
+    onNodeDeleted: handleNodeEvent,
+    onNodeMoved: handleNodeEvent,
+    onNodeStatusChanged: handleNodeEvent,
 
     onPlanUpdated: useCallback(() => {
       const userId = getUserId();
       queryClient.invalidateQueries(['plan', userId, planId]);
-      console.log('[WebSocket] Plan updated - refreshing plan');
     }, [planId, queryClient, getUserId]),
 
-    onCommentAdded: useCallback(() => {
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Comment added - refreshing activity');
-    }, [planId, queryClient]),
-
-    onLogAdded: useCallback(() => {
-      queryClient.invalidateQueries(['planActivity', planId]);
-      console.log('[WebSocket] Log added - refreshing activity');
-    }, [planId, queryClient]),
+    onCommentAdded: handleActivityEvent,
+    onLogAdded: handleActivityEvent,
   });
 
   // Subscribe to agent request WebSocket events
@@ -589,19 +562,12 @@ const PlanVisualizationEnhanced: React.FC = () => {
             refetchSelectedNode();
           }
 
-          // Invalidate and refetch activity-related queries for the updated node
+          // Invalidate activity-related queries for the updated node
           queryClient.invalidateQueries(['nodeLogs', planId, nodeId]);
           queryClient.invalidateQueries(['nodeArtifacts', planId, nodeId]);
           queryClient.invalidateQueries(['nodeComments', planId, nodeId]);
           queryClient.invalidateQueries(['nodeAssignments', planId, nodeId]);
           queryClient.invalidateQueries(['planActivity', planId]);
-
-          // If this node is currently selected, also invalidate its specific queries
-          if (nodeId === uiState.nodeDetails.selectedNodeId) {
-            // Force immediate refetch for better UX
-            queryClient.refetchQueries(['nodeLogs', planId, nodeId]);
-            queryClient.refetchQueries(['nodeArtifacts', planId, nodeId]);
-          }
 
           console.log(`Status updated successfully for node ${nodeId}, refreshing activity view`);
         },
@@ -894,17 +860,19 @@ const PlanVisualizationEnhanced: React.FC = () => {
             )
           ) : (
             // Dependency Graph View
-            <DependencyGraph
-              planId={planId}
-              nodes={planNodes}
-              dependencies={dependencies}
-              criticalPathNodeIds={criticalPathNodeIds}
-              onNodeClick={handleNodeSelect}
-              onDeleteDependency={handleDeleteDependency}
-              onCreateDependency={handleCreateDependency}
-              isLoading={isDepsLoading}
-              className="h-full"
-            />
+            <React.Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading graph...</div>}>
+              <DependencyGraph
+                planId={planId}
+                nodes={planNodes}
+                dependencies={dependencies}
+                criticalPathNodeIds={criticalPathNodeIds}
+                onNodeClick={handleNodeSelect}
+                onDeleteDependency={handleDeleteDependency}
+                onCreateDependency={handleCreateDependency}
+                isLoading={isDepsLoading}
+                className="h-full"
+              />
+            </React.Suspense>
           )}
         </div>
 

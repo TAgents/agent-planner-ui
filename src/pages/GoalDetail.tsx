@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import {
   Target,
@@ -527,6 +527,8 @@ const GoalDetail: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState<Notification | null>(null);
+  const notificationTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(notificationTimer.current), []);
 
   // Set initial tab from URL
   useEffect(() => {
@@ -543,7 +545,8 @@ const GoalDetail: React.FC = () => {
 
   const showNotification = useCallback((message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), NOTIFICATION_TIMEOUT_MS);
+    clearTimeout(notificationTimer.current);
+    notificationTimer.current = setTimeout(() => setNotification(null), NOTIFICATION_TIMEOUT_MS);
   }, []);
 
   const handleDelete = useCallback(async () => {

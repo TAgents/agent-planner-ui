@@ -1,8 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import api from '../services/api';
-
-// Use the default export (axios instance)
-const apiClient = (api as any).default || api;
+import { axiosInstance } from '../services/api';
 
 export interface GoalV2 {
   id: string;
@@ -42,24 +39,11 @@ export interface GoalEvaluation {
 
 const GOALS_KEY = 'goals-v2';
 
-async function fetchApi(path: string, options?: any) {
-  const sessionStr = localStorage.getItem('auth_session');
-  let token: string | null = null;
-  if (sessionStr) {
-    try {
-      const session = JSON.parse(sessionStr);
-      token = session.access_token || session.accessToken || session;
-    } catch { token = sessionStr; }
-  }
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/goals/v2${path}`, {
-    headers,
-    ...options,
-  });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
-  return res.json();
+async function fetchApi(path: string, options?: { method?: string; body?: string }) {
+  const config: any = { url: `/goals/v2${path}`, method: options?.method || 'GET' };
+  if (options?.body) config.data = JSON.parse(options.body);
+  const res = await axiosInstance(config);
+  return res.data;
 }
 
 export function useGoalsV2(filters?: { status?: string; type?: string }) {

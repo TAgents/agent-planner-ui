@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Globe, Lock, Loader, Info } from 'lucide-react';
 import { PlanVisibility } from '../../types';
 import { planService } from '../../services/api';
@@ -19,6 +19,7 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
   variant = 'button',
 }) => {
   const [visibility, setVisibility] = useState<PlanVisibility>(currentVisibility);
+  useEffect(() => { setVisibility(currentVisibility); }, [currentVisibility]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -78,22 +79,7 @@ const VisibilityToggle: React.FC<VisibilityToggleProps> = ({
   if (variant === 'menuItem') {
     return (
       <button
-        onClick={async () => {
-          if (!isOwner || isUpdating) return;
-          const newVisibility: PlanVisibility = visibility === 'public' ? 'private' : 'public';
-          const previousVisibility = visibility;
-          setVisibility(newVisibility);
-          setIsUpdating(true);
-          try {
-            await planService.updatePlanVisibility(planId, newVisibility);
-            onVisibilityChange?.(newVisibility);
-          } catch (error) {
-            console.error('Failed to update visibility:', error);
-            setVisibility(previousVisibility);
-          } finally {
-            setIsUpdating(false);
-          }
-        }}
+        onClick={() => handleConfirmVisibilityChange()}
         disabled={!isOwner || isUpdating}
         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50"
       >

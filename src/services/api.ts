@@ -1395,6 +1395,7 @@ const apiServices = {
   ai: aiService,
 };
 
+export { api as axiosInstance };
 export default apiServices;
 
 // Organization service
@@ -1981,7 +1982,43 @@ export const dependencyService = {
       params: { max_depth: maxDepth },
     });
   },
+
+  listCrossPlanDependencies: async (planIds: string[]) => {
+    return request<{ edges: CrossPlanEdge[]; count: number }>({
+      method: 'GET',
+      url: `/dependencies/cross-plan`,
+      params: { plan_ids: planIds.join(',') },
+    });
+  },
+
+  createCrossPlanDependency: async (data: {
+    source_node_id: string;
+    target_node_id: string;
+    dependency_type?: DependencyType;
+    weight?: number;
+  }) => {
+    return request<any>({
+      method: 'POST',
+      url: `/dependencies/cross-plan`,
+      data,
+    });
+  },
 };
+
+export interface CrossPlanEdge {
+  id: string;
+  source_node_id: string;
+  target_node_id: string;
+  dependency_type: string;
+  weight: number;
+  metadata: Record<string, any>;
+  source_plan_id: string;
+  source_title: string;
+  source_status: string;
+  target_plan_id: string;
+  target_title: string;
+  target_status: string;
+}
 
 // Graphiti Knowledge Graph Types
 export interface GraphitiStatus {
