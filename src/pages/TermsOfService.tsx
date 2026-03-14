@@ -28,7 +28,7 @@ const TermsOfService: React.FC = () => {
 
         <div className="prose dark:prose-invert max-w-none space-y-6 text-gray-700 dark:text-gray-300">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Last Updated: {new Date().toLocaleDateString()}
+            Last Updated: March 14, 2026
           </p>
 
           <section>

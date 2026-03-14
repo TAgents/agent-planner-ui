@@ -28,7 +28,7 @@ const PrivacyPolicy: React.FC = () => {
 
         <div className="prose dark:prose-invert max-w-none space-y-6 text-gray-700 dark:text-gray-300">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Last Updated: {new Date().toLocaleDateString()}
+            Last Updated: March 14, 2026
           </p>
 
           <section>
@@ -41,8 +41,8 @@ const PrivacyPolicy: React.FC = () => {
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>Account information (email, name, password)</li>
               <li>Planning data (plans, tasks, milestones, and related content)</li>
-              <li>API tokens and authentication credentials</li>
-              <li>Usage data and analytics</li>
+              <li>API tokens (stored as secure hashes, never in plain text)</li>
+              <li>GitHub profile information (username, avatar, profile URL) if you sign in via GitHub OAuth</li>
             </ul>
           </section>
 
@@ -102,10 +102,15 @@ const PrivacyPolicy: React.FC = () => {
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>Access your personal data</li>
               <li>Correct inaccurate data</li>
-              <li>Delete your account and associated data</li>
-              <li>Export your planning data</li>
-              <li>Opt out of marketing communications</li>
+              <li>Request deletion of your account and associated data</li>
+              <li>Request export of your planning data in a portable format</li>
             </ul>
+            <p className="mt-2">
+              To exercise any of these rights, please contact us at{' '}
+              <a href="mailto:contact@talkingagents.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                contact@talkingagents.com
+              </a>. We will respond within 30 days.
+            </p>
           </section>
 
           <section>
@@ -125,16 +130,18 @@ const PrivacyPolicy: React.FC = () => {
 
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              7. Cookies and Tracking
+              7. Cookies
             </h2>
             <p>
-              We use cookies and similar tracking technologies to:
+              We only use essential cookies for:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Maintain your session</li>
-              <li>Remember your preferences</li>
-              <li>Analyze service usage</li>
+              <li>Maintaining your authentication session</li>
+              <li>Remembering your preferences (e.g., dark mode)</li>
             </ul>
+            <p className="mt-2">
+              We do not use any analytics, advertising, or third-party tracking cookies.
+            </p>
           </section>
 
           <section>
@@ -227,7 +234,7 @@ const PrivacyPolicy: React.FC = () => {
               We retain your personal data only for as long as necessary to fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required or permitted by law.
             </p>
             <p className="mt-4">
-              When you delete your account, we will delete or anonymize your personal data within 30 days, except where we are required to retain certain information for legal, tax, or regulatory purposes.
+              When you request deletion of your account, we will delete or anonymize your personal data within 30 days, except where we are required to retain certain information for legal, tax, or regulatory purposes.
             </p>
           </section>
 

@@ -28,7 +28,7 @@ const CookiesPolicy: React.FC = () => {
 
         <div className="prose dark:prose-invert max-w-none space-y-6 text-gray-700 dark:text-gray-300">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Last Updated: {new Date().toLocaleDateString()}
+            Last Updated: March 14, 2026
           </p>
 
           <section>
@@ -36,19 +36,18 @@ const CookiesPolicy: React.FC = () => {
               1. What Are Cookies
             </h2>
             <p>
-              Cookies are small text files stored on your device when you visit a website. They help us provide you with a better experience by remembering your preferences and understanding how you use our service.
+              Cookies are small text files stored on your device when you visit a website. They help us provide you with a better experience by remembering your preferences.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              2. How We Use Cookies
+              2. Cookies We Use
             </h2>
-            <p>We use cookies for the following purposes:</p>
+            <p>We only use cookies that are strictly necessary for the platform to function. We do not use any analytics or tracking cookies.</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Essential Cookies:</strong> Required for the platform to function properly, including authentication and session management.</li>
-              <li><strong>Preference Cookies:</strong> Remember your settings such as theme preferences and language selection.</li>
-              <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our platform so we can improve it.</li>
+              <li><strong>Authentication Cookies:</strong> Required to keep you logged in and manage your session securely.</li>
+              <li><strong>Preference Cookies:</strong> Remember your settings such as theme preferences (e.g., dark mode). These are stored locally in your browser and are not sent to our servers.</li>
             </ul>
           </section>
 
@@ -57,7 +56,7 @@ const CookiesPolicy: React.FC = () => {
               3. Managing Cookies
             </h2>
             <p>
-              Most web browsers allow you to control cookies through their settings. You can set your browser to refuse cookies or delete certain cookies. However, disabling essential cookies may affect the functionality of our platform.
+              You can control cookies through your browser settings. However, disabling essential cookies will prevent you from logging in and using the platform.
             </p>
           </section>
 
@@ -66,7 +65,7 @@ const CookiesPolicy: React.FC = () => {
               4. Third-Party Cookies
             </h2>
             <p>
-              We may use third-party services that set their own cookies, such as analytics providers. These cookies are governed by the respective third party's privacy policy.
+              We do not use any third-party cookies. No analytics, advertising, or tracking services are embedded in our platform.
             </p>
           </section>
 
