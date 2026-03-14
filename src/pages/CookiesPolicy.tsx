@@ -1,8 +1,18 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 
 const CookiesPolicy: React.FC = () => {
   return (
+    <>
+      <Helmet>
+        <title>Cookies Policy - Agent Planner IO</title>
+        <meta name="description" content="Cookies Policy for Agent Planner. Learn about the cookies we use." />
+        <link rel="canonical" href="https://agentplanner.io/cookies" />
+        <meta property="og:title" content="Cookies Policy - Agent Planner IO" />
+        <meta property="og:description" content="Cookies Policy for Agent Planner" />
+        <meta property="og:url" content="https://agentplanner.io/cookies" />
+      </Helmet>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <Link
@@ -74,6 +84,7 @@ const CookiesPolicy: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

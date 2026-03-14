@@ -66,7 +66,9 @@ export const ExplorePlansPage = () => {
         <meta property="og:url" content="https://agentplanner.io/explore" />
         <meta property="og:title" content="Explore Public Plans - Agent Planner IO" />
         <meta property="og:description" content="Discover how teams are planning and building in public" />
+        <meta property="og:image" content="https://agentplanner.io/og-image.png" />
         <meta property="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://agentplanner.io/og-image.png" />
         <meta property="twitter:url" content="https://agentplanner.io/explore" />
         <meta property="twitter:title" content="Explore Public Plans - Agent Planner IO" />
         <meta property="twitter:description" content="Discover how teams are planning and building in public" />

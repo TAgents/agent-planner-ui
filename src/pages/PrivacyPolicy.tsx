@@ -1,8 +1,18 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 
 const PrivacyPolicy: React.FC = () => {
   return (
+    <>
+      <Helmet>
+        <title>Privacy Policy - Agent Planner IO</title>
+        <meta name="description" content="Privacy Policy for Agent Planner. Learn how we handle your data." />
+        <link rel="canonical" href="https://agentplanner.io/privacy" />
+        <meta property="og:title" content="Privacy Policy - Agent Planner IO" />
+        <meta property="og:description" content="Privacy Policy for Agent Planner" />
+        <meta property="og:url" content="https://agentplanner.io/privacy" />
+      </Helmet>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <Link
@@ -237,6 +247,7 @@ const PrivacyPolicy: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

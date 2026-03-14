@@ -1,8 +1,18 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 
 const TermsOfService: React.FC = () => {
   return (
+    <>
+      <Helmet>
+        <title>Terms of Service - Agent Planner IO</title>
+        <meta name="description" content="Terms of Service for Agent Planner, the structured planning backend for AI agents." />
+        <link rel="canonical" href="https://agentplanner.io/terms" />
+        <meta property="og:title" content="Terms of Service - Agent Planner IO" />
+        <meta property="og:description" content="Terms of Service for Agent Planner" />
+        <meta property="og:url" content="https://agentplanner.io/terms" />
+      </Helmet>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <Link
@@ -171,6 +181,7 @@ const TermsOfService: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

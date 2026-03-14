@@ -15,6 +15,7 @@ import {
   Copy,
   Star,
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { planService } from '../services/api';
 import { formatDate } from '../utils/planUtils';
 import { useAuth } from '../hooks/useAuth';
@@ -321,6 +322,15 @@ const PublicPlanView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Helmet>
+        <title>{`${plan.title} — AgentPlanner`}</title>
+        <meta name="description" content={plan.description || `View the plan "${plan.title}" on AgentPlanner.`} />
+        <meta property="og:title" content={`${plan.title} — AgentPlanner`} />
+        <meta property="og:description" content={plan.description || `View the plan "${plan.title}" on AgentPlanner.`} />
+        <meta property="og:url" content={`https://agentplanner.io/public/plans/${plan.id}`} />
+        <meta property="og:type" content="article" />
+        <link rel="canonical" href={`https://agentplanner.io/public/plans/${plan.id}`} />
+      </Helmet>
       {/* Secondary Header with Plan Actions */}
       <header className="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
