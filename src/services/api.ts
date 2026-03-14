@@ -1788,70 +1788,6 @@ export const dashboardApi = {
     });
   },
 
-  getAgentActivity: async () => {
-    return request<{
-      agents: Array<{ id: string; name: string; email: string; avatar_url: string; capability_tags: string[] }>;
-      assignments: Array<any>;
-      handoffs: Array<any>;
-      recentActivity: Array<any>;
-    }>({
-      method: 'GET',
-      url: '/dashboard/agent-activity',
-    });
-  },
-};
-
-// Agent Status API
-export const agentStatusApi = {
-  sendHeartbeat: async (data: { plan_id?: string; task_id?: string; status?: string }) => {
-    return request<any>({
-      method: 'POST',
-      url: '/heartbeat',
-      data,
-    });
-  },
-
-  getPlanAgentStatuses: async (planId: string) => {
-    return request<{ agents: Array<{ id: string; name: string; email: string; capability_tags: string[]; status: string; last_seen_at: string | null; current_task_id: string | null }> }>({
-      method: 'GET',
-      url: `/plans/${planId}/agent-status`,
-    });
-  },
-};
-
-// Prompt Templates API
-
-// Capability Tags API
-export const capabilityTagsApi = {
-  get: async () => {
-    return request<{ capability_tags: string[] }>({
-      method: 'GET',
-      url: '/users/capabilities',
-    });
-  },
-
-  update: async (tags: string[]) => {
-    return request<{ capability_tags: string[] }>({
-      method: 'PUT',
-      url: '/users/capabilities',
-      data: { capability_tags: tags },
-    });
-  },
-
-  getForUser: async (userId: string) => {
-    return request<{ capability_tags: string[] }>({
-      method: 'GET',
-      url: `/users/${userId}/capabilities`,
-    });
-  },
-
-  searchByTags: async (tags: string[], match: 'any' | 'all' = 'any') => {
-    return request<{ results: Array<{ id: string; email: string; name: string; avatar_url: string; capability_tags: string[] }>; count: number }>({
-      method: 'GET',
-      url: '/users/capabilities/search',
-      params: { tags: tags.join(','), match },
-    });
-  },
 };
 
 // Slack Integration API
@@ -2122,4 +2058,26 @@ export const graphitiService = {
       url: `/knowledge/episodes/${episodeId}`,
     });
   },
+};
+
+// Goal Dashboard API
+export const goalDashboardService = {
+  getDashboard: () => api.get('/goals/v2/dashboard').then(r => r.data),
+  getBriefing: (goalId: string) => api.get(`/goals/v2/${goalId}/briefing`).then(r => r.data),
+};
+
+// Node Agent View API
+export const nodeViewService = {
+  getAgentView: (nodeId: string, depth: number = 4) =>
+    api.get(`/nodes/${nodeId}/agent-view`, { params: { depth } }).then(r => r.data),
+};
+
+// Claims API
+export const claimService = {
+  getClaim: (planId: string, nodeId: string) =>
+    api.get(`/plans/${planId}/nodes/${nodeId}/claim`).then(r => r.data),
+  claim: (planId: string, nodeId: string, agentId: string, ttlMinutes?: number) =>
+    api.post(`/plans/${planId}/nodes/${nodeId}/claim`, { agent_id: agentId, ttl_minutes: ttlMinutes }).then(r => r.data),
+  release: (planId: string, nodeId: string, agentId: string) =>
+    api.delete(`/plans/${planId}/nodes/${nodeId}/claim`, { data: { agent_id: agentId } }).then(r => r.data),
 };

@@ -23,6 +23,7 @@ import {
 import { PlanNode, NodeStatus, NodeType, Dependency } from '../../types';
 import { TreeNodeItem } from './TreeNodeItem';
 import { InlineTaskInput } from './InlineTaskInput';
+import { BottleneckNode } from '../../hooks/useBottlenecks';
 
 interface PlanTreeViewProps {
   nodes: PlanNode[];
@@ -34,6 +35,8 @@ interface PlanTreeViewProps {
   onNodeMove?: (nodeId: string, newParentId: string | null, newOrderIndex?: number) => void;
   /** Plan dependencies for showing indicators on tree nodes */
   dependencies?: Dependency[];
+  /** Bottleneck analysis data */
+  bottlenecks?: BottleneckNode[];
   className?: string;
 }
 
@@ -46,6 +49,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
   onNodeCreateInline,
   onNodeMove,
   dependencies = [],
+  bottlenecks = [],
   className = ''
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
@@ -332,6 +336,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
           canDrag={!!onNodeMove}
           upstreamCount={depCounts.upstream.get(node.id) || 0}
           downstreamCount={depCounts.downstream.get(node.id) || 0}
+          bottlenecks={bottlenecks}
         />
         {/* Inline task input - shown when adding to this node */}
         {isAddingHere && (
@@ -356,7 +361,7 @@ export const PlanTreeView: React.FC<PlanTreeViewProps> = ({
         )}
       </div>
     );
-  }, [expandedNodes, selectedNodeId, getChildren, filterNode, handleToggleExpand, onNodeSelect, onNodeStatusChange, activeId, overId, canDrop, onNodeMove, addingToNodeId, onNodeCreateInline, depCounts]);
+  }, [expandedNodes, selectedNodeId, getChildren, filterNode, handleToggleExpand, onNodeSelect, onNodeStatusChange, activeId, overId, canDrop, onNodeMove, addingToNodeId, onNodeCreateInline, depCounts, bottlenecks]);
 
   // Get active node for drag overlay
   const activeNode = activeId ? nodes.find(n => n.id === activeId) : null;

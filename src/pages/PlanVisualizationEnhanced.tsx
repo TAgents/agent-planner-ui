@@ -27,7 +27,6 @@ import GitHubRepoBadge from '../components/github/GitHubRepoBadge';
 import PlanBreadcrumb from '../components/plan/PlanBreadcrumb';
 import { DecisionBadge, DecisionPanel, DecisionDetailModal } from '../components/decisions';
 
-import AgentStatusIndicator from '../components/agent/AgentStatusIndicator';
 import { useAgentRequestEvents } from '../hooks/useAgentRequests';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useFocusNavigation } from '../hooks/useFocusNavigation';
@@ -48,6 +47,7 @@ import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
 import { useDependencies, useCriticalPath } from '../hooks/useDependencies';
+import { useBottlenecks } from '../hooks/useBottlenecks';
 
 // Lazy-load dependency graph (heavy React Flow component)
 const DependencyGraph = React.lazy(() => import('../components/visualization/DependencyGraph'));
@@ -311,6 +311,9 @@ const PlanVisualizationEnhanced: React.FC = () => {
   } = useDependencies(planId || '');
 
   const { criticalPath } = useCriticalPath(planId || '', viewMode === 'dependencies');
+
+  // Bottleneck analysis
+  const { data: bottlenecks = [] } = useBottlenecks(planId || '');
 
   const criticalPathNodeIds = useMemo(() => {
     if (!criticalPath?.path) return new Set<string>();
@@ -657,7 +660,6 @@ const PlanVisualizationEnhanced: React.FC = () => {
             {planViewers.length > 0 && (
               <div className="hidden sm:block">
                 <PresenceIndicator viewers={planViewers} maxVisible={3} size="sm" />
-                <AgentStatusIndicator planId={planId || ''} compact />
               </div>
             )}
           </div>
@@ -801,6 +803,7 @@ const PlanVisualizationEnhanced: React.FC = () => {
                 onNodeCreateInline={handleInlineNodeCreate}
                 onNodeMove={handleNodeMove}
                 dependencies={dependencies}
+                bottlenecks={bottlenecks}
                 className="h-full"
               />
             )

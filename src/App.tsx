@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { UIProvider } from './contexts/UIContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
@@ -24,9 +24,8 @@ import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
 import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
-import Goals from './pages/Goals';
+import GoalsList from './pages/GoalsV2';
 import GoalDetail from './pages/GoalDetail';
-import GoalsV2 from './pages/GoalsV2';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import TermsOfService from './pages/TermsOfService';
@@ -36,10 +35,9 @@ import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// Lazy-load heavy pages (ReactFlow, agent dashboard)
+// Lazy-load heavy pages (ReactFlow)
 const Knowledge = React.lazy(() => import('./pages/Knowledge'));
 const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
-const AgentDashboard = React.lazy(() => import('./pages/AgentDashboard'));
 
 // Create a React Query client
 const queryClient = new QueryClient({
@@ -88,13 +86,13 @@ const App: React.FC = () => {
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanVisualization />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
-                  <Route path="goals" element={<Goals />} />
-                  <Route path="goals/:goalId" element={<GoalDetail />} />
-                  <Route path="goals-v2" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
-                  <Route path="goals-v2/:goalId" element={<ErrorBoundary><GoalsV2 /></ErrorBoundary>} />
+                  <Route path="goals" element={<ErrorBoundary><GoalsList /></ErrorBoundary>} />
+                  <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
+                  {/* Legacy v2 routes redirect to unified goals */}
+                  <Route path="goals-v2" element={<Navigate to="/app/goals" replace />} />
+                  <Route path="goals-v2/:goalId" element={<Navigate to="/app/goals" replace />} />
                   <Route path="knowledge" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
-                  <Route path="agents" element={<AgentDashboard />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
                   <Route path="settings/profile" element={<ProfileSettings />} />

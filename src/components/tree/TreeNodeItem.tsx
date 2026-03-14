@@ -6,8 +6,10 @@ import { StatusBadge, getNextStatus } from './StatusBadge';
 import {
   GripVertical, Plus, ArrowUp, ArrowDown, ChevronRight,
   Layers, CheckSquare, Flag, FolderOpen, Folder,
-  Zap, CheckCircle2, Bot, MessageSquare
+  Bot, MessageSquare
 } from 'lucide-react';
+import BottleneckIndicator from '../visualization/BottleneckIndicator';
+import { BottleneckNode } from '../../hooks/useBottlenecks';
 
 interface TreeNodeItemProps {
   node: PlanNode;
@@ -26,6 +28,8 @@ interface TreeNodeItemProps {
   upstreamCount?: number;
   /** Number of downstream (blocked by this) dependencies */
   downstreamCount?: number;
+  /** Bottleneck analysis data */
+  bottlenecks?: BottleneckNode[];
 }
 
 export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
@@ -43,6 +47,7 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   canDrag = true,
   upstreamCount = 0,
   downstreamCount = 0,
+  bottlenecks = [],
 }) => {
   const canAddChildren = node.node_type === 'phase' || node.node_type === 'root';
   const [isHovered, setIsHovered] = useState(false);
@@ -226,25 +231,15 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         {node.title}
       </span>
 
+      {/* Bottleneck Indicator */}
+      {bottlenecks.length > 0 && (
+        <BottleneckIndicator nodeId={node.id} bottlenecks={bottlenecks} />
+      )}
+
       {/* Agent Indicator */}
       {node.assigned_agent_id && (
-        <span
-          className="flex items-center gap-0.5 flex-shrink-0"
-          title={
-            node.metadata && (node.metadata as any).agentStatus === 'working'
-              ? 'Agent actively working'
-              : node.metadata && (node.metadata as any).agentStatus === 'completed'
-              ? 'Agent completed work'
-              : 'Agent assigned'
-          }
-        >
-          {node.metadata && (node.metadata as any).agentStatus === 'working' ? (
-            <Zap className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-          ) : node.metadata && (node.metadata as any).agentStatus === 'completed' ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-          ) : (
-            <Bot className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-          )}
+        <span className="flex items-center gap-0.5 flex-shrink-0" title="Agent assigned">
+          <Bot className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
         </span>
       )}
 

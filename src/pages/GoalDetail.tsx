@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import {
   Target,
   ArrowLeft,
-  Calendar,
-  Building2,
-  TrendingUp,
+  ArrowRight,
   FolderKanban,
   BookOpen,
   Activity,
   Trash2,
-  Edit,
   Check,
   ExternalLink,
   Loader2,
@@ -22,263 +20,44 @@ import {
   CheckCircle2,
   Clock,
   Ban,
+  BarChart3,
+  ChevronDown,
+  AlertTriangle,
 } from 'lucide-react';
-import { useGoal, SuccessMetric } from '../hooks/useGoals';
-import { Goal, LinkedPlan } from '../services/api';
-import StatusBadge from '../components/goals/shared/StatusBadge';
 import {
-  calculateOverallProgress,
-  calculateMetricProgress,
-  isMetricComplete
-} from '../utils/goalHelpers';
-import {
+  useGoalV2,
+  useGoalEvaluations,
+  useUpdateGoal,
+  useDeleteGoal,
+  useAddEvaluation,
   useGoalPath,
   useGoalProgress,
   useGoalKnowledgeGaps,
+  GoalV2,
+  GoalEvaluation,
   GoalPathNode,
 } from '../hooks/useGoalsV2';
+import { goalDashboardService } from '../services/api';
+
+// ─── Config ──────────────────────────────────────────────────────
+const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string; bg: string; text: string }> = {
+  outcome:    { label: 'Outcome',    color: '#3b82f6', icon: '🎯', bg: 'bg-blue-50 dark:bg-blue-900/20',   text: 'text-blue-700 dark:text-blue-300' },
+  constraint: { label: 'Constraint', color: '#ef4444', icon: '🚧', bg: 'bg-red-50 dark:bg-red-900/20',     text: 'text-red-700 dark:text-red-300' },
+  metric:     { label: 'Metric',     color: '#10b981', icon: '📊', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-300' },
+  principle:  { label: 'Principle',  color: '#8b5cf6', icon: '💡', bg: 'bg-violet-50 dark:bg-violet-900/20', text: 'text-violet-700 dark:text-violet-300' },
+};
+
+const STATUS_OPTIONS: { value: string; label: string; dot: string }[] = [
+  { value: 'active',    label: 'Active',    dot: 'bg-emerald-500' },
+  { value: 'achieved',  label: 'Achieved',  dot: 'bg-blue-500' },
+  { value: 'paused',    label: 'Paused',    dot: 'bg-amber-500' },
+  { value: 'abandoned', label: 'Abandoned', dot: 'bg-gray-400' },
+];
 
 // Tab types
-type TabType = 'overview' | 'plans' | 'path' | 'knowledge' | 'activity';
+type TabType = 'overview' | 'path' | 'evaluations';
 
-// Notification state type
-interface Notification {
-  message: string;
-  type: 'success' | 'error';
-}
-
-// Overview Tab Content
-const OverviewTab: React.FC<{ goal: Goal }> = ({ goal }) => {
-  const progress = useMemo(
-    () => calculateOverallProgress(goal.success_metrics),
-    [goal.success_metrics]
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* Progress Overview */}
-      <section 
-        className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-        aria-labelledby="progress-heading"
-      >
-        <h3 id="progress-heading" className="font-semibold text-gray-900 dark:text-white mb-4">
-          Overall Progress
-        </h3>
-        <div className="mb-2 flex justify-between text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Completion</span>
-          <span className="font-medium text-gray-900 dark:text-white">{progress}%</span>
-        </div>
-        <div 
-          className="h-4 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
-          role="progressbar"
-          aria-valuenow={progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Overall progress: ${progress}%`}
-        >
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </section>
-
-      {/* Success Metrics */}
-      <section 
-        className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-        aria-labelledby="metrics-heading"
-      >
-        <h3 id="metrics-heading" className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-          Success Metrics
-        </h3>
-        {!goal.success_metrics || goal.success_metrics.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No metrics defined for this goal.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {goal.success_metrics.map((metric: SuccessMetric, idx: number) => {
-              const metricProgress = calculateMetricProgress(metric);
-              const complete = isMetricComplete(metric);
-
-              return (
-                <div key={metric.metric || idx} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="font-medium text-gray-900 dark:text-white">{metric.metric}</span>
-                    {complete && (
-                      <Check className="w-5 h-5 text-green-500" aria-label="Complete" />
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className={`text-2xl font-bold ${complete ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>
-                      {metric.current}
-                    </span>
-                    <span className="text-gray-400 dark:text-gray-500">/ {metric.target} {metric.unit}</span>
-                  </div>
-                  <div 
-                    className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={Math.round(metricProgress)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  >
-                    <div
-                      className={`h-full rounded-full ${complete ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{ width: `${metricProgress}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Description */}
-      {goal.description && (
-        <section 
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-          aria-labelledby="description-heading"
-        >
-          <h3 id="description-heading" className="font-semibold text-gray-900 dark:text-white mb-4">
-            Description
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{goal.description}</p>
-        </section>
-      )}
-    </div>
-  );
-};
-
-// Plans Tab Content
-const PlansTab: React.FC<{ 
-  goal: Goal; 
-  onUnlink: (planId: string) => Promise<void>;
-  onError: (message: string) => void;
-}> = ({ goal, onUnlink, onError }) => {
-  const [unlinking, setUnlinking] = useState<string | null>(null);
-  const plans = goal.linked_plans || [];
-
-  const handleUnlink = async (planId: string) => {
-    setUnlinking(planId);
-    try {
-      await onUnlink(planId);
-    } catch (err) {
-      onError('Failed to unlink plan. Please try again.');
-    } finally {
-      setUnlinking(null);
-    }
-  };
-
-  return (
-    <section 
-      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-      aria-labelledby="plans-heading"
-    >
-      <h3 id="plans-heading" className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-        <FolderKanban className="w-5 h-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-        Linked Plans ({plans.length})
-      </h3>
-      {plans.length === 0 ? (
-        <div className="text-center py-8">
-          <FolderKanban className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" aria-hidden="true" />
-          <p className="text-gray-500 dark:text-gray-400 mb-2">No plans linked to this goal</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500">
-            Link plans from the plan page to track progress toward this goal.
-          </p>
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {plans.map((plan: LinkedPlan) => (
-            <li
-              key={plan.id}
-              className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-            >
-              <div className="flex-1 min-w-0">
-                <Link
-                  to={`/app/plans/${plan.id}`}
-                  className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  {plan.title}
-                </Link>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  <span>{plan.progress || 0}% complete</span>
-                  <span className="capitalize">{plan.status}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  to={`/app/plans/${plan.id}`}
-                  className="p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
-                  title="Open plan"
-                  aria-label={`Open plan: ${plan.title}`}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
-                <button
-                  onClick={() => handleUnlink(plan.id)}
-                  disabled={unlinking === plan.id}
-                  className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors disabled:opacity-50"
-                  title="Unlink plan"
-                  aria-label={`Unlink plan: ${plan.title}`}
-                >
-                  {unlinking === plan.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <X className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-};
-
-// Knowledge Tab Content
-const KnowledgeTab: React.FC<{ goalId: string }> = ({ goalId }) => {
-  return (
-    <section 
-      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-      aria-labelledby="knowledge-heading"
-    >
-      <h3 id="knowledge-heading" className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-        <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-        Knowledge Entries
-      </h3>
-      <div className="text-center py-8">
-        <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" aria-hidden="true" />
-        <p className="text-gray-500 dark:text-gray-400">
-          Knowledge entries related to this goal will appear here.
-        </p>
-      </div>
-    </section>
-  );
-};
-
-// Activity Tab Content
-const ActivityTab: React.FC<{ goalId: string }> = ({ goalId }) => {
-  return (
-    <section 
-      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-      aria-labelledby="activity-heading"
-    >
-      <h3 id="activity-heading" className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-        <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-        Activity
-      </h3>
-      <div className="text-center py-8">
-        <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" aria-hidden="true" />
-        <p className="text-gray-500 dark:text-gray-400">
-          Activity feed coming soon...
-        </p>
-      </div>
-    </section>
-  );
-};
-
-// Status icon helper
+// ─── Status Icon ─────────────────────────────────────────────────
 const StatusIcon: React.FC<{ status: string; className?: string }> = ({ status, className = 'w-4 h-4' }) => {
   switch (status) {
     case 'completed': return <CheckCircle2 className={`${className} text-green-500`} />;
@@ -288,10 +67,185 @@ const StatusIcon: React.FC<{ status: string; className?: string }> = ({ status, 
   }
 };
 
-// Dependency Path Tab Content
+// ─── Status Dropdown ─────────────────────────────────────────────
+function StatusDropdown({ currentStatus, onStatusChange }: { currentStatus: string; onStatusChange: (s: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = STATUS_OPTIONS.find(o => o.value === currentStatus) || STATUS_OPTIONS[0];
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+      >
+        <span className={`w-2 h-2 rounded-full ${current.dot}`} />
+        {current.label}
+        <ChevronDown className="w-3 h-3 text-gray-400" />
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 py-1 min-w-[140px]">
+          {STATUS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onStatusChange(opt.value); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                opt.value === currentStatus
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
+              {opt.label}
+              {opt.value === currentStatus && <Check className="w-3 h-3 ml-auto" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Overview Tab ────────────────────────────────────────────────
+const OverviewTab: React.FC<{ goal: GoalV2; goalId: string }> = ({ goal, goalId }) => {
+  const { data: progressData } = useGoalProgress(goalId);
+  const { data: pathData } = useGoalPath(goalId);
+  const { data: gapsData } = useGoalKnowledgeGaps(goalId);
+
+  const progress = progressData?.progress ?? 0;
+  const stats = pathData?.stats;
+  const nodes = pathData?.nodes || [];
+  const coverage = gapsData?.coverage;
+  const gaps = gapsData?.gaps || [];
+
+  return (
+    <div className="space-y-4">
+      {/* Description */}
+      {goal.description && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{goal.description}</p>
+        </section>
+      )}
+
+      {/* Progress from dependency graph */}
+      {nodes.length > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <GitBranch className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              Progress
+            </h3>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">{progress}%</span>
+          </div>
+          <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          {stats && (
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: 'Completed', value: stats.completed, color: 'text-emerald-600 dark:text-emerald-400' },
+                { label: 'In Progress', value: stats.in_progress, color: 'text-blue-600 dark:text-blue-400' },
+                { label: 'Blocked', value: stats.blocked, color: 'text-red-600 dark:text-red-400' },
+                { label: 'Not Started', value: stats.not_started, color: 'text-gray-500 dark:text-gray-400' },
+              ].map((s) => (
+                <div key={s.label} className="text-center">
+                  <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
+                  <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Knowledge coverage */}
+      {coverage && coverage.total > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              Knowledge Coverage
+            </h3>
+            <span className={`text-sm font-medium ${coverage.percentage >= 80 ? 'text-emerald-600' : coverage.percentage >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+              {coverage.percentage}%
+            </span>
+          </div>
+          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
+            <div
+              className={`h-full rounded-full transition-all ${coverage.percentage >= 80 ? 'bg-emerald-500' : coverage.percentage >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+              style={{ width: `${coverage.percentage}%` }}
+            />
+          </div>
+          {gaps.length > 0 && (
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {gaps.length} task{gaps.length !== 1 ? 's' : ''} missing knowledge
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* Success Criteria (if any) */}
+      {goal.successCriteria && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Success Criteria</h3>
+          <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg text-xs overflow-auto text-gray-800 dark:text-gray-200">
+            {JSON.stringify(goal.successCriteria, null, 2)}
+          </pre>
+        </section>
+      )}
+
+      {/* Links */}
+      {goal.links && goal.links.length > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <FolderKanban className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            Linked Resources ({goal.links.length})
+          </h3>
+          <div className="space-y-1.5">
+            {goal.links.map((link) => (
+              <div key={link.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm">
+                <span className="text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{link.linkedType}</span>
+                {link.linkedType === 'plan' ? (
+                  <Link to={`/app/plans/${link.linkedId}`} className="text-blue-600 dark:text-blue-400 hover:underline truncate">
+                    {link.linkedId.slice(0, 8)}...
+                  </Link>
+                ) : (
+                  <span className="text-gray-700 dark:text-gray-300 font-mono truncate">{link.linkedId.slice(0, 8)}...</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Empty state when no data at all */}
+      {nodes.length === 0 && !goal.description && (!goal.links || goal.links.length === 0) && (
+        <div className="text-center py-12">
+          <Target className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">This goal doesn't have any linked plans or tasks yet.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Use the MCP tools or plan page to link tasks to this goal with "achieves" edges.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Dependency Path Tab ─────────────────────────────────────────
 const DependencyPathTab: React.FC<{ goalId: string }> = ({ goalId }) => {
   const { data: pathData, isLoading: pathLoading } = useGoalPath(goalId);
-  const { data: progressData } = useGoalProgress(goalId);
   const { data: gapsData } = useGoalKnowledgeGaps(goalId);
 
   if (pathLoading) {
@@ -303,19 +257,15 @@ const DependencyPathTab: React.FC<{ goalId: string }> = ({ goalId }) => {
   }
 
   const nodes = pathData?.nodes || [];
-  const stats = pathData?.stats;
-  const progress = progressData?.progress ?? 0;
-  const directProgress = progressData?.direct_progress ?? 0;
   const gaps = gapsData?.gaps || [];
-  const coverage = gapsData?.coverage;
 
   if (nodes.length === 0) {
     return (
-      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="text-center py-8">
-          <GitBranch className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-          <p className="text-gray-500 dark:text-gray-400 mb-2">No dependency path yet</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500">
+          <GitBranch className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <p className="text-gray-500 dark:text-gray-400 mb-1 text-sm">No dependency path yet</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             Link tasks to this goal using "achieves" edges to build a dependency path.
           </p>
         </div>
@@ -333,119 +283,163 @@ const DependencyPathTab: React.FC<{ goalId: string }> = ({ goalId }) => {
   const depths = Array.from(byDepth.keys()).sort((a, b) => a - b);
 
   return (
-    <div className="space-y-4">
-      {/* Progress from graph */}
-      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <GitBranch className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            Graph Progress
-          </h3>
-          <span className="text-lg font-bold text-gray-900 dark:text-white">{progress}%</span>
+    <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+        Task Path ({nodes.length} tasks)
+      </h3>
+      <div className="space-y-4">
+        {depths.map((depth) => {
+          const depthNodes = byDepth.get(depth)!;
+          const label = depth === 1 ? 'Direct achievers' : `Depth ${depth} (upstream)`;
+          return (
+            <div key={depth}>
+              <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 ml-1 font-medium">
+                {label}
+              </p>
+              <div className="space-y-1">
+                {depthNodes.map((node) => {
+                  const hasGap = gaps.some(g => g.node_id === node.node_id);
+                  return (
+                    <div
+                      key={node.node_id}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 text-sm transition-colors"
+                    >
+                      <StatusIcon status={node.status} />
+                      <Link
+                        to={`/app/plans/${node.plan_id}`}
+                        className="flex-1 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate"
+                      >
+                        {node.title}
+                      </Link>
+                      <span className="text-[10px] text-gray-400 capitalize">{node.status.replace('_', ' ')}</span>
+                      {hasGap && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
+                          no knowledge
+                        </span>
+                      )}
+                      {node.dependency_type === 'achieves' && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
+                          achieves
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
+// ─── Evaluations Tab ─────────────────────────────────────────────
+function EvaluationForm({ goalId, onClose }: { goalId: string; onClose: () => void }) {
+  const addEval = useAddEvaluation();
+  const [score, setScore] = useState(50);
+  const [reasoning, setReasoning] = useState('');
+  const [evaluatedBy, setEvaluatedBy] = useState('human');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await addEval.mutateAsync({ goalId, evaluatedBy, score, reasoning });
+    onClose();
+  };
+
+  const scoreColor = score >= 70 ? 'text-emerald-600' : score >= 40 ? 'text-amber-600' : 'text-red-600';
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">New Evaluation</h4>
+      <div className="space-y-4">
+        <div>
+          <label className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <span>Score</span>
+            <span className={`text-lg font-bold ${scoreColor}`}>{score}</span>
+          </label>
+          <input type="range" min={0} max={100} value={score} onChange={e => setScore(Number(e.target.value))} className="w-full accent-blue-600" />
         </div>
-        <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
-          <div
-            className="h-full bg-blue-500 rounded-full transition-all"
-            style={{ width: `${progress}%` }}
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Evaluated by</label>
+          <input
+            placeholder="e.g. human, agent-name"
+            value={evaluatedBy}
+            onChange={e => setEvaluatedBy(e.target.value)}
+            required
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
-        <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
-          {stats && (
-            <>
-              <span>{stats.completed} completed</span>
-              <span>{stats.in_progress} in progress</span>
-              <span>{stats.blocked} blocked</span>
-              <span>{stats.not_started} not started</span>
-            </>
-          )}
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Reasoning</label>
+          <textarea
+            placeholder="Why this score?"
+            value={reasoning}
+            onChange={e => setReasoning(e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
-        {directProgress !== progress && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            Direct achievers: {directProgress}%
-          </p>
-        )}
-      </section>
+        <div className="flex gap-2 justify-end">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancel</button>
+          <button type="submit" disabled={addEval.isLoading} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition-colors">
+            {addEval.isLoading ? 'Saving...' : 'Submit'}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
 
-      {/* Knowledge coverage */}
-      {coverage && coverage.total > 0 && (
-        <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
-              <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              Knowledge Coverage
-            </h3>
-            <span className={`text-sm font-medium ${coverage.percentage >= 80 ? 'text-green-600' : coverage.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-              {coverage.percentage}%
-            </span>
-          </div>
-          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
-            <div
-              className={`h-full rounded-full transition-all ${coverage.percentage >= 80 ? 'bg-green-500' : coverage.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-              style={{ width: `${coverage.percentage}%` }}
-            />
-          </div>
-          {gaps.length > 0 && (
-            <p className="text-xs text-red-500 dark:text-red-400">
-              {gaps.length} task{gaps.length !== 1 ? 's' : ''} missing knowledge coverage
-            </p>
-          )}
-        </section>
+const EvaluationsTab: React.FC<{ goalId: string }> = ({ goalId }) => {
+  const { data: evaluations } = useGoalEvaluations(goalId);
+  const [showForm, setShowForm] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      {!showForm && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+          >
+            + Add Evaluation
+          </button>
+        </div>
       )}
 
-      {/* Task tree by depth */}
-      <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-          Task Path ({nodes.length} tasks)
-        </h3>
-        <div className="space-y-3">
-          {depths.map((depth) => {
-            const depthNodes = byDepth.get(depth)!;
-            const label = depth === 1 ? 'Direct achievers' : `Depth ${depth} (upstream)`;
-            return (
-              <div key={depth}>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5 ml-1">
-                  {label}
-                </p>
-                <div className="space-y-1">
-                  {depthNodes.map((node) => {
-                    const hasGap = gaps.some(g => g.node_id === node.node_id);
-                    return (
-                      <div
-                        key={node.node_id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 text-sm"
-                      >
-                        <StatusIcon status={node.status} />
-                        <Link
-                          to={`/app/plans/${node.plan_id}`}
-                          className="flex-1 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate"
-                        >
-                          {node.title}
-                        </Link>
-                        <span className="text-[10px] text-gray-400 capitalize">{node.status.replace('_', ' ')}</span>
-                        {hasGap && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
-                            no knowledge
-                          </span>
-                        )}
-                        {node.dependency_type === 'achieves' && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
-                            achieves
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+      {showForm && <EvaluationForm goalId={goalId} onClose={() => setShowForm(false)} />}
+
+      {evaluations && evaluations.length > 0 ? (
+        evaluations.map((ev: GoalEvaluation) => {
+          const scoreColor = ev.score != null && ev.score >= 70 ? 'border-l-emerald-500' : ev.score != null && ev.score >= 40 ? 'border-l-amber-500' : 'border-l-gray-400';
+          return (
+            <div key={ev.id} className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 border-l-[3px] ${scoreColor} p-4`}>
+              <div className="flex justify-between mb-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{ev.evaluatedBy}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(ev.evaluatedAt).toLocaleDateString()}</span>
               </div>
-            );
-          })}
-        </div>
-      </section>
+              {ev.score != null && (
+                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{ev.score}<span className="text-sm text-gray-400 font-normal">/100</span></div>
+              )}
+              {ev.reasoning && <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{ev.reasoning}</p>}
+            </div>
+          );
+        })
+      ) : (
+        !showForm && (
+          <div className="text-center py-12">
+            <BarChart3 className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">No evaluations yet</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Evaluations track how well you're progressing toward this goal.</p>
+          </div>
+        )
+      )}
     </div>
   );
 };
 
-// Delete Confirmation Modal
+// ─── Delete Modal ────────────────────────────────────────────────
 const DeleteModal: React.FC<{
   goalTitle: string;
   isDeleting: boolean;
@@ -454,56 +448,28 @@ const DeleteModal: React.FC<{
 }> = ({ goalTitle, isDeleting, onConfirm, onCancel }) => {
   const modalRef = React.useRef<HTMLDivElement>(null);
 
-  // Focus trap and escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isDeleting) {
-        onCancel();
-      }
+      if (e.key === 'Escape' && !isDeleting) onCancel();
     };
-    
     document.addEventListener('keydown', handleEscape);
     modalRef.current?.focus();
-    
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onCancel, isDeleting]);
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-modal-title"
-    >
-      <div 
-        className="fixed inset-0 bg-black/50" 
-        onClick={!isDeleting ? onCancel : undefined}
-        aria-hidden="true"
-      />
-      <div 
-        ref={modalRef}
-        tabIndex={-1}
-        className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
-      >
-        <h3 id="delete-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          Delete Goal
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black/50" onClick={!isDeleting ? onCancel : undefined} />
+      <div ref={modalRef} tabIndex={-1} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Goal</h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
           Are you sure you want to delete "{goalTitle}"? This action cannot be undone.
         </p>
         <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
+          <button onClick={onCancel} disabled={isDeleting} className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium text-sm transition-colors disabled:opacity-50">
             Cancel
           </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
+          <button onClick={onConfirm} disabled={isDeleting} className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2">
             {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
             Delete
           </button>
@@ -513,27 +479,139 @@ const DeleteModal: React.FC<{
   );
 };
 
-// Notification timeout constant
-const NOTIFICATION_TIMEOUT_MS = 5000;
+// ─── Health Color Helper ─────────────────────────────────────────
+function getHealthColor(health: string): string {
+  switch (health) {
+    case 'healthy': return 'bg-emerald-500';
+    case 'at_risk': return 'bg-amber-500';
+    case 'critical': return 'bg-red-500';
+    case 'stale': return 'bg-gray-400';
+    default: return 'bg-gray-400';
+  }
+}
 
-// Main GoalDetail Component
+function getCriticalPathStatusStyles(status: string): string {
+  switch (status) {
+    case 'completed': return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+    case 'in_progress': return 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+    case 'blocked': return 'border-red-300 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300';
+    default: return 'border-gray-300 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-300';
+  }
+}
+
+// ─── Health Indicators Section ──────────────────────────────────
+const HealthIndicators: React.FC<{ goalId: string }> = ({ goalId }) => {
+  const { data: briefing } = useQuery(
+    ['goals-v2', 'briefing', goalId],
+    () => goalDashboardService.getBriefing(goalId),
+    { enabled: !!goalId, refetchInterval: 60000 }
+  );
+
+  if (!briefing) return null;
+
+  const healthColor = getHealthColor(briefing.health);
+
+  return (
+    <>
+      {/* Health Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Health Status */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Health</div>
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${healthColor}`} />
+            <span className="text-lg font-semibold capitalize">{briefing.health?.replace('_', ' ') || 'Unknown'}</span>
+          </div>
+          {briefing.health === 'stale' && briefing.last_activity && (
+            <div className="mt-2 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Last activity: {new Date(briefing.last_activity).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Bottlenecks */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Bottlenecks</div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-white">{briefing.bottlenecks?.length || 0}</div>
+          {briefing.bottlenecks?.[0] && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{briefing.bottlenecks[0].title}</div>
+          )}
+        </div>
+
+        {/* Knowledge */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Knowledge</div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-white">{briefing.knowledge?.facts_count || 0} facts</div>
+          {briefing.knowledge?.contradictions?.length > 0 && (
+            <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+              <AlertTriangle className="w-3 h-3 inline mr-1" />
+              {briefing.knowledge.contradictions.length} contradictions
+            </div>
+          )}
+        </div>
+
+        {/* Pending Decisions */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Pending</div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-white">{briefing.pending_decisions?.length || 0}</div>
+          {briefing.pending_decisions?.[0] && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{briefing.pending_decisions[0].title || briefing.pending_decisions[0]}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Critical Path */}
+      {briefing.critical_path?.length > 0 && (
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Critical Path</h3>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {briefing.critical_path.map((node: any, i: number) => (
+              <React.Fragment key={node.node_id}>
+                <div className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap border ${getCriticalPathStatusStyles(node.status)}`}>
+                  {node.title}
+                </div>
+                {i < briefing.critical_path.length - 1 && (
+                  <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Staleness Warning */}
+      {briefing.health === 'stale' && (
+        <div className="mb-6 flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">This goal appears stale</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              No recent activity detected. Consider reviewing progress or updating the goal status.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// ─── Main Component ──────────────────────────────────────────────
 const GoalDetail: React.FC = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { goal, loading, error, deleteGoal, unlinkPlan } = useGoal(goalId ?? null);
-  
+  const { data: goal, isLoading } = useGoalV2(goalId ?? '');
+  const updateGoal = useUpdateGoal();
+  const deleteGoalMut = useDeleteGoal();
+
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [notification, setNotification] = useState<Notification | null>(null);
-  const notificationTimer = useRef<ReturnType<typeof setTimeout>>();
-  useEffect(() => () => clearTimeout(notificationTimer.current), []);
 
-  // Set initial tab from URL
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
-    if (tab && ['overview', 'plans', 'path', 'knowledge', 'activity'].includes(tab)) {
+    if (tab && ['overview', 'path', 'evaluations'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -543,192 +621,118 @@ const GoalDetail: React.FC = () => {
     setSearchParams({ tab });
   }, [setSearchParams]);
 
-  const showNotification = useCallback((message: string, type: 'success' | 'error') => {
-    setNotification({ message, type });
-    clearTimeout(notificationTimer.current);
-    notificationTimer.current = setTimeout(() => setNotification(null), NOTIFICATION_TIMEOUT_MS);
-  }, []);
+  const handleStatusChange = useCallback((status: string) => {
+    if (!goalId) return;
+    updateGoal.mutate({ id: goalId, status: status as any });
+  }, [goalId, updateGoal]);
 
   const handleDelete = useCallback(async () => {
     if (!goalId) return;
     setIsDeleting(true);
     try {
-      await deleteGoal(goalId);
+      await deleteGoalMut.mutateAsync(goalId);
       navigate('/app/goals');
-    } catch (err) {
-      showNotification('Failed to delete goal. Please try again.', 'error');
+    } catch {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
-  }, [goalId, deleteGoal, navigate, showNotification]);
+  }, [goalId, deleteGoalMut, navigate]);
 
-  const handleUnlinkPlan = useCallback(async (planId: string) => {
-    await unlinkPlan(planId);
-  }, [unlinkPlan]);
+  if (!goalId) return <Navigate to="/app/goals" replace />;
 
-  const handleError = useCallback((message: string) => {
-    showNotification(message, 'error');
-  }, [showNotification]);
-
-  // Redirect if no goalId provided
-  if (!goalId) {
-    return <Navigate to="/app/goals" replace />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+      </div>
+    );
   }
 
-  if (loading) {
+  if (!goal) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-center py-20" role="status">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="sr-only">Loading goal...</span>
-          </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+        <div className="max-w-3xl mx-auto text-center py-20">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Goal not found</h2>
+          <Link to="/app/goals" className="text-blue-600 hover:text-blue-700 font-medium text-sm">Back to Goals</Link>
         </div>
       </div>
     );
   }
 
-  if (error || !goal) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center py-20" role="alert">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" aria-hidden="true" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Goal not found</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">{error || 'The goal you are looking for does not exist.'}</p>
-            <Link
-              to="/app/goals"
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Back to Goals
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const typeConf = TYPE_CONFIG[goal.type] || TYPE_CONFIG.outcome;
 
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Target className="w-4 h-4" /> },
-    { id: 'path', label: 'Dependency Path', icon: <GitBranch className="w-4 h-4" /> },
-    { id: 'plans', label: 'Linked Plans', icon: <FolderKanban className="w-4 h-4" />, count: goal.linked_plans?.length || 0 },
-    { id: 'knowledge', label: 'Knowledge', icon: <BookOpen className="w-4 h-4" />, count: goal.knowledge_entries_count || 0 },
-    { id: 'activity', label: 'Activity', icon: <Activity className="w-4 h-4" /> },
+    { id: 'path', label: 'Tasks & Dependencies', icon: <GitBranch className="w-4 h-4" /> },
+    { id: 'evaluations', label: 'Evaluations', icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Notification */}
-        {notification && (
-          <div 
-            className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
-              notification.type === 'success' 
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-            }`}
-            role="alert"
-          >
-            {notification.type === 'success' ? (
-              <Check className="w-5 h-5" aria-hidden="true" />
-            ) : (
-              <AlertCircle className="w-5 h-5" aria-hidden="true" />
-            )}
-            {notification.message}
-          </div>
-        )}
-
-        {/* Back Link */}
-        <Link
-          to="/app/goals"
-          className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Back to Goals
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        {/* Back link */}
+        <Link to="/app/goals" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-4 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Goals
         </Link>
 
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <header className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-5">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 flex-wrap mb-2">
-                <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{goal.title}</h1>
-                <StatusBadge status={goal.status} size="md" />
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <span className="text-2xl mt-0.5">{typeConf.icon}</span>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{goal.title}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${typeConf.bg} ${typeConf.text}`}>
+                    {typeConf.label}
+                  </span>
+                  <StatusDropdown currentStatus={goal.status} onStatusChange={handleStatusChange} />
+                  {goal.priority > 0 && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Priority {goal.priority}</span>
+                  )}
+                </div>
               </div>
-              {goal.organization && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-2">
-                  <Building2 className="w-4 h-4" aria-hidden="true" />
-                  {goal.organization.name}
-                </p>
-              )}
-              {goal.time_horizon && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                  <Calendar className="w-4 h-4" aria-hidden="true" />
-                  Target: <time dateTime={goal.time_horizon}>{new Date(goal.time_horizon).toLocaleDateString()}</time>
-                </p>
-              )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  // Edit functionality will be implemented in a future update
-                  // See: https://github.com/TAgents/agent-planner-ui/issues/new?title=Implement+goal+edit+modal
-                  showNotification('Edit functionality coming soon!', 'success');
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title="Edit goal (coming soon)"
-                aria-label="Edit goal"
-              >
-                <Edit className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                title="Delete goal"
-                aria-label="Delete goal"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
+              title="Delete goal"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
+        {/* Health Indicators */}
+        <HealthIndicators goalId={goalId!} />
+
         {/* Tabs */}
-        <nav className="border-b border-gray-200 dark:border-gray-700 mb-6" aria-label="Goal sections">
-          <div className="flex gap-4 -mb-px" role="tablist">
+        <nav className="border-b border-gray-200 dark:border-gray-700 mb-5" aria-label="Goal sections">
+          <div className="flex gap-1 -mb-px">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                aria-controls={`tabpanel-${tab.id}`}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
                 }`}
               >
-                <span aria-hidden="true">{tab.icon}</span>
+                {tab.icon}
                 {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className="ml-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded-full">
-                    {tab.count}
-                  </span>
-                )}
               </button>
             ))}
           </div>
         </nav>
 
         {/* Tab Content */}
-        <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
-          {activeTab === 'overview' && <OverviewTab goal={goal} />}
+        <div>
+          {activeTab === 'overview' && <OverviewTab goal={goal} goalId={goalId!} />}
           {activeTab === 'path' && <DependencyPathTab goalId={goalId!} />}
-          {activeTab === 'plans' && <PlansTab goal={goal} onUnlink={handleUnlinkPlan} onError={handleError} />}
-          {activeTab === 'knowledge' && <KnowledgeTab goalId={goalId!} />}
-          {activeTab === 'activity' && <ActivityTab goalId={goalId!} />}
+          {activeTab === 'evaluations' && <EvaluationsTab goalId={goalId!} />}
         </div>
 
         {/* Delete Confirmation Modal */}

@@ -13,7 +13,6 @@ import {
   Target,
   BookOpen,
   Home,
-  Bot,
   Network,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -111,14 +110,13 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   const primaryNav = [
     { to: '/app', label: 'Home', icon: Home, isActiveFn: () => location.pathname === '/app' || location.pathname === '/app/dashboard' },
     { to: '/app/plans', label: 'Plans', icon: FolderKanban, isActiveFn: () => isActive('/app/plans') },
-    { to: '/app/goals-v2', label: 'Goals', icon: Target, isActiveFn: () => isActive('/app/goals-v2') || isActive('/app/goals') },
+    { to: '/app/goals', label: 'Goals', icon: Target, isActiveFn: () => isActive('/app/goals') },
   ];
 
   // Secondary nav items (less used)
   const secondaryNav = [
     { to: '/app/portfolio', label: 'Portfolio', icon: Network, isActiveFn: () => isActive('/app/portfolio') },
     { to: '/app/knowledge', label: 'Knowledge', icon: BookOpen, isActiveFn: () => isActive('/app/knowledge') },
-    { to: '/app/agents', label: 'Agents', icon: Bot, isActiveFn: () => isActive('/app/agents') },
     { to: '/explore', label: 'Explore', icon: Compass, isActiveFn: () => isActive('/explore'), alwaysShow: true },
     { to: '/app/settings', label: 'Settings', icon: Settings, isActiveFn: () => isActive('/app/settings') },
   ];

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Save, Edit3, Github, Lock, Loader2 } from 'lucide-react';
 import { SettingsNav } from '../../components/settings/SettingsLayout';
-import CapabilityTags from '../../components/settings/CapabilityTags';
 import api from '../../services/api';
 
 interface UserData {
@@ -284,8 +283,6 @@ const ProfileSettings: React.FC = () => {
               )}
             </div>
 
-            {/* Capability Tags */}
-            <CapabilityTags />
           </div>
         )}
       </div>
