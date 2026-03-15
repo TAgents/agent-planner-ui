@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from 'react-query';
 import { useCallback } from 'react';
-import { decisionsApi, agentRequestApi, planService } from '../services/api';
+import { dashboardApi } from '../services/api';
 import { useWebSocketEvent } from './useWebSocket';
-import { AGENT_EVENTS } from '../types/websocket';
+import { AGENT_EVENTS, DECISION_EVENTS } from '../types/websocket';
 
 // Types
 export interface NotificationItem {
@@ -23,17 +23,35 @@ export interface NotificationSummary {
   hasUrgent: boolean;
 }
 
-// Fetch pending notifications across all accessible plans
-// DISABLED: This was causing 21+ API calls per fetch (1 plans + 10 decisions + 10 agent requests)
-// which triggered rate limiting and broke the site.
-// TODO: Re-enable when backend has a batch notifications endpoint
+// Fetch pending notifications using the batch dashboard endpoint
 async function fetchPendingNotifications(): Promise<NotificationSummary> {
-  // Return empty to avoid rate limiting
+  const pending = await dashboardApi.getPending(20);
+
+  const decisions: NotificationItem[] = pending.decisions.map(d => ({
+    id: d.id,
+    type: 'decision',
+    plan_id: d.plan_id,
+    plan_title: d.plan_title,
+    title: d.title,
+    urgency: d.urgency as 'blocking' | 'can_continue',
+    created_at: d.created_at,
+  }));
+
+  const agentRequests: NotificationItem[] = pending.agent_requests.map(r => ({
+    id: r.id,
+    type: 'agent_request',
+    plan_id: r.plan_id,
+    plan_title: r.plan_title,
+    title: r.task_title,
+    request_type: r.request_type,
+    created_at: r.requested_at,
+  }));
+
   return {
-    decisions: [],
-    agentRequests: [],
-    totalCount: 0,
-    hasUrgent: false,
+    decisions,
+    agentRequests,
+    totalCount: pending.total,
+    hasUrgent: pending.decisions.some(d => d.urgency === 'blocking'),
   };
 }
 
@@ -53,15 +71,15 @@ export function usePendingNotifications() {
 // Hook for WebSocket-based notification updates
 export function useNotificationEvents() {
   const queryClient = useQueryClient();
-  
+
   const invalidateNotifications = useCallback(() => {
     queryClient.invalidateQueries(['notifications', 'pending']);
   }, [queryClient]);
 
   // Decision events
-  useWebSocketEvent('decision.requested' as any, invalidateNotifications, [invalidateNotifications]);
-  useWebSocketEvent('decision.resolved' as any, invalidateNotifications, [invalidateNotifications]);
-  
+  useWebSocketEvent(DECISION_EVENTS.REQUESTED, invalidateNotifications, [invalidateNotifications]);
+  useWebSocketEvent(DECISION_EVENTS.RESOLVED, invalidateNotifications, [invalidateNotifications]);
+
   // Agent request events
   useWebSocketEvent(AGENT_EVENTS.REQUESTED, invalidateNotifications, [invalidateNotifications]);
   useWebSocketEvent(AGENT_EVENTS.RESPONSE, invalidateNotifications, [invalidateNotifications]);

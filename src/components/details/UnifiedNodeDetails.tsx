@@ -29,15 +29,12 @@ import {
   Copy as CopyIcon,
   Move,
   Archive,
-  Bot,
   Loader2,
-  Play,
-  Zap,
   Tag,
-  MessageSquare,
   Clock,
   GitBranch,
-  Pencil
+  Pencil,
+  Cpu
 } from 'lucide-react';
 import { PlanNode, NodeStatus, NodeType, TaskMode, User as UserType } from '../../types';
 import { formatDate } from '../../utils/planUtils';
@@ -45,13 +42,10 @@ import { useNodeLogs } from '../../hooks/useNodeLogs';
 import { useCollaborators } from '../../hooks/useCollaborators';
 import { useNodeAssignments } from '../../hooks/useNodeAssignments';
 import { useNodeInstructions } from '../../hooks/useNodeInstructions';
-import { AskAgentModal } from '../agent-request/AskAgentModal';
-import { AgentResponsePanel } from '../agent-request/AgentResponsePanel';
-import { useTaskAgentRequests, useCreateAgentRequest } from '../../hooks/useAgentRequests';
-import { AgentRequest, nodeService } from '../../services/api';
 import api from '../../services/api';
 import NodeDependenciesTab from './NodeDependenciesTab';
 import NodeKnowledgeTab from './NodeKnowledgeTab';
+import AgentContextPanel from './AgentContextPanel';
 
 // Types
 interface UnifiedNodeDetailsProps {
@@ -367,29 +361,15 @@ const ActionsMenu: React.FC<{
   );
 };
 
-// Component: Unified Assignment Selector (People + Agents)
-interface AgentOption {
-  id: string;
-  name: string;
-  email: string;
-  avatar_url?: string;
-  capability_tags?: string[];
-  status?: string;
-}
-
+// Component: Unified Assignment Selector (People)
 const UnifiedAssignmentSelector: React.FC<{
   assignedUser?: { id: string; name?: string; email?: string };
-  assignedAgent?: AgentOption | null;
   collaborators: any[];
-  agents: AgentOption[];
   onAssignUser: (userId: string) => void;
   onUnassignUser: () => void;
-  onAssignAgent: (agentId: string) => void;
-  onUnassignAgent: () => void;
   isLoading?: boolean;
   isUpdating?: boolean;
-  agentsLoading?: boolean;
-}> = ({ assignedUser, assignedAgent, collaborators, agents, onAssignUser, onUnassignUser, onAssignAgent, onUnassignAgent, isLoading = false, isUpdating = false, agentsLoading = false }) => {
+}> = ({ assignedUser, collaborators, onAssignUser, onUnassignUser, isLoading = false, isUpdating = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -405,7 +385,7 @@ const UnifiedAssignmentSelector: React.FC<{
     }
   }, [isOpen]);
 
-  const hasAssignment = assignedUser || assignedAgent;
+  const hasAssignment = !!assignedUser;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -423,11 +403,6 @@ const UnifiedAssignmentSelector: React.FC<{
           <>
             <div className="w-3 h-3 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
             <span className="text-gray-700 dark:text-gray-300">Updating...</span>
-          </>
-        ) : assignedAgent ? (
-          <>
-            <Bot className="w-3.5 h-3.5 text-purple-500" />
-            <span className="text-gray-700 dark:text-gray-300">{assignedAgent.name || assignedAgent.email}</span>
           </>
         ) : assignedUser ? (
           <>
@@ -450,8 +425,7 @@ const UnifiedAssignmentSelector: React.FC<{
             <>
               <button
                 onClick={() => {
-                  if (assignedAgent) onUnassignAgent();
-                  else onUnassignUser();
+                  onUnassignUser();
                   setIsOpen(false);
                 }}
                 className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300"
@@ -475,7 +449,6 @@ const UnifiedAssignmentSelector: React.FC<{
               <button
                 key={userId}
                 onClick={() => {
-                  if (assignedAgent) onUnassignAgent();
                   onAssignUser(userId);
                   setIsOpen(false);
                 }}
@@ -491,154 +464,9 @@ const UnifiedAssignmentSelector: React.FC<{
             <div className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">No collaborators</div>
           )}
 
-          {/* 🤖 Agents section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 mt-1" />
-          <div className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-            <span>🤖</span> Agents
-          </div>
-          {agentsLoading ? (
-            <div className="px-3 py-2 flex items-center gap-2 text-xs text-gray-400">
-              <Loader2 className="w-3 h-3 animate-spin" /> Loading agents...
-            </div>
-          ) : agents.length > 0 ? agents.map(agent => {
-            const isSelected = assignedAgent?.id === agent.id;
-            const statusColor = agent.status === 'active' ? 'bg-green-500' : agent.status === 'online' ? 'bg-blue-500' : agent.status === 'idle' ? 'bg-yellow-500' : 'bg-gray-400';
-            return (
-              <button
-                key={agent.id}
-                onClick={() => {
-                  if (assignedUser) onUnassignUser();
-                  onAssignAgent(agent.id);
-                  setIsOpen(false);
-                }}
-                className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-start gap-2 transition-colors duration-200 text-gray-700 dark:text-gray-300 disabled:opacity-50"
-                disabled={isSelected}
-              >
-                <div className="relative flex-shrink-0 mt-0.5">
-                  <Bot className="w-4 h-4 text-purple-500" />
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-800 ${statusColor}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium">{agent.name || agent.email}</div>
-                  {agent.capability_tags && agent.capability_tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-0.5">
-                      {agent.capability_tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="px-1 py-0 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {isSelected && <Check className="w-3 h-3 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />}
-              </button>
-            );
-          }) : (
-            <div className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">No agents available</div>
-          )}
         </div>
       )}
     </div>
-  );
-};
-
-// Component: Start Agent Button (contextual action when agent assigned)
-const StartAgentButton: React.FC<{
-  planId: string;
-  taskId: string;
-  taskTitle: string;
-  activeRequest?: AgentRequest;
-  latestCompletedRequest?: AgentRequest;
-}> = ({ planId, taskId, taskTitle, activeRequest, latestCompletedRequest }) => {
-  const createRequest = useCreateAgentRequest(planId);
-  const [showModal, setShowModal] = useState(false);
-
-  const handleStart = async () => {
-    try {
-      await createRequest.mutateAsync({
-        taskId,
-        data: { request_type: 'execute' },
-      });
-    } catch (error) {
-      console.error('Failed to start agent:', error);
-    }
-  };
-
-  if (activeRequest) {
-    const isWorking = activeRequest.status === 'in_progress';
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-        isWorking
-          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-          : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
-      }`}>
-        <Zap className="w-3.5 h-3.5 animate-pulse" />
-        {isWorking ? 'Agent working...' : 'Waiting for agent...'}
-      </span>
-    );
-  }
-
-  return (
-    <>
-      <div className="flex items-center gap-1.5">
-        <button
-          onClick={handleStart}
-          disabled={createRequest.isLoading}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors disabled:opacity-50"
-        >
-          {createRequest.isLoading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Play className="w-3.5 h-3.5" />
-          )}
-          Start Agent
-        </button>
-        <button
-          onClick={() => setShowModal(true)}
-          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          title="Custom agent request"
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      <AskAgentModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        planId={planId}
-        taskId={taskId}
-        taskTitle={taskTitle}
-      />
-    </>
-  );
-};
-
-// Component: New Agent Request Button (for Activity tab)
-const NewAgentRequestButton: React.FC<{
-  planId: string;
-  taskId: string;
-  taskTitle: string;
-}> = ({ planId, taskId, taskTitle }) => {
-  const [showModal, setShowModal] = useState(false);
-
-  return (
-    <>
-      <div className="px-3 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700 transition-colors"
-        >
-          <Bot className="w-3.5 h-3.5" />
-          New Agent Request
-        </button>
-      </div>
-      <AskAgentModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        planId={planId}
-        taskId={taskId}
-        taskTitle={taskTitle}
-      />
-    </>
   );
 };
 
@@ -770,9 +598,7 @@ const ActivityItem: React.FC<{
 // Component: Log Composer
 const LogComposer: React.FC<{
   onLogAdd: (content: string, logType: string, tags?: string[]) => void;
-  showAgentRequestButton?: boolean;
-  onAgentRequest?: () => void;
-}> = ({ onLogAdd, showAgentRequestButton, onAgentRequest }) => {
+}> = ({ onLogAdd }) => {
   const [logContent, setLogContent] = useState('');
   const [logType, setLogType] = useState<LogType>('progress');
 
@@ -815,15 +641,6 @@ const LogComposer: React.FC<{
             target.style.height = Math.min(target.scrollHeight, 120) + 'px';
           }}
         />
-        {showAgentRequestButton && onAgentRequest && (
-          <button
-            onClick={onAgentRequest}
-            className="p-1.5 text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 rounded transition-colors flex-shrink-0"
-            title="New agent request"
-          >
-            <Bot className="w-3.5 h-3.5" />
-          </button>
-        )}
         <button
           onClick={handleSubmit}
           disabled={!logContent.trim()}
@@ -1240,18 +1057,12 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   allNodes = [],
   onUpdateNode,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions' | 'dependencies' | 'knowledge'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'instructions' | 'agent-context' | 'dependencies' | 'knowledge'>('overview');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [assignedUser, setAssignedUser] = useState<any>(null);
-  const [suggestedAgents, setSuggestedAgents] = useState<AgentOption[]>([]);
-  const [assignedAgent, setAssignedAgent] = useState<AgentOption | null>(null);
-  const [agentsLoading, setAgentsLoading] = useState(false);
-  const [showAgentModal, setShowAgentModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showRedirectInput, setShowRedirectInput] = useState(false);
   const [redirectText, setRedirectText] = useState('');
-  const [showAgentContextInput, setShowAgentContextInput] = useState(false);
-  const [agentContextText, setAgentContextText] = useState('');
 
   // Reset tab and edit mode when node changes
   React.useEffect(() => {
@@ -1259,8 +1070,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
     setIsEditMode(false);
     setShowRedirectInput(false);
     setRedirectText('');
-    setShowAgentContextInput(false);
-    setAgentContextText('');
   }, [node.id]);
 
   // Fetch logs from API
@@ -1278,54 +1087,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
   // Handle agent instructions updates
   const { updateInstructions } = useNodeInstructions(planId, node.id);
-
-  // Fetch agent requests for this task
-  const { data: agentRequests } = useTaskAgentRequests(planId, node.id, { enabled: node.node_type === 'task' });
-  const activeRequest = agentRequests?.find(r => r.status === 'pending' || r.status === 'in_progress');
-  const latestCompletedRequest = agentRequests?.find(r => r.status === 'completed');
-
-  // Load suggested agents
-  useEffect(() => {
-    if (node.node_type !== 'task') return;
-    let cancelled = false;
-    const load = async () => {
-      setAgentsLoading(true);
-      try {
-        const result = await api.nodes.getSuggestedAgents(planId, node.id);
-        if (!cancelled) setSuggestedAgents(result.agents || []);
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setAgentsLoading(false);
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [planId, node.id, node.node_type]);
-
-  // Load assigned agent info
-  useEffect(() => {
-    if (!node.assigned_agent_id) {
-      setAssignedAgent(null);
-      return;
-    }
-    const agent = suggestedAgents.find(a => a.id === node.assigned_agent_id);
-    if (agent) {
-      setAssignedAgent(agent);
-    } else {
-      // Try to load from API
-      const load = async () => {
-        try {
-          const result = await api.nodes.getSuggestedAgents(planId, node.id);
-          const found = (result.agents || []).find((a: AgentOption) => a.id === node.assigned_agent_id);
-          if (found) setAssignedAgent(found);
-        } catch {
-          // silent
-        }
-      };
-      load();
-    }
-  }, [node.assigned_agent_id, suggestedAgents, planId, node.id]);
 
   // Fetch and manage node assignments
   const {
@@ -1363,9 +1124,9 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   const progress = node.status === 'completed' ? 100 :
                    node.status === 'in_progress' ? 50 : 0;
 
-  // Convert logs + agent requests to unified activities
+  // Convert logs to unified activities
   const activities: UnifiedActivity[] = React.useMemo(() => {
-    const logActivities: UnifiedActivity[] = logs.map(log => ({
+    return logs.map(log => ({
       id: log.id,
       nodeId: node.id,
       type: 'log' as const,
@@ -1381,75 +1142,8 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
         logType: log.log_type,
         tags: log.tags
       }
-    }));
-
-    // Add agent request/response entries
-    const agentActivities: UnifiedActivity[] = (agentRequests || []).flatMap(req => {
-      const entries: UnifiedActivity[] = [];
-      // Request entry
-      entries.push({
-        id: `agent-req-${req.id}`,
-        nodeId: node.id,
-        type: 'log' as const,
-        actor: {
-          id: req.requested_by || 'system',
-          name: req.requester?.name || 'You',
-          email: req.requester?.email,
-        },
-        timestamp: new Date(req.created_at),
-        data: {
-          content: `🤖 Agent request: ${req.request_type}${req.prompt ? ` — "${req.prompt}"` : ''}`,
-          logType: 'progress' as LogType,
-          tags: ['agent-request'],
-          isAgentRequest: true,
-          agentRequest: req,
-        }
-      });
-      // Response entry
-      if (req.status === 'completed' && req.response) {
-        entries.push({
-          id: `agent-res-${req.id}`,
-          nodeId: node.id,
-          type: 'log' as const,
-          actor: {
-            id: 'agent',
-            name: '🤖 Agent',
-          },
-          timestamp: new Date(req.completed_at || req.updated_at),
-          data: {
-            content: req.response,
-            logType: 'decision' as LogType,
-            tags: ['agent-response'],
-            isAgentResponse: true,
-            agentRequest: req,
-          }
-        });
-      }
-      // Failed entry
-      if (req.status === 'failed' && req.error) {
-        entries.push({
-          id: `agent-err-${req.id}`,
-          nodeId: node.id,
-          type: 'log' as const,
-          actor: {
-            id: 'agent',
-            name: '🤖 Agent',
-          },
-          timestamp: new Date(req.updated_at),
-          data: {
-            content: `❌ Agent request failed: ${req.error}`,
-            logType: 'challenge' as LogType,
-            tags: ['agent-error'],
-            isAgentError: true,
-          }
-        });
-      }
-      return entries;
-    });
-
-    return [...logActivities, ...agentActivities]
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }, [logs, agentRequests, node.id]);
+    })).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [logs, node.id]);
 
   // Filter activities based on current filter
   const filteredActivities = React.useMemo(() => {
@@ -1503,32 +1197,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
     }
   };
 
-  // Handle agent assignment
-  const handleAssignAgent = async (agentId: string) => {
-    try {
-      await api.nodes.assignAgent(planId, node.id, agentId);
-      const agent = suggestedAgents.find(a => a.id === agentId);
-      if (agent) setAssignedAgent(agent);
-      // Clear human assignment when assigning agent
-      if (assignedUser) {
-        await unassignUserFromNode(assignedUser.id);
-        setAssignedUser(null);
-      }
-    } catch (error) {
-      console.error('Failed to assign agent:', error);
-    }
-  };
-
-  const handleUnassignAgent = async () => {
-    try {
-      await api.nodes.unassignAgent(planId, node.id);
-      setAssignedAgent(null);
-    } catch (error) {
-      console.error('Failed to unassign agent:', error);
-    }
-  };
-
-  // Action handlers (placeholders for future implementation)
+  // Action handlers
   const handleCopyId = () => {
     navigator.clipboard.writeText(node.id);
     alert('Node ID copied to clipboard');
@@ -1616,21 +1285,12 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
         </div>
       </div>
 
-      {/* APPROVE/REDIRECT ACTIONS for plan_ready or agent_requested nodes */}
-      {(node.status === 'plan_ready' || (node as any).agent_requested) && onUpdateNode && (
+      {/* APPROVE/REDIRECT ACTIONS for plan_ready nodes */}
+      {node.status === 'plan_ready' && onUpdateNode && (
         <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
           <div className="flex gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
             <button
-              onClick={async () => {
-                if (node.status === 'plan_ready') {
-                  onStatusChange('not_started');
-                }
-                if ((node as any).agent_requested) {
-                  try {
-                    await nodeService.clearAgentRequest(node.plan_id || planId, node.id);
-                  } catch (e) { /* ignore if already cleared */ }
-                }
-              }}
+              onClick={() => onStatusChange('not_started')}
               className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
             >
               Approve
@@ -1641,11 +1301,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             >
               Redirect
             </button>
-            {(node as any).agent_request_message && (
-              <p className="text-sm text-amber-700 dark:text-amber-300 ml-2 self-center">
-                Agent: {(node as any).agent_request_message}
-              </p>
-            )}
           </div>
           {showRedirectInput && (
             <div className="mt-2 flex gap-2">
@@ -1660,14 +1315,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                   onClick={async () => {
                     if (redirectText.trim()) {
                       await handleFieldUpdate('agent_instructions', redirectText.trim());
-                      if (node.status === 'plan_ready') {
-                        onStatusChange('not_started');
-                      }
-                      if ((node as any).agent_requested) {
-                        try {
-                          await nodeService.clearAgentRequest(node.plan_id || planId, node.id);
-                        } catch (e) { /* ignore if already cleared */ }
-                      }
+                      onStatusChange('not_started');
                       setRedirectText('');
                       setShowRedirectInput(false);
                     }
@@ -1710,16 +1358,11 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             <span className="text-gray-400 dark:text-gray-500">Assigned to:</span>
             <UnifiedAssignmentSelector
               assignedUser={assignedUser}
-              assignedAgent={assignedAgent}
               collaborators={collaborators}
-              agents={suggestedAgents}
               onAssignUser={handleAssign}
               onUnassignUser={handleUnassign}
-              onAssignAgent={handleAssignAgent}
-              onUnassignAgent={handleUnassignAgent}
               isLoading={assignmentsLoading}
               isUpdating={isAssigning || isUnassigning}
-              agentsLoading={agentsLoading}
             />
           </div>
           {node.due_date && (
@@ -1730,25 +1373,13 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           )}
         </div>
 
-        {/* Contextual Start Agent action */}
-        {node.node_type === 'task' && assignedAgent && (
-          <div className="mt-2 flex items-center gap-2">
-            <StartAgentButton
-              planId={planId}
-              taskId={node.id}
-              taskTitle={node.title}
-              activeRequest={activeRequest}
-              latestCompletedRequest={latestCompletedRequest}
-            />
-          </div>
-        )}
       </div>
 
       {/* TABBED CONTENT AREA */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Tab Navigation */}
         <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+          <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab('overview')}
               className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
@@ -1785,11 +1416,24 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               }`}
             >
               <Code2 className="w-3 h-3" />
-              <span>Context & Instructions</span>
+              <span>Instructions</span>
               {node.agent_instructions && (
                 <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full" />
               )}
             </button>
+            {node.node_type === 'task' && (
+              <button
+                onClick={() => setActiveTab('agent-context')}
+                className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === 'agent-context'
+                    ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <Cpu className="w-3 h-3" />
+                <span>Agent Context</span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('dependencies')}
               className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
@@ -1837,28 +1481,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 italic">No description</p>
               )}
 
-              {/* Context */}
-              {onUpdateNode && isEditMode ? (
-                <div>
-                  <label className="block text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-0.5 uppercase tracking-wider">Context</label>
-                  <InlineEditField
-                    value={node.context || ''}
-                    placeholder="Add context..."
-                    onSave={(val) => handleFieldUpdate('context', val)}
-                    multiline
-                    className=""
-                    readClassName="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed"
-                  />
-                </div>
-              ) : node.context ? (
-                <div>
-                  <label className="block text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-0.5 uppercase tracking-wider">Context</label>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed" style={{ overflowWrap: 'anywhere' }}>
-                    {node.context}
-                  </p>
-                </div>
-              ) : null}
-
               {/* Due date */}
               {onUpdateNode && isEditMode ? (
                 <div className="flex items-center gap-1.5 text-[11px]">
@@ -1880,58 +1502,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                   <span>Due: {formatDate(node.due_date)}</span>
                 </div>
               ) : null}
-
-              {/* Add Context for Agent action */}
-              {onUpdateNode && !isEditMode && (
-                <div className="pt-1">
-                  {showAgentContextInput ? (
-                    <div className="space-y-1.5">
-                      <label className="block text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                        Context for Agent
-                      </label>
-                      <textarea
-                        value={agentContextText}
-                        onChange={(e) => setAgentContextText(e.target.value)}
-                        placeholder="Add instructions or context for the next agent working on this task..."
-                        className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-y min-h-[60px]"
-                        autoFocus
-                      />
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={async () => {
-                            if (agentContextText.trim()) {
-                              const existing = node.agent_instructions || '';
-                              const updated = existing
-                                ? `${existing}\n\n---\n\n${agentContextText.trim()}`
-                                : agentContextText.trim();
-                              await handleFieldUpdate('agent_instructions', updated);
-                              setAgentContextText('');
-                              setShowAgentContextInput(false);
-                            }
-                          }}
-                          className="px-2 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => { setShowAgentContextInput(false); setAgentContextText(''); }}
-                          className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowAgentContextInput(true)}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
-                    >
-                      <Bot className="w-3 h-3" />
-                      Add Context for Agent
-                    </button>
-                  )}
-                </div>
-              )}
 
               {/* Compact metadata row with inline dropdowns */}
               <div className="flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-500 pt-1">
@@ -2004,15 +1574,6 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             </div>
             <LogComposer
               onLogAdd={handleLogAdd}
-              showAgentRequestButton={node.node_type === 'task'}
-              onAgentRequest={() => setShowAgentModal(true)}
-            />
-            <AskAgentModal
-              isOpen={showAgentModal}
-              onClose={() => setShowAgentModal(false)}
-              planId={planId}
-              taskId={node.id}
-              taskTitle={node.title}
             />
           </div>
         )}
@@ -2022,6 +1583,12 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
             node={node}
             onUpdate={updateInstructions}
           />
+        )}
+
+        {activeTab === 'agent-context' && (
+          <div className="flex-1 overflow-y-auto p-3">
+            <AgentContextPanel nodeId={node.id} planId={planId} />
+          </div>
         )}
 
         {activeTab === 'dependencies' && (

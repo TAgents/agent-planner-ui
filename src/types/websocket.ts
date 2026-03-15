@@ -78,6 +78,11 @@ export const AGENT_EVENTS = {
   FAILED: 'agent.failed'
 } as const;
 
+export const DECISION_EVENTS = {
+  REQUESTED: 'decision.requested',
+  RESOLVED: 'decision.resolved'
+} as const;
+
 export const EVENT_TYPES = {
   ...CONNECTION_EVENTS,
   ...PLAN_EVENTS,
@@ -85,7 +90,8 @@ export const EVENT_TYPES = {
   ...COLLABORATION_EVENTS,
   ...COLLABORATOR_EVENTS,
   ...PRESENCE_EVENTS,
-  ...AGENT_EVENTS
+  ...AGENT_EVENTS,
+  ...DECISION_EVENTS
 } as const;
 
 // Extract all event type values
@@ -96,7 +102,8 @@ export type EventType =
   | typeof COLLABORATION_EVENTS[keyof typeof COLLABORATION_EVENTS]
   | typeof COLLABORATOR_EVENTS[keyof typeof COLLABORATOR_EVENTS]
   | typeof PRESENCE_EVENTS[keyof typeof PRESENCE_EVENTS]
-  | typeof AGENT_EVENTS[keyof typeof AGENT_EVENTS];
+  | typeof AGENT_EVENTS[keyof typeof AGENT_EVENTS]
+  | typeof DECISION_EVENTS[keyof typeof DECISION_EVENTS];
 
 // ============================================================================
 // Message Structure Types

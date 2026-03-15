@@ -57,6 +57,15 @@ html.dark {
   }
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* React Flow specific styles */
 .react-flow__node {
   @apply font-sans;

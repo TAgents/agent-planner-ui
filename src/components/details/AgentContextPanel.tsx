@@ -23,7 +23,55 @@ interface AgentContextPanelProps {
   planId: string;
 }
 
-interface AgentViewResponse {
+// Raw API response shape from GET /nodes/:nodeId/agent-view
+interface ApiAgentViewResponse {
+  node_id: string;
+  layers: {
+    task_focus?: {
+      node: {
+        id: string;
+        title: string;
+        description?: string;
+        status: string;
+        node_type: string;
+        task_mode?: string;
+        agent_instructions?: string;
+      } | null;
+      logs?: Array<{
+        id: string;
+        content: string;
+        log_type: string;
+        created_at: string;
+      }>;
+      rpi_research?: Array<unknown>;
+    };
+    neighborhood?: {
+      parent?: { id: string; title: string; node_type: string } | null;
+      siblings?: Array<{ id: string; title: string; status: string }>;
+      dependencies?: {
+        upstream?: Array<{ id: string; title: string; status: string; dependency_type: string }>;
+        downstream?: Array<{ id: string; title: string; status: string; dependency_type: string }>;
+      };
+    };
+    knowledge?: {
+      facts?: Array<{ fact: string; source_node_name?: string; target_node_name?: string }>;
+      contradictions?: Array<{ fact: string; created_at: string }>;
+    };
+    extended?: {
+      plan?: { id: string; title: string; description?: string } | null;
+      ancestry?: Array<{ id: string; title: string; node_type: string }>;
+      goals?: Array<{ id: string; title: string; status: string }>;
+      transitive_dependencies?: unknown;
+    };
+  };
+  meta: {
+    layers_included: string[];
+    estimated_tokens: number;
+  };
+}
+
+// Normalized shape used by the rendering code
+interface AgentViewData {
   task: {
     id: string;
     title: string;
@@ -40,7 +88,7 @@ interface AgentViewResponse {
     }>;
   };
   neighborhood?: {
-    parent?: { id: string; title: string; node_type: string };
+    parent?: { id: string; title: string; node_type: string } | null;
     siblings?: Array<{ id: string; title: string; status: string }>;
     upstream_dependencies?: Array<{ id: string; title: string; status: string; dependency_type: string }>;
     downstream_dependencies?: Array<{ id: string; title: string; status: string; dependency_type: string }>;
@@ -55,12 +103,37 @@ interface AgentViewResponse {
     ancestry?: Array<{ id: string; title: string; node_type: string }>;
     linked_goals?: Array<{ id: string; title: string; status: string }>;
   };
-  token_estimates?: {
-    task?: number;
-    neighborhood?: number;
-    knowledge?: number;
-    extended?: number;
-    total?: number;
+  totalTokens: number;
+}
+
+function transformApiResponse(raw: ApiAgentViewResponse): AgentViewData {
+  const { layers, meta } = raw;
+  const taskNode = layers.task_focus?.node;
+  return {
+    task: {
+      id: taskNode?.id || '',
+      title: taskNode?.title || 'Unknown',
+      description: taskNode?.description,
+      status: taskNode?.status || 'unknown',
+      node_type: taskNode?.node_type || 'task',
+      task_mode: taskNode?.task_mode,
+      agent_instructions: taskNode?.agent_instructions,
+      recent_logs: layers.task_focus?.logs,
+    },
+    neighborhood: layers.neighborhood ? {
+      parent: layers.neighborhood.parent,
+      siblings: layers.neighborhood.siblings,
+      upstream_dependencies: layers.neighborhood.dependencies?.upstream,
+      downstream_dependencies: layers.neighborhood.dependencies?.downstream,
+    } : undefined,
+    knowledge: layers.knowledge,
+    extended: layers.extended ? {
+      plan_title: layers.extended.plan?.title,
+      plan_description: layers.extended.plan?.description,
+      ancestry: layers.extended.ancestry,
+      linked_goals: layers.extended.goals,
+    } : undefined,
+    totalTokens: meta.estimated_tokens,
   };
 }
 
@@ -161,7 +234,7 @@ const AgentContextPanel: React.FC<AgentContextPanelProps> = ({ nodeId, planId })
     }
   }
 
-  const { data, isLoading, error } = useQuery<AgentViewResponse>(
+  const { data: rawData, isLoading, error } = useQuery<ApiAgentViewResponse>(
     ['agentView', userId, nodeId],
     () => nodeViewService.getAgentView(nodeId, 4),
     {
@@ -174,7 +247,7 @@ const AgentContextPanel: React.FC<AgentContextPanelProps> = ({ nodeId, planId })
     return <LoadingSkeleton />;
   }
 
-  if (error || !data) {
+  if (error || !rawData) {
     return (
       <div className="text-center py-8">
         <AlertCircle className="w-6 h-6 text-red-400 mx-auto mb-2" />
@@ -188,22 +261,13 @@ const AgentContextPanel: React.FC<AgentContextPanelProps> = ({ nodeId, planId })
     );
   }
 
-  const { task, neighborhood, knowledge, extended, token_estimates } = data;
+  const { task, neighborhood, knowledge, extended, totalTokens } = transformApiResponse(rawData);
 
-  // Calculate totals — use API estimates if available, else rough estimate
-  const taskTokens = token_estimates?.task || estimateTokens(
-    JSON.stringify(task),
-  );
-  const neighborhoodTokens = token_estimates?.neighborhood || estimateTokens(
-    JSON.stringify(neighborhood || {}),
-  );
-  const knowledgeTokens = token_estimates?.knowledge || estimateTokens(
-    JSON.stringify(knowledge || {}),
-  );
-  const extendedTokens = token_estimates?.extended || estimateTokens(
-    JSON.stringify(extended || {}),
-  );
-  const totalTokens = token_estimates?.total || (taskTokens + neighborhoodTokens + knowledgeTokens + extendedTokens);
+  // Per-layer token estimates (rough, since API only gives total)
+  const taskTokens = estimateTokens(JSON.stringify(task));
+  const neighborhoodTokens = estimateTokens(JSON.stringify(neighborhood || {}));
+  const knowledgeTokens = estimateTokens(JSON.stringify(knowledge || {}));
+  const extendedTokens = estimateTokens(JSON.stringify(extended || {}));
 
   return (
     <div className="space-y-3">
