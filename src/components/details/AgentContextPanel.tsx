@@ -126,7 +126,14 @@ function transformApiResponse(raw: ApiAgentViewResponse): AgentViewData {
       upstream_dependencies: layers.neighborhood.dependencies?.upstream,
       downstream_dependencies: layers.neighborhood.dependencies?.downstream,
     } : undefined,
-    knowledge: layers.knowledge,
+    knowledge: layers.knowledge ? {
+      facts: layers.knowledge.facts?.map((f: any) => ({
+        fact: f.fact || f.content || '',
+        source_node_name: f.source_node_name,
+        target_node_name: f.target_node_name,
+      })),
+      contradictions: layers.knowledge.contradictions,
+    } : undefined,
     extended: layers.extended ? {
       plan_title: layers.extended.plan?.title,
       plan_description: layers.extended.plan?.description,
@@ -457,17 +464,16 @@ const AgentContextPanel: React.FC<AgentContextPanelProps> = ({ nodeId, planId })
 
         {knowledge?.contradictions && knowledge.contradictions.length > 0 && (
           <div className="mt-2">
-            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              Contradictions ({knowledge.contradictions.length})
+            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1">
+              Superseded ({knowledge.contradictions.length})
             </span>
             <ul className="mt-1 space-y-1">
               {knowledge.contradictions.map((c, i) => (
                 <li
                   key={i}
-                  className="bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1.5 border border-amber-200 dark:border-amber-800/40"
+                  className="rounded px-2 py-1.5 border border-gray-100 dark:border-gray-700/30"
                 >
-                  <p className="text-amber-800 dark:text-amber-300">{c.fact}</p>
+                  <p className="text-gray-400 dark:text-gray-500 line-through text-xs">{c.fact}</p>
                 </li>
               ))}
             </ul>
