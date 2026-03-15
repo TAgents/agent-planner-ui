@@ -17,7 +17,7 @@ const PrivacyPolicy: React.FC = () => {
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <Link
           to="/"
-          className="inline-flex items-center text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 mb-8"
+          className="inline-flex items-center text-amber-600 hover:text-amber-700 dark:text-amber-400 mb-8"
         >
           ← Back to Home
         </Link>
@@ -107,7 +107,7 @@ const PrivacyPolicy: React.FC = () => {
             </ul>
             <p className="mt-2">
               To exercise any of these rights, please contact us at{' '}
-              <a href="mailto:contact@talkingagents.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+              <a href="mailto:contact@talkingagents.com" className="text-amber-600 dark:text-amber-400 hover:underline">
                 contact@talkingagents.com
               </a>. We will respond within 30 days.
             </p>
@@ -205,7 +205,7 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <p className="mt-2">
               <strong>Finnish Data Protection Ombudsman:</strong><br />
-              Website: <a href="https://tietosuoja.fi" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">tietosuoja.fi</a>
+              Website: <a href="https://tietosuoja.fi" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 dark:text-amber-400">tietosuoja.fi</a>
             </p>
           </section>
 
@@ -248,7 +248,7 @@ const PrivacyPolicy: React.FC = () => {
             <p className="ml-4 mt-2">
               <strong>Talking Agents Oy</strong><br />
               Email: contact@talkingagents.com<br />
-              GitHub: <a href="https://github.com/tagents" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">github.com/tagents</a>
+              GitHub: <a href="https://github.com/tagents" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 dark:text-amber-400">github.com/tagents</a>
             </p>
           </section>
         </div>

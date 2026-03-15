@@ -46,11 +46,11 @@ const ForgotPassword: React.FC = () => {
           </p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
             Didn't receive it?{' '}
-            <button onClick={() => { setSuccess(false); setEmail(''); }} className="text-blue-600 dark:text-blue-400 hover:underline">
+            <button onClick={() => { setSuccess(false); setEmail(''); }} className="text-amber-600 dark:text-amber-400 hover:underline">
               Try again
             </button>
           </p>
-          <Link to="/login" className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <Link to="/login" className="inline-flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:underline">
             <ArrowLeft className="w-3 h-3" />
             Back to sign in
           </Link>
@@ -89,7 +89,7 @@ const ForgotPassword: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 placeholder="you@example.com"
               />
             </div>
@@ -97,7 +97,7 @@ const ForgotPassword: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-amber-400 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <>

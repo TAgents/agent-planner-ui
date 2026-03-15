@@ -7,7 +7,7 @@ html {
   background-color: #ffffff;
 }
 html.dark {
-  background-color: #030712; /* gray-950 */
+  background-color: #0e0c0a; /* obsidian-900 — warm black */
 }
 
 @layer base {
@@ -15,7 +15,26 @@ html.dark {
     @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-white;
   }
 
-  /* For improved accessibility and focus states */
+  /* Dark mode: use Figtree as body font */
+  .dark body {
+    font-family: 'Figtree', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Override text-white in dark mode to use warm cream */
+  .dark .text-white,
+  .dark [class*="dark:text-white"] {
+    color: #ede8df;
+  }
+
+  /* Focus rings: amber instead of blue in dark mode */
+  .dark a:focus, .dark button:focus, .dark input:focus, .dark select:focus, .dark textarea:focus {
+    @apply outline-none ring-2 ring-opacity-50;
+    --tw-ring-color: #d4a24e;
+  }
+
+  /* Light mode focus */
   a:focus, button:focus, input:focus, select:focus, textarea:focus {
     @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
   }
@@ -50,7 +69,7 @@ html.dark {
 }
 
 .react-flow__handle {
-  @apply bg-blue-500 dark:bg-blue-400;
+  @apply bg-blue-500 dark:bg-amber-400;
 }
 
 .react-flow__edge-path {
@@ -58,7 +77,7 @@ html.dark {
 }
 
 .react-flow__edge.animated .react-flow__edge-path {
-  @apply stroke-blue-500 dark:stroke-blue-400;
+  @apply stroke-blue-500 dark:stroke-amber-400;
 }
 
 .react-flow__controls {
@@ -165,4 +184,103 @@ html.dark {
 
 .animate-slide-in-right {
   animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Landing Page Styles ─────────────────────────────────── */
+
+/* Noise texture overlay — scoped to landing */
+.landing-noise::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Landing animations */
+@keyframes landingFadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+@keyframes gridSlide {
+  from { transform: translateY(0); }
+  to   { transform: translateY(40px); }
+}
+
+@keyframes scanLine {
+  0%   { top: -2px; }
+  100% { top: 100%; }
+}
+
+.landing-fade-up {
+  animation: landingFadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-delay-1 { animation-delay: 0.1s; }
+.landing-delay-2 { animation-delay: 0.2s; }
+.landing-delay-3 { animation-delay: 0.35s; }
+.landing-delay-4 { animation-delay: 0.5s; }
+.landing-delay-5 { animation-delay: 0.65s; }
+.landing-delay-6 { animation-delay: 0.8s; }
+.landing-delay-7 { animation-delay: 0.95s; }
+
+/* Hero ambient glow */
+.hero-glow::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 500px;
+  background: radial-gradient(ellipse at center, rgba(212, 162, 78, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+  animation: glowPulse 6s ease-in-out infinite;
+}
+
+/* Hero dot grid */
+.hero-dots::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at center, #2a261e 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.3;
+  animation: gridSlide 8s linear infinite;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 60% 70% at 50% 30%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 30%, black 20%, transparent 70%);
+}
+
+/* Code block scan line */
+.code-scan::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(212, 162, 78, 0.08), transparent);
+  animation: scanLine 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Code block top glow line */
+.code-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 162, 78, 0.25), transparent);
 }

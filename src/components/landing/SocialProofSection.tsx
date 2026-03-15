@@ -1,82 +1,68 @@
-import React, { useState } from 'react';
-import { CodeBlock } from './CodeBlock';
+import React from 'react';
+import { McpSetupBlock } from '../common/McpSetupBlock';
+
+const c = {
+  surface: '#16140f',
+  borderSubtle: '#1f1c16',
+  text: '#ede8df',
+  textSec: '#a09882',
+  textMuted: '#6b6354',
+  amber: '#d4a24e',
+  amberDim: '#b8882e',
+};
 
 export const SocialProofSection: React.FC = () => {
-  const [configTab, setConfigTab] = useState<'claude-code' | 'claude-desktop' | 'openclaw'>('claude-code');
-
-  const claudeCodeConfig = `claude mcp add agent-planner npx agent-planner-mcp \\
-  -e API_URL=https://agentplanner.io/api \\
-  -e USER_API_TOKEN=your_api_token_here`;
-
-  const claudeDesktopConfig = `{
-  "mcpServers": {
-    "agent-planner": {
-      "command": "npx",
-      "args": ["-y", "agent-planner-mcp"],
-      "env": {
-        "API_URL": "https://agentplanner.io/api",
-        "USER_API_TOKEN": "your_api_token_here"
-      }
-    }
-  }
-}`;
-
-  const openclawConfig = `# openclaw config
-tools:
-  - name: agent-planner
-    type: mcp
-    command: npx
-    args: ["-y", "agent-planner-mcp"]
-    env:
-      API_URL: https://agentplanner.io/api
-      USER_API_TOKEN: your_api_token_here`;
-
-  const tabs = [
-    { key: 'claude-code' as const, label: 'Claude Code', lang: 'bash' },
-    { key: 'claude-desktop' as const, label: 'Claude Desktop', lang: 'json' },
-    { key: 'openclaw' as const, label: 'OpenClaw', lang: 'yaml' },
-  ];
-
-  const configs = { 'claude-code': claudeCodeConfig, 'claude-desktop': claudeDesktopConfig, openclaw: openclawConfig };
-
   return (
-    <section className="py-10 md:py-14 bg-gray-50 dark:bg-gray-800/50 border-y border-gray-200 dark:border-gray-700/50">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-          Connect your agent
-        </h2>
+    <section className="py-10 md:py-16" style={{ borderTop: `1px solid ${c.borderSubtle}` }}>
+      <div className="max-w-[1080px] mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10 md:gap-16 landing-fade-up landing-delay-5">
+          {/* Left — steps */}
+          <div>
+            <div className="font-mono text-[0.65rem] uppercase tracking-[0.12em] mb-4" style={{ color: c.textMuted }}>
+              Quick start
+            </div>
+            <h3 className="font-display text-2xl font-semibold tracking-tight leading-snug" style={{ color: c.text }}>
+              Connect your agent in 60 seconds
+            </h3>
+            <div className="flex flex-col gap-2 mt-6">
+              {['Sign in and generate an API token', 'Add the MCP server config', 'Ask your agent to create a plan'].map((step, i) => (
+                <div key={i} className="flex items-baseline gap-2.5 text-[0.85rem]" style={{ color: c.textSec }}>
+                  <span className="font-mono text-[0.7rem] w-4 shrink-0" style={{ color: c.amberDim }}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  {i === 0 ? (
+                    <span>
+                      <a href="/login" style={{ color: c.amber }} className="hover:underline">Sign in</a>
+                      {' '}and generate an API token
+                    </span>
+                  ) : (
+                    <span>{step}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          1. <a href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Sign in</a> and generate an API token in{' '}
-          <a href="/app/settings" className="text-blue-600 dark:text-blue-400 hover:underline">Settings</a>.
-          <br />
-          2. Add the MCP server to your agent:
-        </p>
+          {/* Right — code */}
+          <div className="code-glow code-scan">
+            <McpSetupBlock
+              apiUrl="https://agentplanner.io/api"
+              token="your_api_token_here"
+              clients={['claude-code', 'claude-desktop', 'openclaw']}
+              bare
+            />
 
-        <div className="flex gap-1 mb-3">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setConfigTab(tab.key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                configTab === tab.key
-                  ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+            <p className="mt-3 text-[0.78rem]" style={{ color: c.textMuted }}>
+              Then ask:{' '}
+              <code
+                className="inline-block px-2.5 py-0.5 rounded font-mono text-[0.75rem]"
+                style={{ background: c.surface, border: `1px solid ${c.borderSubtle}`, color: c.textSec }}
+              >
+                "Create a plan for building a REST API"
+              </code>
+            </p>
+          </div>
         </div>
-
-        <CodeBlock
-          code={configs[configTab]}
-          language={tabs.find(t => t.key === configTab)!.lang}
-        />
-
-        <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
-          Then ask your agent: <code className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">"Create a plan for building a REST API"</code>
-        </p>
       </div>
     </section>
   );

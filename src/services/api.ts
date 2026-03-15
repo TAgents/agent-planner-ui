@@ -859,6 +859,13 @@ export const nodeService = {
     });
   },
 
+  clearAgentRequest: async (planId: string, nodeId: string) => {
+    return request<any>({
+      method: 'DELETE',
+      url: `/plans/${planId}/nodes/${nodeId}/request-agent`,
+    });
+  },
+
   getSuggestedAgents: async (planId: string, nodeId: string, tags?: string) => {
     return request<{ agents: Array<{ id: string; name: string; email: string; avatar_url: string; capability_tags: string[] }> }>({
       method: 'GET',
@@ -1669,28 +1676,15 @@ export const agentRequestApi = {
   },
 
   // Get agent requests for a task
-  listForTask: async (planId: string, taskId: string) => {
-    return request<AgentRequest[]>({
-      method: 'GET',
-      url: `/plans/${planId}/nodes/${taskId}/request-agent`,
-    }).catch(() => [] as AgentRequest[]);
+  // Note: Backend stores agent_requested flag on the node itself, no separate GET endpoint.
+  // Agent request history comes from activity logs, not a dedicated collection.
+  listForTask: async (_planId: string, _taskId: string) => {
+    return [] as AgentRequest[];
   },
 
-  // Get all pending agent requests for a plan
-  listForPlan: async (planId: string, status?: string) => {
-    return request<AgentRequest[]>({
-      method: 'GET',
-      url: `/plans/${planId}/agent-requests`,
-      params: status ? { status } : undefined,
-    });
-  },
-
-  // Get single agent request
-  get: async (planId: string, requestId: string) => {
-    return request<AgentRequest>({
-      method: 'GET',
-      url: `/plans/${planId}/agent-requests/${requestId}`,
-    });
+  // No backend GET endpoints for agent requests — state is stored on the node itself.
+  listForPlan: async (_planId: string, _status?: string) => {
+    return [] as AgentRequest[];
   },
 };
 

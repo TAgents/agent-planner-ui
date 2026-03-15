@@ -48,7 +48,7 @@ import { useNodeInstructions } from '../../hooks/useNodeInstructions';
 import { AskAgentModal } from '../agent-request/AskAgentModal';
 import { AgentResponsePanel } from '../agent-request/AgentResponsePanel';
 import { useTaskAgentRequests, useCreateAgentRequest } from '../../hooks/useAgentRequests';
-import { AgentRequest } from '../../services/api';
+import { AgentRequest, nodeService } from '../../services/api';
 import api from '../../services/api';
 import NodeDependenciesTab from './NodeDependenciesTab';
 import NodeKnowledgeTab from './NodeKnowledgeTab';
@@ -1463,8 +1463,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
     addLogEntry({
       content,
       log_type: logType,
-      tags,
-      metadata: {}
+      ...(tags && tags.length > 0 && { tags }),
     });
   };
 
@@ -1627,7 +1626,9 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                   onStatusChange('not_started');
                 }
                 if ((node as any).agent_requested) {
-                  await handleFieldUpdate('agent_requested', false);
+                  try {
+                    await nodeService.clearAgentRequest(node.plan_id || planId, node.id);
+                  } catch (e) { /* ignore if already cleared */ }
                 }
               }}
               className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
@@ -1661,6 +1662,11 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                       await handleFieldUpdate('agent_instructions', redirectText.trim());
                       if (node.status === 'plan_ready') {
                         onStatusChange('not_started');
+                      }
+                      if ((node as any).agent_requested) {
+                        try {
+                          await nodeService.clearAgentRequest(node.plan_id || planId, node.id);
+                        } catch (e) { /* ignore if already cleared */ }
                       }
                       setRedirectText('');
                       setShowRedirectInput(false);

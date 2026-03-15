@@ -113,7 +113,7 @@ const Login: React.FC = () => {
                       type="button"
                       onClick={handleResendVerification}
                       disabled={resendingEmail}
-                      className="block mt-1 text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                      className="block mt-1 text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-50"
                     >
                       {resendingEmail ? 'Sending...' : 'Resend verification email'}
                     </button>
@@ -134,7 +134,7 @@ const Login: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -152,7 +152,7 @@ const Login: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className="w-full px-3 py-2 pr-9 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 pr-9 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -177,13 +177,13 @@ const Login: React.FC = () => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-blue-500"
+                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-amber-500"
                 />
                 Remember me
               </label>
               <Link
                 to="/forgot-password"
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-xs text-amber-600 dark:text-amber-400 hover:underline"
               >
                 Forgot password?
               </Link>
@@ -192,7 +192,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-amber-400 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <>
@@ -208,7 +208,7 @@ const Login: React.FC = () => {
 
         <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
           No account?{' '}
-          <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
+          <Link to="/register" className="text-amber-600 dark:text-amber-400 hover:underline">
             Sign up
           </Link>
         </p>

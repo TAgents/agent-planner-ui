@@ -2,30 +2,69 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Github } from 'lucide-react';
 
+const c = {
+  borderSubtle: '#1f1c16',
+  textMuted: '#6b6354',
+  textSec: '#a09882',
+};
+
 const Footer: React.FC = () => {
+  const linkClass = "transition-colors duration-150";
+
   return (
-    <footer className="py-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-500">
-          <div className="flex items-center gap-4">
+    <footer className="py-8" style={{ borderTop: `1px solid ${c.borderSubtle}` }}>
+      <div className="max-w-[1080px] mx-auto px-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs" style={{ color: c.textMuted }}>
+          <div className="flex items-center gap-5">
             <span>&copy; {new Date().getFullYear()} Talking Agents</span>
-            <Link to="/privacy" className="hover:text-gray-900 dark:hover:text-white transition-colors">Privacy</Link>
-            <Link to="/terms" className="hover:text-gray-900 dark:hover:text-white transition-colors">Terms</Link>
+            <Link
+              to="/privacy"
+              className={linkClass}
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/terms"
+              className={linkClass}
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
+            >
+              Terms
+            </Link>
+            <Link
+              to="/cookies"
+              className={linkClass}
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
+            >
+              Cookies
+            </Link>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <a
               href="/api/api-docs/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-gray-900 dark:hover:text-white transition-colors"
+              className={linkClass}
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
             >
-              API Docs
+              API
             </a>
             <a
               href="https://www.npmjs.com/package/agent-planner-mcp"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-gray-900 dark:hover:text-white transition-colors"
+              className={linkClass}
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
             >
               npm
             </a>
@@ -33,8 +72,11 @@ const Footer: React.FC = () => {
               href="https://github.com/tagents"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-gray-900 dark:hover:text-white transition-colors"
+              className={linkClass}
               aria-label="GitHub"
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
             >
               <Github className="w-4 h-4" />
             </a>

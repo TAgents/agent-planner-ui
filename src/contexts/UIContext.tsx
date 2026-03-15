@@ -46,7 +46,7 @@ const defaultState: UIState = {
     isOpen: false,
     selectedNodeId: null,
   },
-  darkMode: false,
+  darkMode: true,
 };
 
 const UIContext = createContext<UIContextProps | undefined>(undefined);
@@ -135,30 +135,12 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
 export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(uiReducer, defaultState);
 
-  // Initialize dark mode from user preference
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const savedDarkMode = localStorage.getItem('darkMode');
-      
-      if (savedDarkMode) {
-        dispatch({ type: 'SET_DARK_MODE', payload: savedDarkMode === 'true' });
-      } else if (prefersDarkMode) {
-        dispatch({ type: 'SET_DARK_MODE', payload: true });
-      }
-    }
-  }, []);
-
-  // Update HTML class when dark mode changes
+  // Always force dark mode
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      if (state.darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      document.documentElement.classList.add('dark');
     }
-  }, [state.darkMode])
+  }, []);
 
   // Context actions
   const toggleSidebar = () => dispatch({ type: 'TOGGLE_SIDEBAR' });
@@ -182,12 +164,6 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'SET_DARK_MODE', payload: enabled });
   };
 
-  // Save dark mode preference to localStorage when it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('darkMode', String(state.darkMode));
-    }
-  }, [state.darkMode]);
 
   return (
     <UIContext.Provider

@@ -5,7 +5,7 @@ const NotFound: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
       <div className="text-center">
-        <h1 className="text-9xl font-bold text-indigo-600 dark:text-indigo-400" aria-hidden="true">404</h1>
+        <h1 className="text-9xl font-bold text-amber-600 dark:text-amber-400" aria-hidden="true">404</h1>
         <h2 className="text-3xl font-semibold text-gray-900 dark:text-white mt-4">
           Page Not Found
         </h2>
@@ -15,7 +15,7 @@ const NotFound: React.FC = () => {
         <div className="mt-8 flex gap-4 justify-center">
           <Link
             to="/"
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
           >
             Go Home
           </Link>

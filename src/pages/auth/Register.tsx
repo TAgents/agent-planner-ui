@@ -138,7 +138,7 @@ const Register: React.FC = () => {
   }
 
   const inputClass = (field: keyof FormErrors) =>
-    `w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+    `w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
       errors[field] ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
     }`;
 
@@ -208,12 +208,12 @@ const Register: React.FC = () => {
 
             <div className="pt-1">
               <label className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <input name="acceptTerms" type="checkbox" checked={formData.acceptTerms} onChange={handleInputChange} className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-blue-500" />
+                <input name="acceptTerms" type="checkbox" checked={formData.acceptTerms} onChange={handleInputChange} className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-amber-500" />
                 <span>
                   I agree to the{' '}
-                  <Link to="/terms" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline">Terms</Link>
+                  <Link to="/terms" target="_blank" className="text-amber-600 dark:text-amber-400 hover:underline">Terms</Link>
                   {' '}and{' '}
-                  <Link to="/privacy" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</Link>
+                  <Link to="/privacy" target="_blank" className="text-amber-600 dark:text-amber-400 hover:underline">Privacy Policy</Link>
                 </span>
               </label>
               {errors.acceptTerms && <p className="mt-1 text-xs text-red-500">{errors.acceptTerms}</p>}
@@ -222,7 +222,7 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-amber-400 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
             >
               {loading ? (
                 <>
@@ -238,7 +238,7 @@ const Register: React.FC = () => {
 
         <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Sign in</Link>
+          <Link to="/login" className="text-amber-600 dark:text-amber-400 hover:underline">Sign in</Link>
         </p>
       </div>
     </div>

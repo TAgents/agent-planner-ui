@@ -17,7 +17,7 @@ const CookiesPolicy: React.FC = () => {
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <Link
           to="/"
-          className="inline-flex items-center text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 mb-8"
+          className="inline-flex items-center text-amber-600 hover:text-amber-700 dark:text-amber-400 mb-8"
         >
           ← Back to Home
         </Link>
@@ -75,7 +75,7 @@ const CookiesPolicy: React.FC = () => {
             </h2>
             <p>
               If you have questions about our use of cookies, please contact us at{' '}
-              <a href="mailto:support@agentplanner.io" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+              <a href="mailto:support@agentplanner.io" className="text-amber-600 dark:text-amber-400 hover:underline">
                 support@agentplanner.io
               </a>.
             </p>

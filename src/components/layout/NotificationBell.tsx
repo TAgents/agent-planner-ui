@@ -53,7 +53,7 @@ export const NotificationBell: React.FC = () => {
               absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] 
               flex items-center justify-center 
               text-xs font-bold text-white rounded-full px-1
-              ${hasUrgent ? 'bg-red-500 animate-pulse' : 'bg-indigo-500'}
+              ${hasUrgent ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}
             `}
           >
             {totalCount > 99 ? '99+' : totalCount}
@@ -88,7 +88,7 @@ export const NotificationBell: React.FC = () => {
           <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
               <div className="p-4 text-center">
-                <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto" />
+                <div className="animate-spin w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full mx-auto" />
                 <p className="text-sm text-gray-500 mt-2">Loading...</p>
               </div>
             ) : totalCount === 0 ? (

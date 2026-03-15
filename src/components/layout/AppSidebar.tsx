@@ -19,7 +19,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
 import { Plan, PlanStatus } from '../../types';
 import NotificationBell from './NotificationBell';
-import ThemeToggle from '../common/ThemeToggle';
 
 interface AppSidebarProps {
   className?: string;
@@ -171,7 +170,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           <Link
             to={isAuthenticated ? "/app/plans/create" : "/login"}
             onClick={handleNavClick}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-md transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-700"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Plan</span>
@@ -188,7 +187,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-colors"
+                className="w-full pl-8 pr-2 py-1.5 text-xs bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-amber-500 focus:border-amber-500 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-colors"
               />
             </div>
           </div>
@@ -253,7 +252,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 <Link
                   to="/app/plans"
                   onClick={handleNavClick}
-                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 rounded-md transition-colors"
                 >
                   <span>View all</span>
                   <ChevronRight className="w-3 h-3" />
@@ -320,8 +319,8 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                   className="flex items-center gap-2 flex-1 min-w-0 px-1 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/50 dark:to-blue-900/50 rounded-full flex items-center justify-center">
-                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-300">
+                    <div className="w-6 h-6 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 rounded-full flex items-center justify-center">
+                      <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">
                         {(userName || userEmail || 'U').charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -334,7 +333,6 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
 
                 {/* Compact utility row */}
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <ThemeToggle size="sm" />
                   <NotificationBell />
                   <button
                     onClick={handleSignOut}
@@ -351,9 +349,6 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           {/* Sign In Section — for public/unauthenticated users */}
           {!isAuthenticated && (
             <div className="px-2.5 py-2 border-t border-gray-100 dark:border-gray-800/60 space-y-1.5">
-              <div className="flex items-center justify-between px-1 mb-1">
-                <ThemeToggle size="sm" />
-              </div>
               <Link
                 to="/login"
                 onClick={handleNavClick}
@@ -365,7 +360,8 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
               <Link
                 to="/register"
                 onClick={handleNavClick}
-                className="flex items-center justify-center gap-1.5 w-full px-2.5 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors font-medium"
+                className="flex items-center justify-center gap-1.5 w-full px-2.5 py-1.5 text-xs rounded-md transition-colors font-medium"
+                style={{ background: '#d4a24e', color: '#0e0c0a' }}
               >
                 <span>Get Started</span>
               </Link>

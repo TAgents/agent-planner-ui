@@ -6,10 +6,20 @@ import {
   Zap,
   Users,
   BookOpen,
-  Webhook,
+  Bell,
   GitBranch,
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
+
+const c = {
+  surface: '#16140f',
+  raised: '#1e1b15',
+  border: '#2a261e',
+  borderSubtle: '#1f1c16',
+  text: '#ede8df',
+  textMuted: '#6b6354',
+  amber: '#d4a24e',
+};
 
 interface Feature {
   icon: LucideIcon;
@@ -18,31 +28,53 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { icon: Bot, label: 'MCP-native', detail: 'Any MCP-compatible agent can create, update, and track plans.' },
+  { icon: Bot, label: 'MCP-native', detail: 'Any MCP-compatible agent can create, update, and track plans out of the box.' },
   { icon: LayoutList, label: 'Hierarchical plans', detail: 'Phases, tasks, milestones with dependencies and critical path analysis.' },
-  { icon: BookOpen, label: 'Knowledge graph', detail: 'Temporal knowledge via Graphiti — entities, facts, and contradictions.' },
-  { icon: Users, label: 'Human-in-the-loop', detail: 'Agents request decisions. You review and approve via UI or notifications.' },
-  { icon: Zap, label: 'Real-time sync', detail: 'WebSocket updates, live progress tracking, multi-agent collaboration.' },
-  { icon: GitBranch, label: 'RPI chains', detail: 'Research → Plan → Implement workflows with auto-compacted context.' },
-  { icon: Webhook, label: 'Notifications', detail: 'Slack, webhooks, email. Get notified on blocks, completions, decisions.' },
-  { icon: Globe, label: 'Public plans', detail: 'Share plans publicly for open-source transparency.' },
+  { icon: BookOpen, label: 'Knowledge graph', detail: 'Temporal knowledge via Graphiti — entities, facts, and contradiction detection.' },
+  { icon: Users, label: 'Human-in-the-loop', detail: 'Agents request decisions. You review and approve via the UI or notifications.' },
+  { icon: Zap, label: 'Real-time sync', detail: 'WebSocket updates, live progress, and multi-agent collaboration.' },
+  { icon: GitBranch, label: 'RPI chains', detail: 'Research \u2192 Plan \u2192 Implement workflows with auto-compacted context.' },
+  { icon: Bell, label: 'Notifications', detail: 'Slack, webhooks, email. Know when tasks block, complete, or need decisions.' },
+  { icon: Globe, label: 'Public plans', detail: 'Share plans publicly for open-source transparency and collaboration.' },
 ];
 
 export const FeaturesSection: React.FC = () => {
   return (
-    <section className="py-10 md:py-14 bg-white dark:bg-gray-900">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-6">
-          What it does
-        </h2>
+    <section className="py-10 md:py-16" style={{ borderTop: `1px solid ${c.borderSubtle}` }}>
+      <div className="max-w-[1080px] mx-auto px-6">
+        {/* Header */}
+        <div className="flex items-baseline justify-between mb-10 landing-fade-up landing-delay-6">
+          <span className="font-mono text-[0.65rem] uppercase tracking-[0.12em]" style={{ color: c.textMuted }}>
+            Capabilities
+          </span>
+          <span className="font-mono text-[0.65rem]" style={{ color: c.textMuted }}>
+            8 tools
+          </span>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+        {/* Grid */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 rounded-xl overflow-hidden landing-fade-up landing-delay-7"
+          style={{ border: `1px solid ${c.borderSubtle}`, gap: '1px', background: c.borderSubtle }}
+        >
           {features.map((f) => (
-            <div key={f.label} className="flex items-start gap-3">
-              <f.icon className="w-4 h-4 mt-0.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-              <div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">{f.label}</span>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{f.detail}</p>
+            <div
+              key={f.label}
+              className="group px-6 py-5 md:px-8 md:py-6 transition-colors duration-200 cursor-default"
+              style={{ background: c.surface }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = c.raised; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = c.surface; }}
+            >
+              <f.icon
+                className="w-5 h-5 mb-3 transition-all duration-200 group-hover:-translate-y-px"
+                style={{ color: c.textMuted }}
+                onMouseEnter={() => {}}
+              />
+              <div className="font-display text-[0.95rem] font-semibold mb-1" style={{ color: c.text, letterSpacing: '-0.01em' }}>
+                {f.label}
+              </div>
+              <div className="text-[0.8rem] leading-relaxed" style={{ color: c.textMuted }}>
+                {f.detail}
               </div>
             </div>
           ))}

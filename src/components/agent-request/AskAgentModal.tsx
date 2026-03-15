@@ -104,7 +104,7 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
             <select
               value={requestType}
               onChange={(e) => setRequestType(e.target.value as RequestType)}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
             >
               <option value="execute">Execute - Start working on this task</option>
               <option value="review">Review - Review current work</option>
@@ -127,7 +127,7 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
                   ? "What would you like the agent to do?"
                   : "Any specific instructions or context..."
               }
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
             />
           </div>
 
@@ -151,7 +151,7 @@ export const AskAgentModal: React.FC<AskAgentModalProps> = ({
             <button
               type="submit"
               disabled={createRequest.isLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createRequest.isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
