@@ -1547,7 +1547,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 min-w-0 overflow-hidden">
       {/* COMPACT HEADER */}
       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between gap-1.5">
@@ -1817,7 +1817,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
-          <div className="flex-1 overflow-y-auto p-3 flex flex-col">
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col min-w-0">
             <div className="flex-1 space-y-2">
               {/* Description */}
               {onUpdateNode && isEditMode ? (
@@ -1830,7 +1830,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
                   readClassName="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed"
                 />
               ) : node.description ? (
-                <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+                <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed" style={{ overflowWrap: 'anywhere' }}>
                   {node.description}
                 </p>
               ) : (
@@ -1853,7 +1853,7 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
               ) : node.context ? (
                 <div>
                   <label className="block text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-0.5 uppercase tracking-wider">Context</label>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words leading-relaxed" style={{ overflowWrap: 'anywhere' }}>
                     {node.context}
                   </p>
                 </div>

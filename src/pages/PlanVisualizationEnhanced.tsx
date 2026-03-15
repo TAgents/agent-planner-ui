@@ -898,10 +898,10 @@ const PlanVisualizationEnhanced: React.FC = () => {
           {uiState.sidebar.isOpen && uiState.nodeDetails.isOpen && selectedNode && (
             <motion.aside
               key="detail-panel"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 'auto', opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35, mass: 0.8 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="hidden md:flex flex-col flex-shrink-0 w-[320px] lg:w-[380px] xl:w-[420px] border-l border-gray-200 dark:border-gray-800 overflow-hidden"
             >
               <UnifiedNodeDetails
