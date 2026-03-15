@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '../../hooks/useAuth';
-import api from '../../services/api';
 
 export interface PublicPlanCardProps {
   plan: {
@@ -28,42 +26,9 @@ export interface PublicPlanCardProps {
 
 export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const [isStarred, setIsStarred] = useState(plan.is_starred || false);
-  const [starCount, setStarCount] = useState(plan.star_count);
-  const [isStarring, setIsStarring] = useState(false);
 
   const handleClick = () => {
     navigate(`/public/plans/${plan.id}`);
-  };
-
-  const handleStar = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
-    if (isStarring) return;
-
-    setIsStarring(true);
-
-    try {
-      if (isStarred) {
-        const response = await api.plans.unstarPlan(plan.id);
-        setIsStarred(false);
-        setStarCount(response.star_count);
-      } else {
-        const response = await api.plans.starPlan(plan.id);
-        setIsStarred(true);
-        setStarCount(response.star_count);
-      }
-    } catch (error) {
-      console.error('Error starring/unstarring plan:', error);
-    } finally {
-      setIsStarring(false);
-    }
   };
 
   const truncateDescription = (text?: string, maxLength: number = 150) => {
@@ -76,7 +41,6 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
     if (plan.owner.avatar_url) {
       return plan.owner.avatar_url;
     }
-    // Fallback to GitHub avatar if username is available
     if (plan.owner.github_username) {
       return `https://github.com/${plan.owner.github_username}.png`;
     }
@@ -121,7 +85,6 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
             alt={plan.owner.name}
             className="w-8 h-8 rounded-full mr-2"
             onError={(e) => {
-              // Fallback to initials if image fails to load
               e.currentTarget.style.display = 'none';
             }}
           />
@@ -184,30 +147,7 @@ export const PublicPlanCard: React.FC<PublicPlanCardProps> = ({ plan }) => {
       {/* Footer Stats */}
       <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-4">
-          {/* Star Button */}
-          <button
-            onClick={handleStar}
-            disabled={isStarring}
-            className={`flex items-center transition-colors ${
-              isStarred
-                ? 'text-yellow-500 hover:text-yellow-600'
-                : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500'
-            } ${isStarring ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            title={isAuthenticated ? (isStarred ? 'Unstar plan' : 'Star plan') : 'Sign in to star'}
-          >
-            <svg
-              className="w-4 h-4 mr-1"
-              fill={isStarred ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth={isStarred ? "0" : "2"}
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-            <span>{starCount}</span>
-          </button>
-
-          {/* View Count (if available) */}
+          {/* View Count */}
           {plan.view_count !== undefined && (
             <div className="flex items-center">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

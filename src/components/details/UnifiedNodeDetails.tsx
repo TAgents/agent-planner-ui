@@ -214,6 +214,88 @@ const StatusBadge: React.FC<{ status: NodeStatus; onChange?: (status: NodeStatus
   );
 };
 
+// Component: Task Mode Badge (clickable dropdown for task nodes)
+const taskModeConfig = {
+  free: { label: 'Free', bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300' },
+  research: { label: 'Research', bg: 'bg-sky-50 dark:bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400' },
+  plan: { label: 'Plan', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
+  implement: { label: 'Implement', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+};
+
+const TaskModeBadge: React.FC<{
+  mode: TaskMode | undefined;
+  onChange?: (mode: TaskMode) => void;
+  nodeId?: string;
+}> = ({ mode, onChange, nodeId }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [localMode, setLocalMode] = useState<TaskMode | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Reset when node or mode prop changes
+  React.useEffect(() => {
+    setLocalMode(null);
+    setIsOpen(false);
+  }, [nodeId, mode]);
+
+  // Close on outside click
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  const displayMode = localMode || mode || 'free';
+  const cfg = taskModeConfig[displayMode] || taskModeConfig.free;
+
+  if (!onChange) {
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+        {cfg.label}
+      </span>
+    );
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${cfg.bg} ${cfg.text} hover:opacity-90 transition-all duration-200`}
+        title={`Task mode: ${displayMode}`}
+      >
+        {cfg.label}
+        <ChevronDown className="w-2.5 h-2.5" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[9999] min-w-[130px]">
+          {(['free', 'research', 'plan', 'implement'] as TaskMode[]).map(m => {
+            const mCfg = taskModeConfig[m];
+            return (
+              <button
+                key={m}
+                onClick={() => {
+                  setLocalMode(m);
+                  onChange(m);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left transition-colors duration-200 ${
+                  m === displayMode ? 'font-semibold' : ''
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${mCfg.bg} border ${mCfg.text}`} />
+                <span>{mCfg.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Component: User Avatar with real initials
 const Avatar: React.FC<{
   user: { name?: string; email?: string; avatar?: string };
@@ -1239,19 +1321,12 @@ const UnifiedNodeDetails: React.FC<UnifiedNodeDetailsProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <StatusBadge status={node.status} onChange={onStatusChange} nodeId={node.id} />
-            {node.task_mode && node.task_mode !== 'free' && (
-              <span
-                className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
-                  node.task_mode === 'research'
-                    ? 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400'
-                    : node.task_mode === 'plan'
-                    ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'
-                    : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-                }`}
-                title={`Task mode: ${node.task_mode}`}
-              >
-                {node.task_mode}
-              </span>
+            {node.node_type === 'task' && (
+              <TaskModeBadge
+                mode={node.task_mode}
+                onChange={onUpdateNode ? (val) => handleFieldUpdate('task_mode', val) : undefined}
+                nodeId={node.id}
+              />
             )}
             {onUpdateNode && (
               <button

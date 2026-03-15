@@ -1,207 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from 'react-query';
+import { useQuery } from 'react-query';
 import {
   ArrowLeft,
   Eye,
   Calendar,
   User,
   GitBranch,
-  CheckCircle2,
-  Circle,
-  Clock,
-  AlertCircle,
   Loader2,
   Copy,
-  Star,
+  AlertCircle,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { planService } from '../services/api';
 import { formatDate } from '../utils/planUtils';
 import { useAuth } from '../hooks/useAuth';
+import { PlanTreeView } from '../components/tree/PlanTreeView';
+import { PlanNode } from '../types';
 import ClonePlanModal from '../components/explore/ClonePlanModal';
 
-interface PublicPlanNode {
+// The v2 API returns nodes in camelCase with children tree structure
+interface ApiNode {
+  id: string;
+  planId: string;
+  parentId?: string | null;
+  nodeType: string;
+  title: string;
+  description?: string;
+  status: string;
+  orderIndex: number;
+  dueDate?: string;
+  context?: string;
+  agentInstructions?: string;
+  taskMode?: string;
+  metadata?: Record<string, any>;
+  commentCount?: number;
+  logCount?: number;
+  assignedAgentId?: string;
+  assignedAgentAt?: string;
+  assignedAgentBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  children?: ApiNode[];
+}
+
+// v2 getPublicPlan returns a flat object (not wrapped in {plan, structure})
+interface PublicPlanApiResponse {
   id: string;
   title: string;
   description?: string;
-  node_type: string;
   status: string;
-  parent_id: string | null;
-  children?: PublicPlanNode[];
-}
-
-interface PublicPlanResponse {
-  plan: {
+  visibility: string;
+  is_public: boolean;
+  view_count: number;
+  owner_id: string;
+  github_repo_owner?: string;
+  github_repo_name?: string;
+  github_repo_url?: string;
+  github_repo_full_name?: string;
+  metadata?: any;
+  created_at: string;
+  updated_at: string;
+  last_viewed_at?: string;
+  owner: {
     id: string;
-    title: string;
-    description?: string;
-    status: string;
-    view_count: number;
-    created_at: string;
-    updated_at: string;
-    github_repo_owner?: string;
-    github_repo_name?: string;
-    metadata?: any;
-    owner: {
-      id: string;
-      name: string;
-      email: string;
-      github_username?: string;
-      avatar_url?: string;
-    };
-    progress: number;
-  };
-  structure: PublicPlanNode;
+    name: string;
+  } | null;
+  nodes: ApiNode[];
 }
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-    case 'in_progress':
-      return <Clock className="w-5 h-5 text-blue-500" />;
-    case 'blocked':
-      return <AlertCircle className="w-5 h-5 text-red-500" />;
-    default:
-      return <Circle className="w-5 h-5 text-gray-400" />;
-  }
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-    case 'in_progress':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-    case 'blocked':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-  }
-};
-
-const getNodeTypeColor = (nodeType: string) => {
-  switch (nodeType) {
-    case 'phase':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-    case 'task':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-    case 'milestone':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-  }
-};
-
-// Calculate node statistics from the structure tree
-const calculateNodeStats = (node: PublicPlanNode | undefined): {
-  total: number;
-  completed: number;
-  in_progress: number;
-  not_started: number;
-  blocked: number;
-} => {
-  if (!node) {
-    return { total: 0, completed: 0, in_progress: 0, not_started: 0, blocked: 0 };
-  }
-
-  // Don't count the root node itself, only its children
-  let stats = { total: 0, completed: 0, in_progress: 0, not_started: 0, blocked: 0 };
-
-  const countNodes = (n: PublicPlanNode, isRoot: boolean = false) => {
-    // Count this node unless it's the root
-    if (!isRoot) {
-      stats.total++;
-      switch (n.status) {
-        case 'completed':
-          stats.completed++;
-          break;
-        case 'in_progress':
-          stats.in_progress++;
-          break;
-        case 'blocked':
-          stats.blocked++;
-          break;
-        default:
-          stats.not_started++;
-      }
-    }
-
-    // Recursively count children
-    if (n.children && n.children.length > 0) {
-      n.children.forEach(child => countNodes(child, false));
-    }
+/** Convert a camelCase API node to snake_case PlanNode */
+function apiNodeToPlanNode(node: ApiNode): PlanNode {
+  return {
+    id: node.id,
+    plan_id: node.planId,
+    parent_id: node.parentId || undefined,
+    node_type: node.nodeType as PlanNode['node_type'],
+    title: node.title,
+    description: node.description,
+    status: node.status as PlanNode['status'],
+    order_index: node.orderIndex,
+    due_date: node.dueDate,
+    context: node.context,
+    agent_instructions: node.agentInstructions,
+    task_mode: node.taskMode as PlanNode['task_mode'],
+    metadata: node.metadata,
+    comment_count: node.commentCount,
+    log_count: node.logCount,
+    assigned_agent_id: node.assignedAgentId,
+    assigned_agent_at: node.assignedAgentAt,
+    assigned_agent_by: node.assignedAgentBy,
+    created_at: node.createdAt,
+    updated_at: node.updatedAt,
   };
+}
 
-  countNodes(node, true);
-  return stats;
-};
+/** Flatten a tree of ApiNodes into a flat PlanNode[] array */
+function flattenApiNodes(nodes: ApiNode[]): PlanNode[] {
+  const result: PlanNode[] = [];
+  function walk(node: ApiNode) {
+    result.push(apiNodeToPlanNode(node));
+    if (node.children) {
+      node.children.forEach(walk);
+    }
+  }
+  nodes.forEach(walk);
+  return result;
+}
 
-const NodeItem: React.FC<{ node: any; depth: number }> = ({ node, depth }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const hasChildren = node.children && node.children.length > 0;
-
-  return (
-    <div className="mb-2">
-      <div
-        className={`flex items-start gap-3 p-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-md transition-all`}
-        style={{ marginLeft: `${depth * 24}px` }}
-      >
-        <div className="flex-shrink-0 mt-1">{getStatusIcon(node.status)}</div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <h4 className="text-base font-semibold text-gray-900 dark:text-white">
-              {node.title}
-            </h4>
-            <span className={`px-2 py-1 text-xs font-medium rounded-lg ${getNodeTypeColor(node.node_type)}`}>
-              {node.node_type}
-            </span>
-            {node.status && (
-              <span className={`px-2 py-1 text-xs font-medium rounded-lg ${getStatusColor(node.status)}`}>
-                {node.status.replace('_', ' ')}
-              </span>
-            )}
-          </div>
-
-          {node.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              {node.description}
-            </p>
-          )}
-
-          {hasChildren && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {isExpanded ? 'Hide' : 'Show'} {node.children.length} sub-item{node.children.length !== 1 ? 's' : ''}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {hasChildren && isExpanded && (
-        <div className="mt-2">
-          {node.children.map((child: any) => (
-            <NodeItem key={child.id} node={child} depth={depth + 1} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Helper to check authentication
 const PublicPlanView: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, userId: currentUserId } = useAuth();
 
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const { data: response, isLoading, error } = useQuery<PublicPlanResponse>(
+  const { data: response, isLoading, error } = useQuery<PublicPlanApiResponse>(
     ['publicPlan', planId],
     () => planService.getPublicPlan(planId!),
     {
@@ -213,68 +128,24 @@ const PublicPlanView: React.FC = () => {
     }
   );
 
-  const plan = response?.plan;
-  const structure = response?.structure;
+  // Flatten tree nodes into flat PlanNode[] for PlanTreeView
+  const flatNodes = useMemo(() => {
+    if (!response?.nodes) return [];
+    return flattenApiNodes(response.nodes);
+  }, [response]);
 
-  // Calculate node statistics from structure
-  const nodeStats = React.useMemo(
-    () => calculateNodeStats(structure),
-    [structure]
-  );
-
-  // Fetch star status (only if authenticated)
-  const { data: starData, refetch: refetchStars } = useQuery(
-    ['planStars', planId],
-    () => planService.getPlanStars(planId!),
-    {
-      enabled: !!planId && isAuthenticated,
-      retry: 1,
-      onError: (err: any) => {
-        console.error('Error fetching star status:', err);
-      },
-    }
-  );
-
-  // Star mutation
-  const starMutation = useMutation(
-    () => planService.starPlan(planId!),
-    {
-      onSuccess: () => {
-        refetchStars();
-      },
-      onError: (err: any) => {
-        console.error('Error starring plan:', err);
-        alert('Failed to star plan. Please try again.');
-      },
-    }
-  );
-
-  // Unstar mutation
-  const unstarMutation = useMutation(
-    () => planService.unstarPlan(planId!),
-    {
-      onSuccess: () => {
-        refetchStars();
-      },
-      onError: (err: any) => {
-        console.error('Error unstarring plan:', err);
-        alert('Failed to unstar plan. Please try again.');
-      },
-    }
-  );
-
-  const handleToggleStar = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
-    if (starData?.is_starred) {
-      unstarMutation.mutate();
-    } else {
-      starMutation.mutate();
-    }
-  };
+  // Compute progress from node stats
+  const nodeStats = useMemo(() => {
+    // Exclude root node from stats
+    const nonRoot = flatNodes.filter(n => n.node_type !== 'root');
+    const total = nonRoot.length;
+    const completed = nonRoot.filter(n => n.status === 'completed').length;
+    const in_progress = nonRoot.filter(n => n.status === 'in_progress').length;
+    const blocked = nonRoot.filter(n => n.status === 'blocked').length;
+    const not_started = total - completed - in_progress - blocked;
+    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, in_progress, blocked, not_started, progress };
+  }, [flatNodes]);
 
   const handleUseAsTemplate = () => {
     if (!isAuthenticated) {
@@ -284,7 +155,7 @@ const PublicPlanView: React.FC = () => {
     setShowCloneModal(true);
   };
 
-  const isPlanOwner = plan?.owner?.id === currentUserId;
+  const isPlanOwner = response?.owner?.id === currentUserId;
 
   if (isLoading) {
     return (
@@ -297,7 +168,7 @@ const PublicPlanView: React.FC = () => {
     );
   }
 
-  if (error || !plan) {
+  if (error || !response) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-8 text-center">
@@ -323,15 +194,16 @@ const PublicPlanView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Helmet>
-        <title>{`${plan.title} — AgentPlanner`}</title>
-        <meta name="description" content={plan.description || `View the plan "${plan.title}" on AgentPlanner.`} />
-        <meta property="og:title" content={`${plan.title} — AgentPlanner`} />
-        <meta property="og:description" content={plan.description || `View the plan "${plan.title}" on AgentPlanner.`} />
-        <meta property="og:url" content={`https://agentplanner.io/public/plans/${plan.id}`} />
+        <title>{`${response.title} — AgentPlanner`}</title>
+        <meta name="description" content={response.description || `View the plan "${response.title}" on AgentPlanner.`} />
+        <meta property="og:title" content={`${response.title} — AgentPlanner`} />
+        <meta property="og:description" content={response.description || `View the plan "${response.title}" on AgentPlanner.`} />
+        <meta property="og:url" content={`https://agentplanner.io/public/plans/${response.id}`} />
         <meta property="og:type" content="article" />
-        <link rel="canonical" href={`https://agentplanner.io/public/plans/${plan.id}`} />
+        <link rel="canonical" href={`https://agentplanner.io/public/plans/${response.id}`} />
       </Helmet>
-      {/* Secondary Header with Plan Actions */}
+
+      {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -346,29 +218,10 @@ const PublicPlanView: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Eye className="w-4 h-4" />
-                <span>{plan.view_count} views</span>
+                <span>{response.view_count} views</span>
               </div>
 
-              {/* Star Button - visible to all authenticated users */}
-              {isAuthenticated && (
-                <button
-                  onClick={handleToggleStar}
-                  disabled={starMutation.isLoading || unstarMutation.isLoading}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    starData?.is_starred
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  title={starData?.is_starred ? 'Unstar this plan' : 'Star this plan'}
-                >
-                  <Star
-                    className={`w-4 h-4 ${starData?.is_starred ? 'fill-current' : ''}`}
-                  />
-                  <span>{starData?.star_count || 0}</span>
-                </button>
-              )}
-
-              {/* Clone Plan Button - visible only to non-owners */}
+              {/* Clone Plan Button */}
               {isAuthenticated && !isPlanOwner && (
                 <button
                   onClick={handleUseAsTemplate}
@@ -391,29 +244,33 @@ const PublicPlanView: React.FC = () => {
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {plan.title}
+                {response.title}
               </h1>
-              {plan.description && (
+              {response.description && (
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                  {plan.description}
+                  {response.description}
                 </p>
               )}
             </div>
-            {plan.status && (
-              <span className={`px-3 py-1.5 text-sm font-medium rounded-lg ${getStatusColor(plan.status)}`}>
-                {plan.status.replace('_', ' ')}
+            {response.status && (
+              <span className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+                response.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                response.status === 'active' || response.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+              }`}>
+                {response.status.replace('_', ' ')}
               </span>
             )}
           </div>
 
           {/* Plan Meta */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {plan.owner && (
+            {response.owner && (
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <User className="w-5 h-5" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {plan.owner.name}
+                    {response.owner.name}
                   </p>
                   <p className="text-xs">Plan Owner</p>
                 </div>
@@ -424,7 +281,7 @@ const PublicPlanView: React.FC = () => {
               <Calendar className="w-5 h-5" />
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formatDate(plan.created_at)}
+                  {formatDate(response.created_at)}
                 </p>
                 <p className="text-xs">Created</p>
               </div>
@@ -442,20 +299,20 @@ const PublicPlanView: React.FC = () => {
           </div>
 
           {/* Progress Bar */}
-          {plan && typeof plan.progress === 'number' && (
+          {nodeStats.total > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Progress
                 </span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {Math.round(plan.progress || 0)}%
+                  {nodeStats.progress}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 shadow-sm"
-                  style={{ width: `${plan.progress || 0}%` }}
+                  style={{ width: `${nodeStats.progress}%` }}
                 />
               </div>
               <div className="flex items-center justify-between mt-2 text-xs text-gray-600 dark:text-gray-400">
@@ -467,26 +324,25 @@ const PublicPlanView: React.FC = () => {
           )}
         </div>
 
-        {/* Plan Structure */}
+        {/* Plan Structure - using shared PlanTreeView in read-only mode */}
         <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <GitBranch className="w-6 h-6" />
             Plan Structure
           </h2>
 
-          {structure && structure.children && structure.children.length > 0 ? (
-            <div className="space-y-2">
-              {structure.children.map(node => (
-                <NodeItem key={node.id} node={node} depth={0} />
-              ))}
-            </div>
+          {flatNodes.length > 0 ? (
+            <PlanTreeView
+              nodes={flatNodes}
+              selectedNodeId={selectedNodeId}
+              onNodeSelect={(nodeId) => setSelectedNodeId(nodeId)}
+            />
           ) : (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
               This plan doesn't have any nodes yet.
             </p>
           )}
         </div>
-
       </main>
 
       {/* Footer */}
@@ -499,9 +355,14 @@ const PublicPlanView: React.FC = () => {
       </footer>
 
       {/* Clone Plan Modal */}
-      {plan && (
+      {response && (
         <ClonePlanModal
-          plan={plan}
+          plan={{
+            id: response.id,
+            title: response.title,
+            description: response.description,
+            owner: response.owner ? { name: response.owner.name } : undefined,
+          }}
           isOpen={showCloneModal}
           onClose={() => setShowCloneModal(false)}
         />

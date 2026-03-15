@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Terminal } from 'lucide-react';
+import { ArrowRight, Terminal, BookOpen } from 'lucide-react';
 
 const c = {
   bg: '#0e0c0a',
@@ -108,6 +108,27 @@ export const HeroSection: React.FC = () => {
           >
             <Terminal className="w-4 h-4" />
             API Docs
+          </a>
+
+          <a
+            href="https://github.com/TAgents/agent-planner/blob/main/docs/GETTING_STARTED.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors duration-200"
+            style={{ border: `1px solid ${c.border}`, color: c.textSec, background: 'transparent' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = c.textMuted;
+              e.currentTarget.style.color = c.text;
+              e.currentTarget.style.background = c.surface;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = c.border;
+              e.currentTarget.style.color = c.textSec;
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <BookOpen className="w-4 h-4" />
+            Docs
           </a>
 
           <Link

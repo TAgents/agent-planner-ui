@@ -572,36 +572,6 @@ export const planService = {
     });
   },
 
-  // Star/Unstar plans
-  starPlan: async (planId: string) => {
-    return request<{ success: boolean; starred: boolean; star_count: number }>({
-      method: 'POST',
-      url: `/plans/${planId}/star`,
-    });
-  },
-
-  unstarPlan: async (planId: string) => {
-    return request<{ success: boolean; starred: boolean; star_count: number }>({
-      method: 'DELETE',
-      url: `/plans/${planId}/star`,
-    });
-  },
-
-  getPlanStars: async (planId: string) => {
-    return request<{ plan_id: string; star_count: number; is_starred: boolean }>({
-      method: 'GET',
-      url: `/plans/${planId}/stars`,
-    });
-  },
-
-  getUserStarredPlans: async (page: number = 1, limit: number = 12) => {
-    return request<any>({
-      method: 'GET',
-      url: '/plans/starred',
-      params: { page, limit },
-    });
-  },
-
   // AI Plan Generation - Uses Planner Agent via A2A protocol
   generateWithAI: async (prompt: string, options?: { visibility?: string; timeout?: number; questionAnswers?: Array<{ question: string; answer: string }> }) => {
     const PLANNER_AGENT_URL = process.env.REACT_APP_PLANNER_AGENT_URL || 'http://localhost:4001';

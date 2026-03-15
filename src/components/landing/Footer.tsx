@@ -58,6 +58,17 @@ const Footer: React.FC = () => {
               API
             </a>
             <a
+              href="https://github.com/TAgents/agent-planner/blob/main/docs/GETTING_STARTED.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClass}
+              style={{ color: c.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = c.textSec; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = c.textMuted; }}
+            >
+              Docs
+            </a>
+            <a
               href="https://www.npmjs.com/package/agent-planner-mcp"
               target="_blank"
               rel="noopener noreferrer"
