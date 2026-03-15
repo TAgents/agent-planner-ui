@@ -145,7 +145,7 @@ const ProfileSettings: React.FC = () => {
                 </div>
                 {!isEditing && (
                   <button
-                    onClick={() => { setIsEditing(true); setEditData({ name: userData?.name, organization: userData?.organization }); setError(null); }}
+                    onClick={() => { setIsEditing(true); setEditData({ name: userData?.name }); setError(null); }}
                     className="flex items-center gap-1 px-2 py-1 text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
                   >
                     <Edit3 className="w-3 h-3" />
@@ -157,26 +157,14 @@ const ProfileSettings: React.FC = () => {
               <div className="p-4">
                 {isEditing ? (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Name</label>
-                        <input
-                          type="text"
-                          value={editData.name || ''}
-                          onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 dark:text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Organization</label>
-                        <input
-                          type="text"
-                          value={editData.organization || ''}
-                          onChange={(e) => setEditData(prev => ({ ...prev, organization: e.target.value }))}
-                          placeholder="Company or team"
-                          className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 dark:text-white placeholder-gray-400"
-                        />
-                      </div>
+                    <div>
+                      <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Name</label>
+                      <input
+                        type="text"
+                        value={editData.name || ''}
+                        onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 dark:text-white"
+                      />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button onClick={() => { setIsEditing(false); setError(null); }} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
@@ -194,10 +182,6 @@ const ProfileSettings: React.FC = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Organization</p>
-                      <p className="text-xs text-gray-900 dark:text-white">{userData?.organization || <span className="text-gray-400 italic">Not set</span>}</p>
-                    </div>
                     <div>
                       <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Member since</p>
                       <p className="text-xs text-gray-900 dark:text-white">{formatDate(userData?.createdAt)}</p>

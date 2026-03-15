@@ -2036,6 +2036,87 @@ export const nodeViewService = {
     api.get(`/nodes/${nodeId}/agent-view`, { params: { depth } }).then(r => r.data),
 };
 
+// Organization Types
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isPersonal: boolean;
+  avatarUrl?: string;
+  createdAt: string;
+  updatedAt?: string;
+  role?: 'owner' | 'admin' | 'member';
+  joinedAt?: string;
+  memberCount?: number;
+  planCount?: number;
+}
+
+export interface OrgMember {
+  id: string;
+  role: 'owner' | 'admin' | 'member';
+  joinedAt: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  };
+}
+
+// Organization API
+export const organizationService = {
+  list: async () => {
+    const res = await api.get('/organizations');
+    return res.data as { organizations: Organization[] };
+  },
+
+  get: async (orgId: string) => {
+    const res = await api.get(`/organizations/${orgId}`);
+    return res.data as Organization;
+  },
+
+  create: async (data: { name: string; description?: string; slug?: string }) => {
+    const res = await api.post('/organizations', data);
+    return res.data as Organization;
+  },
+
+  update: async (orgId: string, data: { name?: string; description?: string; avatarUrl?: string }) => {
+    const res = await api.put(`/organizations/${orgId}`, data);
+    return res.data as Organization;
+  },
+
+  delete: async (orgId: string) => {
+    const res = await api.delete(`/organizations/${orgId}`);
+    return res.data;
+  },
+
+  listMembers: async (orgId: string) => {
+    const res = await api.get(`/organizations/${orgId}/members`);
+    return res.data as { members: OrgMember[] };
+  },
+
+  addMember: async (orgId: string, data: { email?: string; user_id?: string; role?: string }) => {
+    const res = await api.post(`/organizations/${orgId}/members`, data);
+    return res.data as OrgMember;
+  },
+
+  removeMember: async (orgId: string, memberId: string) => {
+    const res = await api.delete(`/organizations/${orgId}/members/${memberId}`);
+    return res.data;
+  },
+
+  updateMemberRole: async (orgId: string, memberId: string, role: string) => {
+    const res = await api.put(`/organizations/${orgId}/members/${memberId}/role`, { role });
+    return res.data;
+  },
+
+  listPlans: async (orgId: string) => {
+    const res = await api.get(`/organizations/${orgId}/plans`);
+    return res.data;
+  },
+};
+
 // Claims API
 export const claimService = {
   getClaim: (planId: string, nodeId: string) =>

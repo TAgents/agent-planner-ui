@@ -28,6 +28,7 @@ import GoalsList from './pages/GoalsV2';
 import GoalDetail from './pages/GoalDetail';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
+import OrganizationSettings from './pages/settings/OrganizationSettings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
@@ -95,6 +96,7 @@ const App: React.FC = () => {
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
+                  <Route path="settings/organizations" element={<OrganizationSettings />} />
                   <Route path="settings/profile" element={<ProfileSettings />} />
                   <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
                 </Route>

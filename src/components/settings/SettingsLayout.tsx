@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Key, Plug, User } from 'lucide-react';
+import { Key, Plug, User, Building2 } from 'lucide-react';
 
 interface SettingsTab {
   path: string;
@@ -11,6 +11,7 @@ interface SettingsTab {
 const settingsTabs: SettingsTab[] = [
   { path: '/app/settings', label: 'Tokens', icon: Key },
   { path: '/app/settings/integrations', label: 'Integrations', icon: Plug },
+  { path: '/app/settings/organizations', label: 'Organizations', icon: Building2 },
   { path: '/app/settings/profile', label: 'Profile', icon: User },
 ];
 
