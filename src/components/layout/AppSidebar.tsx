@@ -14,6 +14,7 @@ import {
   BookOpen,
   Home,
   Network,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlans } from '../../hooks/usePlans';
@@ -49,7 +50,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { userName, userEmail, signOut, isAuthenticated } = useAuth();
+  const { userName, userEmail, signOut, isAuthenticated, organizationId, organizationName, organizations, switchOrganization } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const showPlans = variant === 'full' && isAuthenticated;
@@ -164,6 +165,28 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
             <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
+
+        {/* Org context indicator */}
+        {isAuthenticated && organizationId && (
+          <div className="mx-2.5 mt-2.5 mb-0">
+            {organizations.length > 1 ? (
+              <select
+                value={organizationId}
+                onChange={(e) => switchOrganization(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-[11px] font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800/80 rounded-md appearance-none cursor-pointer"
+              >
+                {organizations.map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 rounded-md">
+                <Building2 className="w-3 h-3" />
+                <span className="truncate">{organizationName}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* New Plan — quieter, ghost style */}
         <div className="px-2.5 pt-2.5 pb-1">

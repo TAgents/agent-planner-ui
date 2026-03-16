@@ -114,7 +114,17 @@ const Register: React.FC = () => {
 
       setTimeout(() => {
         window.dispatchEvent(new Event('auth-change'));
-        navigate('/app/plans');
+
+        // Check if user needs to pick an org
+        const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
+        const orgs = session.user?.organizations || [];
+
+        if (orgs.length > 1 && !localStorage.getItem('active_org_id')) {
+          navigate('/select-org', { state: { from: '/app/plans' }, replace: true });
+        } else {
+          if (orgs.length === 1) localStorage.setItem('active_org_id', orgs[0].id);
+          navigate('/app/plans', { replace: true });
+        }
       }, 2000);
     } catch (error: any) {
       setErrors({

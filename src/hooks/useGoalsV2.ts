@@ -6,6 +6,7 @@ export interface GoalV2 {
   title: string;
   description: string | null;
   ownerId: string;
+  organizationId: string | null;
   type: 'outcome' | 'constraint' | 'metric' | 'principle';
   status: 'active' | 'achieved' | 'paused' | 'abandoned';
   successCriteria: any;
@@ -13,6 +14,8 @@ export interface GoalV2 {
   parentGoalId: string | null;
   createdAt: string;
   updatedAt: string;
+  ownerName?: string;
+  ownerEmail?: string;
   links?: GoalLink[];
   evaluations?: GoalEvaluation[];
   children?: GoalV2[];

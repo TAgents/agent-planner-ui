@@ -35,6 +35,7 @@ import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import SelectOrganization from './pages/auth/SelectOrganization';
 
 // Lazy-load heavy pages (ReactFlow)
 const Knowledge = React.lazy(() => import('./pages/Knowledge'));
@@ -80,6 +81,7 @@ const App: React.FC = () => {
 
               {/* Protected Main Application Routes */}
               <Route element={<ProtectedRoute />}>
+                <Route path="/select-org" element={<SelectOrganization />} />
                 <Route path="/app" element={<MainLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="dashboard" element={<Dashboard />} />

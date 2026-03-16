@@ -692,6 +692,9 @@ const GoalDetail: React.FC = () => {
                   {goal.priority > 0 && (
                     <span className="text-xs text-gray-400 dark:text-gray-500">Priority {goal.priority}</span>
                   )}
+                  {goal.ownerName && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Created by {goal.ownerName}</span>
+                  )}
                 </div>
               </div>
             </div>

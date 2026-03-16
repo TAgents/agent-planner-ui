@@ -146,9 +146,16 @@ function GoalRow({ goal, depth }: { goal: GoalV2 & { depth: number }; depth: num
               <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">sub-goal</span>
             )}
           </div>
-          {goal.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{goal.description}</p>
-          )}
+          <div className="flex items-center gap-2 mt-0.5">
+            {goal.description && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{goal.description}</p>
+            )}
+            {goal.ownerName && (
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                by {goal.ownerName}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Linked plans count */}

@@ -56,7 +56,15 @@ api.interceptors.request.use(
             console.log('Setting Authorization header with token');
           }
           config.headers.Authorization = `Bearer ${token}`;
-        } else if (process.env.NODE_ENV === 'development') {
+        }
+
+        // Send active org context to backend
+        const activeOrgId = localStorage.getItem('active_org_id');
+        if (activeOrgId) {
+          config.headers['X-Organization-Id'] = activeOrgId;
+        }
+
+        if (!token && process.env.NODE_ENV === 'development') {
           console.warn('No token found in session. Session keys:', Object.keys(session || {}));
         }
       } catch (e) {

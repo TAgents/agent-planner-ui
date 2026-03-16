@@ -57,7 +57,17 @@ const Login: React.FC = () => {
 
       const state = location.state as LocationState;
       const from = state?.from?.pathname || '/app/plans';
-      navigate(from, { replace: true });
+
+      // Check if user needs to pick an org
+      const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
+      const orgs = session.user?.organizations || [];
+
+      if (orgs.length > 1 && !localStorage.getItem('active_org_id')) {
+        navigate('/select-org', { state: { from }, replace: true });
+      } else {
+        if (orgs.length === 1) localStorage.setItem('active_org_id', orgs[0].id);
+        navigate(from, { replace: true });
+      }
     } catch (err: any) {
       const code = err.code || err.response?.data?.code;
       setErrorCode(code || null);

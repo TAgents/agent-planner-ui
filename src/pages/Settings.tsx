@@ -26,6 +26,12 @@ const Settings: React.FC = () => {
 
   useEffect(() => { fetchTokens(); }, [fetchTokens]);
 
+  // Get active org name for display
+  const activeOrgId = localStorage.getItem('active_org_id');
+  const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
+  const orgs: { id: string; name: string }[] = session.user?.organizations || [];
+  const activeOrg = orgs.find(o => o.id === activeOrgId);
+
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [tokenToRevoke, setTokenToRevoke] = useState<string | null>(null);
@@ -116,6 +122,7 @@ const Settings: React.FC = () => {
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800/60">
             <div className="flex items-center gap-2">
               <h2 className="text-xs font-semibold text-gray-900 dark:text-white">API Tokens</h2>
+              {activeOrg && <span className="text-[11px] text-gray-400 ml-1">{activeOrg.name}</span>}
               <span className="text-[10px] text-gray-400 tabular-nums">{tokens.length}</span>
             </div>
             <button

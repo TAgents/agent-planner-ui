@@ -292,17 +292,30 @@ export const McpSetupBlock: React.FC<McpSetupBlockProps> = ({
             </button>
           )}
           {showDocs && (
-            <a
-              href="https://github.com/TAgents/agent-planner-mcp"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[11px] transition-colors"
-              style={{ color: colors.textMuted }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = colors.textSec; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = colors.textMuted; }}
-            >
-              Docs <ExternalLink className="w-2.5 h-2.5" />
-            </a>
+            <>
+              <a
+                href="https://github.com/TAgents/agent-planner-mcp/blob/main/SKILL.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[11px] transition-colors"
+                style={{ color: colors.textMuted }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = colors.textSec; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = colors.textMuted; }}
+              >
+                Skill Reference <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href="https://github.com/TAgents/agent-planner-mcp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[11px] transition-colors"
+                style={{ color: colors.textMuted }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = colors.textSec; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = colors.textMuted; }}
+              >
+                Docs <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </>
           )}
         </div>
       )}
