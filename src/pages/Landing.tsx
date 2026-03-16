@@ -14,7 +14,7 @@ const Landing: React.FC = () => {
           name="description"
           content="Hierarchical plans, dependency tracking, knowledge graph, and real-time sync for AI agents. Connect via MCP or REST API."
         />
-        <meta name="keywords" content="MCP, Model Context Protocol, AI agents, planning, agent tools, structured planning" />
+        <meta name="keywords" content="MCP, Model Context Protocol, AI agents, planning, agent tools, structured planning, Claude, ChatGPT, Cursor, Windsurf, Cline, Gemini, agent orchestration" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://agentplanner.io/" />
         <meta property="og:title" content="AgentPlanner — Structured planning backend for AI agents" />

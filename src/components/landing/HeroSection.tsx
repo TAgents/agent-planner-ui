@@ -67,7 +67,7 @@ export const HeroSection: React.FC = () => {
           style={{ color: c.textSec, fontSize: '1.05rem', lineHeight: 1.7 }}
         >
           Hierarchical plans, dependency tracking, knowledge graph, and
-          real-time sync. Connect any MCP-compatible agent or use the REST API.
+          real-time sync. Works with Claude, ChatGPT, Cursor, Windsurf, Cline, and any MCP client.
         </p>
 
         {/* CTAs */}

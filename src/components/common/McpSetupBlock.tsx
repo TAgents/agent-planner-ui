@@ -17,37 +17,44 @@ const colors = {
 
 // ── Code generation ──────────────────────────────────────────────────
 
-type ClientId = 'claude-code' | 'claude-desktop' | 'chatgpt' | 'editors' | 'gemini' | 'openclaw';
+type ClientId = 'claude-code' | 'claude-desktop' | 'chatgpt' | 'cursor' | 'windsurf' | 'cline' | 'gemini' | 'openclaw' | 'http';
 
 interface ClientDef {
   id: ClientId;
   label: string;
-  type: 'terminal' | 'config';
+  type: 'terminal' | 'config' | 'http-endpoint';
   configHint?: string;
 }
 
 const allClients: ClientDef[] = [
   { id: 'claude-code', label: 'Claude Code', type: 'terminal' },
   { id: 'claude-desktop', label: 'Claude Desktop', type: 'config', configHint: '~/Library/Application Support/Claude/claude_desktop_config.json' },
-  { id: 'chatgpt', label: 'ChatGPT', type: 'config', configHint: 'ChatGPT Desktop → Settings → Developer Mode → MCP' },
-  { id: 'editors', label: 'Code Editors', type: 'config', configHint: "Your editor's MCP configuration file" },
+  { id: 'chatgpt', label: 'ChatGPT', type: 'http-endpoint', configHint: 'Settings → Apps → Advanced → Developer Mode → Add MCP Server' },
+  { id: 'cursor', label: 'Cursor', type: 'config', configHint: '.cursor/mcp.json in your project root' },
+  { id: 'windsurf', label: 'Windsurf', type: 'config', configHint: '~/.codeium/windsurf/mcp_config.json' },
+  { id: 'cline', label: 'Cline', type: 'config', configHint: 'Cline MCP settings in VS Code' },
   { id: 'gemini', label: 'Gemini CLI', type: 'terminal' },
   { id: 'openclaw', label: 'OpenClaw', type: 'config' },
+  { id: 'http', label: 'HTTP', type: 'http-endpoint', configHint: 'Any MCP client that supports Streamable HTTP transport' },
 ];
 
 function getCode(client: ClientId, apiUrl: string, token: string): string {
   const t = token || 'YOUR_TOKEN';
   switch (client) {
     case 'claude-code':
-      return `claude mcp add planning-system npx agent-planner-mcp \\\n  -e API_URL=${apiUrl} \\\n  -e USER_API_TOKEN=${t}`;
+      return `claude mcp add agent-planner -- npx -y agent-planner-mcp \\\n  -e API_URL=${apiUrl} \\\n  -e USER_API_TOKEN=${t}`;
     case 'gemini':
-      return `gemini mcp add planning-system npx agent-planner-mcp \\\n  -e API_URL=${apiUrl} \\\n  -e USER_API_TOKEN=${t}`;
+      return `gemini mcp add agent-planner -- npx -y agent-planner-mcp \\\n  -e API_URL=${apiUrl} \\\n  -e USER_API_TOKEN=${t}`;
     case 'openclaw':
       return `# openclaw config\ntools:\n  - name: agent-planner\n    type: mcp\n    command: npx\n    args: ["-y", "agent-planner-mcp"]\n    env:\n      API_URL: ${apiUrl}\n      USER_API_TOKEN: ${t}`;
-    default: // config-file based
+    case 'chatgpt':
+      return `Endpoint:  https://agentplanner.io/mcp\nAuth type: API Key\nToken:     ${t}`;
+    case 'http':
+      return `Endpoint:   https://agentplanner.io/mcp\nDiscovery:  https://agentplanner.io/.well-known/mcp.json\nAuth:       Authorization: ApiKey ${t}\nTransport:  Streamable HTTP (MCP 2025-03-26)`;
+    default: // config-file based (claude-desktop, cursor, windsurf, cline)
       return JSON.stringify({
         mcpServers: {
-          "planning-system": {
+          "agent-planner": {
             command: "npx",
             args: ["-y", "agent-planner-mcp"],
             env: { API_URL: apiUrl, USER_API_TOKEN: t }
@@ -57,15 +64,16 @@ function getCode(client: ClientId, apiUrl: string, token: string): string {
   }
 }
 
-function getCodeFormat(client: ClientId): 'bash' | 'json' | 'yaml' {
+function getCodeFormat(client: ClientId): 'bash' | 'json' | 'yaml' | 'text' {
   if (client === 'claude-code' || client === 'gemini') return 'bash';
   if (client === 'openclaw') return 'yaml';
+  if (client === 'chatgpt' || client === 'http') return 'text';
   return 'json';
 }
 
 // ── Syntax highlighting ──────────────────────────────────────────────
 
-const SyntaxHighlight: React.FC<{ code: string; format: 'bash' | 'json' | 'yaml' }> = ({ code, format }) => {
+const SyntaxHighlight: React.FC<{ code: string; format: 'bash' | 'json' | 'yaml' | 'text' }> = ({ code, format }) => {
   const parts: React.ReactNode[] = [];
   let key = 0;
 
@@ -138,6 +146,20 @@ const SyntaxHighlight: React.FC<{ code: string; format: 'bash' | 'json' | 'yaml'
         }
       }
       if (!processed) push(line, colors.textSec);
+    });
+  } else if (format === 'text') {
+    // plain text with key: value highlighting
+    lines.forEach((line, i) => {
+      if (i > 0) parts.push(<span key={key++}>{'\n'}</span>);
+      const kvMatch = line.match(/^(\s*)([\w\s]+?):(\s+)(.*)$/);
+      if (kvMatch) {
+        push(kvMatch[1]);
+        push(kvMatch[2], colors.teal);
+        push(':' + kvMatch[3]);
+        push(kvMatch[4], colors.amber);
+      } else {
+        push(line, colors.textSec);
+      }
     });
   } else {
     // yaml
@@ -240,6 +262,11 @@ export const McpSetupBlock: React.FC<McpSetupBlockProps> = ({
       {clientDef.type === 'config' && clientDef.configHint && (
         <div className="px-4 pt-3 text-[11px]" style={{ background: colors.raised, color: colors.textMuted, borderLeft: `1px solid ${colors.border}`, borderRight: `1px solid ${colors.border}` }}>
           Paste into: <code className="font-mono text-[10px]" style={{ color: colors.textSec }}>{clientDef.configHint}</code>
+        </div>
+      )}
+      {clientDef.type === 'http-endpoint' && clientDef.configHint && (
+        <div className="px-4 pt-3 text-[11px]" style={{ background: colors.raised, color: colors.textMuted, borderLeft: `1px solid ${colors.border}`, borderRight: `1px solid ${colors.border}` }}>
+          {clientDef.configHint}
         </div>
       )}
 

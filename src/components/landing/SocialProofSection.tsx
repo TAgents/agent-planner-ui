@@ -3,6 +3,8 @@ import { McpSetupBlock } from '../common/McpSetupBlock';
 
 const c = {
   surface: '#16140f',
+  raised: '#1e1b15',
+  border: '#2a261e',
   borderSubtle: '#1f1c16',
   text: '#ede8df',
   textSec: '#a09882',
@@ -10,6 +12,16 @@ const c = {
   amber: '#d4a24e',
   amberDim: '#b8882e',
 };
+
+const clients = [
+  'Claude Code',
+  'Claude Desktop',
+  'ChatGPT',
+  'Cursor',
+  'Windsurf',
+  'Cline',
+  'Gemini CLI',
+];
 
 export const SocialProofSection: React.FC = () => {
   return (
@@ -41,6 +53,30 @@ export const SocialProofSection: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {/* Works with */}
+            <div className="mt-8">
+              <div className="font-mono text-[0.6rem] uppercase tracking-[0.12em] mb-3" style={{ color: c.textMuted }}>
+                Works with
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {clients.map((name) => (
+                  <span
+                    key={name}
+                    className="px-2 py-1 rounded font-mono text-[0.65rem]"
+                    style={{ background: c.raised, border: `1px solid ${c.border}`, color: c.textSec }}
+                  >
+                    {name}
+                  </span>
+                ))}
+                <span
+                  className="px-2 py-1 rounded font-mono text-[0.65rem]"
+                  style={{ background: c.raised, border: `1px solid ${c.border}`, color: c.textMuted }}
+                >
+                  + any MCP client
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Right — code */}
@@ -48,7 +84,7 @@ export const SocialProofSection: React.FC = () => {
             <McpSetupBlock
               apiUrl="https://agentplanner.io/api"
               token="your_api_token_here"
-              clients={['claude-code', 'claude-desktop', 'openclaw']}
+              clients={['claude-code', 'claude-desktop', 'chatgpt', 'cursor', 'windsurf', 'cline']}
               bare
             />
 

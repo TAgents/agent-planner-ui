@@ -106,7 +106,7 @@ const Settings: React.FC = () => {
             <div className="px-4 pb-4">
               <McpSetupBlock
                 apiUrl={API_URL}
-                clients={['claude-code', 'claude-desktop', 'chatgpt', 'editors', 'gemini']}
+                clients={['claude-code', 'claude-desktop', 'chatgpt', 'cursor', 'windsurf', 'cline', 'gemini']}
                 onCreateToken={() => setOpenCreateDialog(true)}
                 showDocs
                 showClaudeCodeHint
@@ -283,7 +283,7 @@ const Settings: React.FC = () => {
                 <McpSetupBlock
                   apiUrl={API_URL}
                   token={newToken.token}
-                  clients={['claude-code', 'claude-desktop', 'chatgpt', 'editors', 'gemini']}
+                  clients={['claude-code', 'claude-desktop', 'chatgpt', 'cursor', 'windsurf', 'cline', 'gemini']}
                   bare
                 />
               </div>
