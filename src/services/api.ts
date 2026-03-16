@@ -479,11 +479,11 @@ export const planService = {
   addCollaborator: async (planId: string, data: { email: string; role: 'viewer' | 'editor' | 'admin' }) => {
     return request<any>({
       method: 'POST',
-      url: `/plans/${planId}/collaborators`,
+      url: `/plans/${planId}/share`,
       data,
     });
   },
-  
+
   removeCollaborator: async (planId: string, userId: string) => {
     return request<any>({
       method: 'DELETE',
