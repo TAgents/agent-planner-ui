@@ -18,7 +18,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { goalDashboardService, nodeService } from '../services/api';
+import { goalDashboardService, nodeService, dashboardApi, decisionsApi } from '../services/api';
 import { useDashboardSummary, useRecentPlans } from '../hooks/useDashboard';
 import { useRecentActivity, RecentActivityItem } from '../hooks/useRecentActivity';
 import DecisionQueue, { PendingDecision } from '../components/decisions/DecisionQueue';
@@ -280,17 +280,43 @@ const Dashboard: React.FC = () => {
   const goals = dashboardData?.goals || [];
   const recentPlans = recentPlansData?.plans || [];
 
+  // Fetch pending decisions directly from /dashboard/pending (same source as bell icon)
+  const { data: pendingData } = useQuery(
+    ['dashboardPending', userId],
+    () => dashboardApi.getPending(20),
+    { refetchInterval: 30000 }
+  );
+
   // Map recent activity → AgentActivityStream format
   const initialActivities = useMemo<ActivityItem[]>(() => {
     if (!recentActivityData || !Array.isArray(recentActivityData)) return [];
     return recentActivityData.map(mapToActivityItem);
   }, [recentActivityData]);
 
-  // Flatten pending decisions from goals
-  const pendingDecisions = useMemo<PendingDecision[]>(
-    () => goals.flatMap(g => g.pending_decisions || []),
-    [goals]
-  );
+  // Map pending items → PendingDecision[] for DecisionQueue
+  const pendingDecisions = useMemo<PendingDecision[]>(() => {
+    if (!pendingData) return [];
+    const decisions: PendingDecision[] = (pendingData.decisions || []).map((d: any) => ({
+      node_id: d.node_id || d.id,
+      plan_id: d.plan_id,
+      title: d.title,
+      plan_title: d.plan_title || '',
+      type: 'agent_request' as const,
+      agent_request_message: d.description || null,
+      created_at: d.created_at,
+      _decision_id: d.id,  // preserve for resolve API
+    }));
+    const agentRequests: PendingDecision[] = (pendingData.agent_requests || []).map((r: any) => ({
+      node_id: r.id,
+      plan_id: r.plan_id,
+      title: r.task_title,
+      plan_title: r.plan_title || '',
+      type: 'agent_request' as const,
+      agent_request_message: r.message || null,
+      created_at: r.requested_at,
+    }));
+    return [...decisions, ...agentRequests];
+  }, [pendingData]);
 
   const contradictions = useMemo<Contradiction[]>(() => {
     const goalC = goals.flatMap(g => g.contradictions || []);
@@ -307,25 +333,48 @@ const Dashboard: React.FC = () => {
   }, [goals]);
 
   // Decision handlers
+  const invalidateDecisionQueries = useCallback(() => {
+    queryClient.invalidateQueries(['goalDashboard']);
+    queryClient.invalidateQueries(['dashboardSummary']);
+    queryClient.invalidateQueries(['dashboardPending']);
+    queryClient.invalidateQueries(['notifications', 'pending']);
+  }, [queryClient]);
+
   const handleApprove = useCallback(async (decision: PendingDecision) => {
     try {
-      const newStatus = decision.type === 'plan_ready' ? 'in_progress' : 'completed';
-      await nodeService.updateNodeStatus(decision.plan_id, decision.node_id, newStatus);
-      queryClient.invalidateQueries(['goalDashboard']);
-      queryClient.invalidateQueries(['dashboardSummary']);
+      const decisionId = (decision as any)._decision_id;
+      if (decisionId) {
+        // Resolve via decisions API (decision_requests table)
+        await decisionsApi.resolve(decision.plan_id, decisionId, {
+          decision: 'approved',
+          rationale: 'Approved from dashboard',
+        });
+      } else {
+        // Node-based decision (plan_ready or agent_requested on plan_nodes)
+        const newStatus = decision.type === 'plan_ready' ? 'in_progress' : 'completed';
+        await nodeService.updateNodeStatus(decision.plan_id, decision.node_id, newStatus);
+      }
+      invalidateDecisionQueries();
     } catch (err) { console.error('Failed to approve:', err); }
-  }, [queryClient]);
+  }, [invalidateDecisionQueries]);
 
   const handleRedirect = useCallback(async (decision: PendingDecision, instructions: string) => {
     try {
-      await nodeService.updateNode(decision.plan_id, decision.node_id, {
-        agent_instructions: instructions,
-        status: 'not_started',
-      } as any);
-      queryClient.invalidateQueries(['goalDashboard']);
-      queryClient.invalidateQueries(['dashboardSummary']);
+      const decisionId = (decision as any)._decision_id;
+      if (decisionId) {
+        await decisionsApi.resolve(decision.plan_id, decisionId, {
+          decision: 'redirected',
+          rationale: instructions,
+        });
+      } else {
+        await nodeService.updateNode(decision.plan_id, decision.node_id, {
+          agent_instructions: instructions,
+          status: 'not_started',
+        } as any);
+      }
+      invalidateDecisionQueries();
     } catch (err) { console.error('Failed to redirect:', err); }
-  }, [queryClient]);
+  }, [invalidateDecisionQueries]);
 
   if (isLoading) return <DashboardSkeleton />;
 
