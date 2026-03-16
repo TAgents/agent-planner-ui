@@ -199,7 +199,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 export default function GoalsPage() {
   const { data: tree, isLoading, error } = useGoalsTree();
   const [showCreate, setShowCreate] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
 
   const flatGoals = useMemo(() => flattenGoals(tree || []), [tree]);

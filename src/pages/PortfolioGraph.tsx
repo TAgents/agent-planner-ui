@@ -306,9 +306,10 @@ function layoutTaskLevel(plans: Plan[], crossPlanEdges: CrossPlanEdge[]): { node
 
 function PortfolioGraphInner() {
   const [viewMode, setViewMode] = useState<ViewMode>('plans');
+  const [showCompleted, setShowCompleted] = useState(false);
 
-  // Fetch all plans
-  const { plans, isLoading: plansLoading } = usePlans(1, 100);
+  // Fetch all plans (active/draft by default, all when showCompleted is toggled)
+  const { plans, isLoading: plansLoading } = usePlans(1, 100, showCompleted ? undefined : 'active,draft');
 
   const planIds = useMemo(() => (plans || []).map((p: Plan) => p.id), [plans]);
 
@@ -405,6 +406,15 @@ function PortfolioGraphInner() {
                 Tasks
               </button>
             </div>
+            <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showCompleted}
+                onChange={(e) => setShowCompleted(e.target.checked)}
+                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+              />
+              Show completed
+            </label>
             <button
               onClick={handleRefresh}
               className="p-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
