@@ -303,6 +303,7 @@ const Dashboard: React.FC = () => {
       plan_title: d.plan_title || '',
       type: 'agent_request' as const,
       agent_request_message: d.description || null,
+      options: d.options || [],
       created_at: d.created_at,
       _decision_id: d.id,  // preserve for resolve API
     }));
@@ -340,14 +341,14 @@ const Dashboard: React.FC = () => {
     queryClient.invalidateQueries(['notifications', 'pending']);
   }, [queryClient]);
 
-  const handleApprove = useCallback(async (decision: PendingDecision) => {
+  const handleApprove = useCallback(async (decision: PendingDecision, selectedOption?: string) => {
     try {
       const decisionId = (decision as any)._decision_id;
       if (decisionId) {
         // Resolve via decisions API (decision_requests table)
         await decisionsApi.resolve(decision.plan_id, decisionId, {
-          decision: 'approved',
-          rationale: 'Approved from dashboard',
+          decision: selectedOption || 'approved',
+          rationale: selectedOption ? `Selected option: ${selectedOption}` : 'Approved from dashboard',
         });
       } else {
         // Node-based decision (plan_ready or agent_requested on plan_nodes)
