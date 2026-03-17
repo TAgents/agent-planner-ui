@@ -27,7 +27,7 @@ interface ClientDef {
 }
 
 const allClients: ClientDef[] = [
-  { id: 'claude-code', label: 'Claude Code', type: 'terminal' },
+  { id: 'claude-code', label: 'Claude Code', type: 'config' },
   { id: 'claude-desktop', label: 'Claude Desktop', type: 'config', configHint: '~/Library/Application Support/Claude/claude_desktop_config.json' },
   { id: 'chatgpt', label: 'ChatGPT', type: 'http-endpoint', configHint: 'Settings → Apps → Advanced → Developer Mode → Add MCP Server' },
   { id: 'cursor', label: 'Cursor', type: 'config', configHint: '.cursor/mcp.json in your project root' },
@@ -42,9 +42,17 @@ function getCode(client: ClientId, apiUrl: string, token: string): string {
   const t = token || 'YOUR_TOKEN';
   switch (client) {
     case 'claude-code':
-      return `claude mcp add agent-planner -- npx -y agent-planner-mcp \\\n  -e API_URL=${apiUrl} \\\n  -e USER_API_TOKEN=${t}`;
+      return JSON.stringify({
+        mcpServers: {
+          "agent-planner": {
+            command: "npx",
+            args: ["-y", "agent-planner-mcp"],
+            env: { API_URL: apiUrl, USER_API_TOKEN: t }
+          }
+        }
+      }, null, 2) + `\n\n# Save as .mcp.json in your project root`;
     case 'gemini':
-      return `gemini mcp add agent-planner -- npx -y agent-planner-mcp \\\n  -e API_URL=${apiUrl} \\\n  -e USER_API_TOKEN=${t}`;
+      return `gemini mcp add -e API_URL=${apiUrl} -e USER_API_TOKEN=${t} agent-planner -- npx -y agent-planner-mcp`;
     case 'openclaw':
       return `# openclaw config\ntools:\n  - name: agent-planner\n    type: mcp\n    command: npx\n    args: ["-y", "agent-planner-mcp"]\n    env:\n      API_URL: ${apiUrl}\n      USER_API_TOKEN: ${t}`;
     case 'chatgpt':
@@ -65,7 +73,8 @@ function getCode(client: ClientId, apiUrl: string, token: string): string {
 }
 
 function getCodeFormat(client: ClientId): 'bash' | 'json' | 'yaml' | 'text' {
-  if (client === 'claude-code' || client === 'gemini') return 'bash';
+  if (client === 'claude-code') return 'json';
+  if (client === 'gemini') return 'bash';
   if (client === 'openclaw') return 'yaml';
   if (client === 'chatgpt' || client === 'http') return 'text';
   return 'json';
@@ -294,7 +303,7 @@ export const McpSetupBlock: React.FC<McpSetupBlockProps> = ({
       {/* Hints */}
       {showClaudeCodeHint && activeClient === 'claude-code' && (
         <p className="mt-2 text-[10px]" style={{ color: colors.textMuted }}>
-          Optional: <code className="font-mono px-1 rounded" style={{ background: colors.surface, color: colors.textSec }}>npx agent-planner-mcp setup-claude-code</code> adds /create-plan and /execute-plan commands
+          Save as <code className="font-mono px-1 rounded" style={{ background: colors.surface, color: colors.textSec }}>.mcp.json</code> in your project root, then restart Claude Code. Optionally run <code className="font-mono px-1 rounded" style={{ background: colors.surface, color: colors.textSec }}>npx agent-planner-mcp setup-claude-code</code> to add /create-plan and /execute-plan commands.
         </p>
       )}
       {showChatGptHint && activeClient === 'chatgpt' && (
