@@ -43,7 +43,7 @@ export interface GoalEvaluation {
 const GOALS_KEY = 'goals-v2';
 
 async function fetchApi(path: string, options?: { method?: string; body?: string }) {
-  const config: any = { url: `/goals/v2${path}`, method: options?.method || 'GET' };
+  const config: any = { url: `/goals${path}`, method: options?.method || 'GET' };
   if (options?.body) config.data = JSON.parse(options.body);
   const res = await axiosInstance(config);
   return res.data;

@@ -11,7 +11,7 @@ import {
   Activity,
   BookOpen,
 } from 'lucide-react';
-import { useGoals } from '../../hooks/useGoals';
+import { useGoalsV2 } from '../../hooks/useGoalsV2';
 
 interface ClonePlanModalProps {
   plan: {
@@ -36,7 +36,7 @@ interface CloneOptions {
 
 const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { goals } = useGoals();
+  const { data: goals } = useGoalsV2();
 
   const [formData, setFormData] = useState({
     title: `${plan.title} (copy)`,
@@ -191,7 +191,7 @@ const ClonePlanModal: React.FC<ClonePlanModalProps> = ({ plan, isOpen, onClose }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">No goal</option>
-                {goals.map((goal) => (
+                {(goals || []).map((goal) => (
                   <option key={goal.id} value={goal.id}>
                     {goal.title}
                   </option>

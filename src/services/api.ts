@@ -1318,128 +1318,6 @@ const apiServices = {
 export { api as axiosInstance };
 export default apiServices;
 
-// Organization service
-// Goal Types
-export interface SuccessMetric {
-  metric: string;
-  target: string;
-  current: string;
-  unit: string;
-}
-
-export interface LinkedPlan {
-  id: string;
-  title: string;
-  status: string;
-  progress: number;
-}
-
-export interface Goal {
-  id: string;
-  organization_id?: string;
-  title: string;
-  description: string;
-  status: 'active' | 'achieved' | 'at_risk' | 'abandoned';
-  success_metrics: SuccessMetric[];
-  time_horizon: string;
-  github_repo_url?: string;
-  linked_plans: LinkedPlan[];
-  linked_plans_count?: number;
-  knowledge_entries_count?: number;
-  created_at: string;
-  updated_at: string;
-  organization?: {
-    id: string;
-    name: string;
-    slug?: string;
-  };
-  created_by_user?: {
-    id: string;
-    name?: string;
-    email?: string;
-  };
-}
-
-// Goal Service
-export const goalService = {
-  // List goals with optional filters
-  list: async (organizationId?: string, status?: string) => {
-    const params: Record<string, string> = {};
-    if (organizationId) params.organization_id = organizationId;
-    if (status) params.status = status;
-
-    const response = await request<{ goals: Goal[] } | Goal[]>({
-      method: 'GET',
-      url: '/goals',
-      params,
-    });
-    return Array.isArray(response) ? response : response.goals || [];
-  },
-
-  // Get goal details with linked plans
-  get: async (goalId: string) => {
-    return request<Goal>({
-      method: 'GET',
-      url: `/goals/${goalId}`,
-    });
-  },
-
-  // Create a new goal
-  create: async (data: {
-    organization_id?: string;
-    title: string;
-    description?: string;
-    success_metrics?: SuccessMetric[];
-    time_horizon?: string;
-    github_repo_url?: string;
-  }) => {
-    return request<Goal>({
-      method: 'POST',
-      url: '/goals',
-      data,
-    });
-  },
-
-  // Update a goal
-  update: async (goalId: string, data: {
-    title?: string;
-    description?: string;
-    status?: 'active' | 'achieved' | 'at_risk' | 'abandoned';
-    success_metrics?: SuccessMetric[];
-    time_horizon?: string;
-  }) => {
-    return request<Goal>({
-      method: 'PUT',
-      url: `/goals/${goalId}`,
-      data,
-    });
-  },
-
-  // Delete a goal
-  delete: async (goalId: string) => {
-    return request<{ success: boolean; message: string }>({
-      method: 'DELETE',
-      url: `/goals/${goalId}`,
-    });
-  },
-
-  // Link a plan to a goal
-  linkPlan: async (goalId: string, planId: string) => {
-    return request<{ success: boolean; message: string }>({
-      method: 'POST',
-      url: `/goals/${goalId}/plans/${planId}`,
-    });
-  },
-
-  // Unlink a plan from a goal
-  unlinkPlan: async (goalId: string, planId: string) => {
-    return request<{ success: boolean; message: string }>({
-      method: 'DELETE',
-      url: `/goals/${goalId}/plans/${planId}`,
-    });
-  },
-};
-
 // Decision Types for API
 export interface DecisionOption {
   id: string;
@@ -1969,8 +1847,8 @@ export const graphitiService = {
 
 // Goal Dashboard API
 export const goalDashboardService = {
-  getDashboard: () => api.get('/goals/v2/dashboard').then(r => r.data),
-  getBriefing: (goalId: string) => api.get(`/goals/v2/${goalId}/briefing`).then(r => r.data),
+  getDashboard: () => api.get('/goals/dashboard').then(r => r.data),
+  getBriefing: (goalId: string) => api.get(`/goals/${goalId}/briefing`).then(r => r.data),
 };
 
 // Node Agent View API
