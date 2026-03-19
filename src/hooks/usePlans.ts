@@ -6,8 +6,9 @@ import { Plan } from '../types';
  * Hook for fetching and managing plans
  */
 export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) => {
-  // Get user ID from session to use in query key
+  // Get user ID and active org from session to use in query key
   const sessionStr = localStorage.getItem('auth_session');
+  const activeOrgId = localStorage.getItem('active_org_id');
   let userId = 'anonymous';
   if (sessionStr) {
     try {
@@ -17,11 +18,11 @@ export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) 
       console.error('Error parsing session:', e);
     }
   }
-  
+
   // Use React Query to fetch plans with pagination
-  // Include userId in the query key to separate cache per user
+  // Include userId and activeOrgId in the query key so cache busts on org switch
   const { data, isLoading, error, refetch } = useQuery(
-    ['plans', userId, page, limit, status],
+    ['plans', userId, activeOrgId, page, limit, status],
     async () => {
       try {
         // Check if authentication session exists
