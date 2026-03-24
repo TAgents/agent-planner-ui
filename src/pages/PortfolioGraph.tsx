@@ -1,457 +1,247 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import {
-  ReactFlow,
-  Controls,
-  Background,
-  Node,
-  Edge,
-  Position,
-  MarkerType,
-  Handle,
-  NodeProps,
-  Panel,
-  BackgroundVariant,
-  ReactFlowProvider,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import {
-  GitBranch,
-  AlertTriangle,
-  CheckCircle,
-  Circle,
-  Loader,
-  ExternalLink,
-  RefreshCw,
-  Network,
+  Target, CheckCircle, AlertTriangle, BookOpen, Loader2,
+  ArrowRight, Circle
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
-import { useQuery } from 'react-query';
-import { dependencyService, CrossPlanEdge } from '../services/api';
+import { useGoalsV2 } from '../hooks/useGoalsV2';
+import { goalBdiService } from '../services/api';
 import { Plan } from '../types';
 
-// --- Plan Node (cluster) ---
+// ─── Goal Section ─────────────────────────────────────────────
 
-interface PlanNodeData {
-  plan: Plan;
-  crossPlanEdgeCount: number;
-  [key: string]: unknown;
-}
+const GoalSection: React.FC<{ goal: any; allPlans: Plan[] }> = ({ goal, allPlans }) => {
+  const { data: portfolio } = useQuery(
+    ['goal-portfolio', goal.id],
+    () => goalBdiService.getPortfolio(goal.id),
+    { staleTime: 30000 }
+  );
 
-const planStatusConfig: Record<string, { color: string; bg: string; border: string; dot: string }> = {
-  active: { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', dot: 'bg-amber-500' },
-  completed: { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500' },
-  draft: { color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800', border: 'border-gray-200 dark:border-gray-700', dot: 'bg-gray-400' },
-  archived: { color: 'text-gray-400 dark:text-gray-500', bg: 'bg-gray-50 dark:bg-gray-800/50', border: 'border-gray-200 dark:border-gray-700', dot: 'bg-gray-400' },
-};
+  const linkedPlanIds = new Set(
+    (portfolio?.linked_plans || []).map((lp: any) => lp.plan_id)
+  );
+  const linkedPlans = allPlans.filter(p => linkedPlanIds.has(p.id));
 
-function PlanClusterNode({ data }: NodeProps<Node<PlanNodeData>>) {
-  const plan = data.plan;
-  const config = planStatusConfig[plan.status] || planStatusConfig.draft;
+  // Aggregate stats
+  const totalProgress = linkedPlans.length > 0
+    ? Math.round(linkedPlans.reduce((s, p) => s + (p.progress || 0), 0) / linkedPlans.length)
+    : 0;
 
   return (
-    <div className={`rounded-xl border-2 ${config.border} ${config.bg} shadow-md min-w-[240px] max-w-[320px] transition-all hover:shadow-lg`}>
-      <Handle type="target" position={Position.Top} className="!bg-gray-300 dark:!bg-gray-600 !w-3 !h-3 !border-0" />
-      <div className="px-4 py-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-          <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">
-            {plan.status}
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Goal header */}
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <Target className="w-5 h-5 text-violet-500 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/app/goals/${goal.id}`}
+                className="text-base font-semibold text-gray-900 dark:text-white hover:text-violet-600 dark:hover:text-violet-400 transition-colors truncate"
+              >
+                {goal.title}
+              </Link>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                goal.goalType === 'intention'
+                  ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+              }`}>
+                {goal.goalType || 'desire'}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <span>{linkedPlans.length} plan{linkedPlans.length !== 1 ? 's' : ''}</span>
+              <span>{totalProgress}% progress</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Plans grid */}
+      {linkedPlans.length > 0 ? (
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {linkedPlans.map(plan => (
+            <PlanCard key={plan.id} plan={plan} />
+          ))}
+        </div>
+      ) : (
+        <div className="px-5 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
+          No plans linked to this goal
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Plan Card ────────────────────────────────────────────────
+
+const PlanCard: React.FC<{ plan: Plan }> = ({ plan }) => {
+  const progress = plan.progress || 0;
+  const quality = plan.quality_score != null ? Math.round(plan.quality_score * 100) : null;
+
+  const statusColors: Record<string, string> = {
+    active: 'bg-amber-500',
+    completed: 'bg-emerald-500',
+    draft: 'bg-gray-400',
+    archived: 'bg-gray-400',
+  };
+
+  return (
+    <Link
+      to={`/app/plans/${plan.id}`}
+      className="block rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-gray-50 dark:bg-gray-900 p-4 transition-all hover:shadow-md group"
+    >
+      {/* Status + Title */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[plan.status] || 'bg-gray-400'}`} />
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate transition-colors">
+          {plan.title}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 w-8 text-right">
+          {progress}%
+        </span>
+      </div>
+
+      {/* Health indicators */}
+      <div className="flex items-center gap-3 text-[11px]">
+        {/* Quality */}
+        {quality != null && (
+          <div className="flex items-center gap-1" title="Plan quality score">
+            <CheckCircle className={`w-3 h-3 ${quality >= 70 ? 'text-emerald-500' : quality >= 40 ? 'text-amber-500' : 'text-red-500'}`} />
+            <span className={`font-medium ${quality >= 70 ? 'text-emerald-600 dark:text-emerald-400' : quality >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+              Q:{quality}%
+            </span>
+          </div>
+        )}
+
+        {/* Coherence checked */}
+        {plan.coherence_checked_at ? (
+          <div className="flex items-center gap-1 text-gray-400" title={`Last checked: ${new Date(plan.coherence_checked_at).toLocaleDateString()}`}>
+            <CheckCircle className="w-3 h-3 text-emerald-400" />
+            <span>checked</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-gray-400" title="Not yet checked for coherence">
+            <Circle className="w-3 h-3" />
+            <span>unchecked</span>
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+};
+
+// ─── Unlinked Plans Section ───────────────────────────────────
+
+const UnlinkedPlansSection: React.FC<{ plans: Plan[] }> = ({ plans }) => {
+  if (plans.length === 0) return null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-amber-200 dark:border-amber-500/30 overflow-hidden">
+      <div className="px-5 py-4 border-b border-amber-100 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+            Plans without goals ({plans.length})
           </span>
         </div>
-        <Link
-          to={`/app/plans/${plan.id}`}
-          className="text-sm font-semibold text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2"
-        >
-          {plan.title}
-        </Link>
-        {plan.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{plan.description}</p>
-        )}
-        <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
-          {typeof plan.progress === 'number' && (
-            <div className="flex items-center gap-1.5 flex-1">
-              <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all"
-                  style={{ width: `${plan.progress}%` }}
-                />
-              </div>
-              <span>{plan.progress}%</span>
-            </div>
-          )}
-          {data.crossPlanEdgeCount > 0 && (
-            <span className="flex items-center gap-1 text-blue-500 dark:text-blue-400">
-              <Network className="w-3 h-3" />
-              {data.crossPlanEdgeCount}
-            </span>
-          )}
-        </div>
+        <p className="text-xs text-amber-600/70 dark:text-amber-400/50 mt-1">
+          These plans aren't linked to any goal — consider linking them or archiving if no longer needed
+        </p>
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-300 dark:!bg-gray-600 !w-3 !h-3 !border-0" />
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {plans.map(plan => (
+          <PlanCard key={plan.id} plan={plan} />
+        ))}
+      </div>
     </div>
   );
-}
-
-// --- Task Node (shown when plan is expanded) ---
-
-interface TaskNodeData {
-  label: string;
-  status: string;
-  nodeType: string;
-  planTitle: string;
-  [key: string]: unknown;
-}
-
-const taskStatusIcons: Record<string, React.ElementType> = {
-  not_started: Circle,
-  in_progress: Loader,
-  completed: CheckCircle,
-  blocked: AlertTriangle,
 };
 
-const taskStatusColors: Record<string, string> = {
-  not_started: 'text-gray-400',
-  in_progress: 'text-amber-500',
-  completed: 'text-emerald-500',
-  blocked: 'text-red-500',
-};
+// ─── Main Component ───────────────────────────────────────────
 
-function CrossPlanTaskNode({ data }: NodeProps<Node<TaskNodeData>>) {
-  const StatusIcon = taskStatusIcons[data.status] || Circle;
-  const color = taskStatusColors[data.status] || 'text-gray-400';
+export default function PortfolioGraph() {
+  const { plans, isLoading: plansLoading } = usePlans(1, 100, 'active,draft');
+  const { data: goalsData, isLoading: goalsLoading } = useGoalsV2();
 
-  return (
-    <div className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm min-w-[180px] max-w-[240px]">
-      <Handle type="target" position={Position.Top} className="!bg-gray-300 dark:!bg-gray-600 !w-2 !h-2 !border-0" />
-      <div className="flex items-center gap-2">
-        <StatusIcon className={`w-3.5 h-3.5 flex-shrink-0 ${color}`} />
-        <div className="min-w-0 flex-1">
-          <div className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{data.planTitle}</div>
-          <div className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{data.label}</div>
-        </div>
-      </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-300 dark:!bg-gray-600 !w-2 !h-2 !border-0" />
-    </div>
-  );
-}
+  const goals = Array.isArray(goalsData) ? goalsData : (goalsData as any)?.goals || [];
+  const activeGoals = goals.filter((g: any) => g.status === 'active');
 
-const nodeTypes = {
-  planCluster: PlanClusterNode,
-  crossPlanTask: CrossPlanTaskNode,
-};
-
-// --- Edge styling ---
-
-const edgeTypeStyles: Record<string, { stroke: string; strokeDasharray?: string; animated: boolean }> = {
-  blocks: { stroke: '#ef4444', animated: true },
-  requires: { stroke: '#3b82f6', strokeDasharray: '8 4', animated: false },
-  relates_to: { stroke: '#9ca3af', strokeDasharray: '4 4', animated: false },
-};
-
-// --- Layout ---
-
-type ViewMode = 'plans' | 'tasks';
-
-function layoutPlanNodes(plans: Plan[], edges: CrossPlanEdge[], viewMode: ViewMode): { nodes: Node[]; edges: Edge[] } {
-  if (viewMode === 'plans') {
-    return layoutPlanLevel(plans, edges);
-  }
-  return layoutTaskLevel(plans, edges);
-}
-
-function layoutPlanLevel(plans: Plan[], crossPlanEdges: CrossPlanEdge[]): { nodes: Node[]; edges: Edge[] } {
-  // Count edges per plan
-  const edgeCounts = new Map<string, number>();
-  for (const e of crossPlanEdges) {
-    edgeCounts.set(e.source_plan_id, (edgeCounts.get(e.source_plan_id) || 0) + 1);
-    edgeCounts.set(e.target_plan_id, (edgeCounts.get(e.target_plan_id) || 0) + 1);
-  }
-
-  // Find unique plan IDs involved in cross-plan edges
-  const connectedPlanIds = new Set<string>();
-  for (const e of crossPlanEdges) {
-    connectedPlanIds.add(e.source_plan_id);
-    connectedPlanIds.add(e.target_plan_id);
-  }
-
-  // Layout: connected plans first, then unconnected
-  const connected = plans.filter(p => connectedPlanIds.has(p.id));
-  const unconnected = plans.filter(p => !connectedPlanIds.has(p.id));
-
-  const COLS = 3;
-  const X_GAP = 380;
-  const Y_GAP = 200;
-
-  const nodes: Node[] = [];
-  const allPlans = [...connected, ...unconnected];
-
-  allPlans.forEach((plan, i) => {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    nodes.push({
-      id: `plan-${plan.id}`,
-      type: 'planCluster',
-      position: { x: col * X_GAP, y: row * Y_GAP },
-      data: {
-        plan,
-        crossPlanEdgeCount: edgeCounts.get(plan.id) || 0,
-      },
-    });
-  });
-
-  // Edges between plan clusters (aggregate)
-  const planEdgeMap = new Map<string, { count: number; types: Set<string> }>();
-  for (const e of crossPlanEdges) {
-    const key = `${e.source_plan_id}->${e.target_plan_id}`;
-    const existing = planEdgeMap.get(key) || { count: 0, types: new Set<string>() };
-    existing.count++;
-    existing.types.add(e.dependency_type);
-    planEdgeMap.set(key, existing);
-  }
-
-  const edges: Edge[] = [];
-  for (const [key, val] of planEdgeMap) {
-    const [srcPlanId, tgtPlanId] = key.split('->');
-    const primaryType = val.types.has('blocks') ? 'blocks' : val.types.has('requires') ? 'requires' : 'relates_to';
-    const style = edgeTypeStyles[primaryType] || edgeTypeStyles.relates_to;
-
-    edges.push({
-      id: `plan-edge-${key}`,
-      source: `plan-${srcPlanId}`,
-      target: `plan-${tgtPlanId}`,
-      type: 'smoothstep',
-      animated: style.animated,
-      style: { stroke: style.stroke, strokeWidth: Math.min(val.count + 1, 4), strokeDasharray: style.strokeDasharray },
-      markerEnd: { type: MarkerType.ArrowClosed, color: style.stroke, width: 16, height: 16 },
-      label: val.count > 1 ? `${val.count} deps` : undefined,
-      labelStyle: { fill: '#6b7280', fontSize: 10 },
-      labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
-    });
-  }
-
-  return { nodes, edges };
-}
-
-function layoutTaskLevel(plans: Plan[], crossPlanEdges: CrossPlanEdge[]): { nodes: Node[]; edges: Edge[] } {
-  // Show individual task nodes involved in cross-plan dependencies
-  const taskNodes = new Map<string, { id: string; title: string; status: string; planId: string; planTitle: string }>();
-
-  for (const e of crossPlanEdges) {
-    const srcPlan = plans.find(p => p.id === e.source_plan_id);
-    const tgtPlan = plans.find(p => p.id === e.target_plan_id);
-    taskNodes.set(e.source_node_id, {
-      id: e.source_node_id,
-      title: e.source_title,
-      status: e.source_status,
-      planId: e.source_plan_id,
-      planTitle: srcPlan?.title || 'Unknown Plan',
-    });
-    taskNodes.set(e.target_node_id, {
-      id: e.target_node_id,
-      title: e.target_title,
-      status: e.target_status,
-      planId: e.target_plan_id,
-      planTitle: tgtPlan?.title || 'Unknown Plan',
-    });
-  }
-
-  // Group by plan for layout
-  const planGroups = new Map<string, typeof taskNodes extends Map<any, infer V> ? V[] : never>();
-  for (const task of taskNodes.values()) {
-    const group = planGroups.get(task.planId) || [];
-    group.push(task);
-    planGroups.set(task.planId, group);
-  }
-
-  const nodes: Node[] = [];
-  let colOffset = 0;
-  const X_GAP = 280;
-  const Y_GAP = 100;
-
-  for (const [, tasks] of planGroups) {
-    tasks.forEach((task, row) => {
-      nodes.push({
-        id: `task-${task.id}`,
-        type: 'crossPlanTask',
-        position: { x: colOffset * X_GAP, y: row * Y_GAP },
-        data: {
-          label: task.title,
-          status: task.status,
-          nodeType: 'task',
-          planTitle: task.planTitle,
-        },
-      });
-    });
-    colOffset++;
-  }
-
-  const edges: Edge[] = crossPlanEdges.map(e => {
-    const style = edgeTypeStyles[e.dependency_type] || edgeTypeStyles.relates_to;
-    return {
-      id: `cross-edge-${e.id}`,
-      source: `task-${e.source_node_id}`,
-      target: `task-${e.target_node_id}`,
-      type: 'smoothstep',
-      animated: style.animated,
-      style: { stroke: style.stroke, strokeWidth: 2, strokeDasharray: style.strokeDasharray },
-      markerEnd: { type: MarkerType.ArrowClosed, color: style.stroke, width: 14, height: 14 },
-    };
-  });
-
-  return { nodes, edges };
-}
-
-// --- Main component ---
-
-function PortfolioGraphInner() {
-  const [viewMode, setViewMode] = useState<ViewMode>('plans');
-  const [showCompleted, setShowCompleted] = useState(false);
-
-  // Fetch all plans (active/draft by default, all when showCompleted is toggled)
-  const { plans, isLoading: plansLoading } = usePlans(1, 100, showCompleted ? undefined : 'active,draft');
-
-  const planIds = useMemo(() => (plans || []).map((p: Plan) => p.id), [plans]);
-
-  // Fetch cross-plan dependencies
-  const sessionStr = localStorage.getItem('auth_session');
-  let userId = 'anonymous';
-  if (sessionStr) {
-    try { userId = JSON.parse(sessionStr).user?.id || 'anonymous'; } catch { /* */ }
-  }
-
-  const { data: crossPlanData, isLoading: depsLoading, refetch } = useQuery(
-    ['crossPlanDeps', userId, ...planIds],
-    () => dependencyService.listCrossPlanDependencies(planIds),
-    {
-      enabled: planIds.length >= 2,
-      staleTime: 30000,
-    }
+  // Fetch all goal portfolios to find linked plan IDs
+  const goalIds = activeGoals.map((g: any) => g.id);
+  const { data: allPortfolios, isLoading: portfoliosLoading } = useQuery(
+    ['all-goal-portfolios', ...goalIds],
+    async () => {
+      const results: Record<string, string[]> = {};
+      for (const gid of goalIds) {
+        try {
+          const p = await goalBdiService.getPortfolio(gid);
+          results[gid] = (p.linked_plans || []).map((lp: any) => lp.plan_id);
+        } catch { results[gid] = []; }
+      }
+      return results;
+    },
+    { enabled: goalIds.length > 0, staleTime: 30000 }
   );
 
-  const crossPlanEdges: CrossPlanEdge[] = crossPlanData?.edges || [];
-  const isLoading = plansLoading || depsLoading;
-
-  const { nodes: flowNodes, edges: flowEdges } = useMemo(
-    () => layoutPlanNodes(plans || [], crossPlanEdges, viewMode),
-    [plans, crossPlanEdges, viewMode]
+  const linkedPlanIds = new Set<string>(
+    Object.values(allPortfolios || {}).flat()
   );
-
-  const handleRefresh = useCallback(() => refetch(), [refetch]);
+  const isLoading = plansLoading || goalsLoading || portfoliosLoading;
 
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader className="w-6 h-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-gray-500">Loading portfolio...</span>
+        <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+        <span className="text-sm text-gray-500">Loading portfolio...</span>
       </div>
     );
   }
 
-  if (!plans || plans.length === 0) {
+  if (activeGoals.length === 0 && (!plans || plans.length === 0)) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-        <Network className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-600" />
-        <p className="text-lg font-medium">No plans yet</p>
-        <p className="text-sm mt-1">Create plans and add cross-plan dependencies to see them here.</p>
-        <Link to="/app/plans/create" className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-          Create Plan
-        </Link>
+        <Target className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-600" />
+        <p className="text-lg font-medium">No goals or plans yet</p>
+        <p className="text-sm mt-1">Create a goal and link plans to see your portfolio</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <ReactFlow
-        nodes={flowNodes}
-        edges={flowEdges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.3 }}
-        minZoom={0.3}
-        maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
-        <Controls className="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 !shadow-sm" />
+    <div className="h-full overflow-y-auto bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-violet-500" />
+            Portfolio
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {activeGoals.length} goal{activeGoals.length !== 1 ? 's' : ''} · {(plans || []).length} plan{(plans || []).length !== 1 ? 's' : ''}
+          </p>
+        </div>
 
-        <Panel position="top-left" className="!m-3">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <GitBranch className="w-4 h-4 text-blue-500" />
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Portfolio Dependencies</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>{(plans || []).length} plans</span>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
-              <span className="text-blue-500">{crossPlanEdges.length} cross-plan edges</span>
-            </div>
-          </div>
-        </Panel>
+        {/* Goal sections */}
+        {activeGoals.map((goal: any) => (
+          <GoalSection key={goal.id} goal={goal} allPlans={plans || []} />
+        ))}
 
-        <Panel position="top-right" className="!m-3">
-          <div className="flex items-center gap-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex overflow-hidden">
-              <button
-                onClick={() => setViewMode('plans')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'plans' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-              >
-                Plans
-              </button>
-              <button
-                onClick={() => setViewMode('tasks')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'tasks' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-              >
-                Tasks
-              </button>
-            </div>
-            <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showCompleted}
-                onChange={(e) => setShowCompleted(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-              />
-              Show completed
-            </label>
-            <button
-              onClick={handleRefresh}
-              className="p-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
-              title="Refresh"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
-        </Panel>
-
-        <Panel position="bottom-left" className="!m-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm px-3 py-2">
-            <div className="flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-0.5 bg-red-500" />
-                <span>blocks</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-0.5 bg-blue-500" style={{ borderTop: '2px dashed' }} />
-                <span>requires</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-0.5 bg-gray-400" style={{ borderTop: '2px dotted' }} />
-                <span>relates to</span>
-              </div>
-            </div>
-          </div>
-        </Panel>
-      </ReactFlow>
+        {/* Plans without goals */}
+        <UnlinkedPlansSection plans={(plans || []).filter((p: Plan) => !linkedPlanIds.has(p.id))} />
+      </div>
     </div>
-  );
-}
-
-export default function PortfolioGraph() {
-  return (
-    <ReactFlowProvider>
-      <PortfolioGraphInner />
-    </ReactFlowProvider>
   );
 }

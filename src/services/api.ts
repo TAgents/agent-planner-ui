@@ -1843,6 +1843,10 @@ export const graphitiService = {
       url: `/knowledge/episodes/${episodeId}`,
     });
   },
+  getCoverageMap: async () => {
+    const res = await api.get('/knowledge/coverage-map');
+    return res.data;
+  },
 };
 
 // Goal Dashboard API
@@ -1946,4 +1950,42 @@ export const claimService = {
     api.post(`/plans/${planId}/nodes/${nodeId}/claim`, { agent_id: agentId, ttl_minutes: ttlMinutes }).then(r => r.data),
   release: (planId: string, nodeId: string, agentId: string) =>
     api.delete(`/plans/${planId}/nodes/${nodeId}/claim`, { data: { agent_id: agentId } }).then(r => r.data),
+};
+
+// BDI Coherence API
+export const coherenceService = {
+  getPlanCoherence: (planId: string) =>
+    api.get(`/plans/${planId}/coherence`).then(r => r.data),
+  runCheck: (planId: string, goalId?: string) =>
+    api.post(`/plans/${planId}/coherence/check`, goalId ? { goal_id: goalId } : {}).then(r => r.data),
+  getPending: () =>
+    api.get('/coherence/pending').then(r => r.data),
+  getNodeEpisodeLinks: (planId: string, nodeId: string, linkType?: string) =>
+    api.get(`/plans/${planId}/nodes/${nodeId}/episode-links`, { params: linkType ? { link_type: linkType } : {} }).then(r => r.data),
+};
+
+// BDI Knowledge Loop API
+export const knowledgeLoopService = {
+  start: (planId: string, goalId?: string, maxIterations?: number) =>
+    api.post(`/plans/${planId}/knowledge-loop/start`, { goal_id: goalId, max_iterations: maxIterations }).then(r => r.data),
+  getStatus: (planId: string) =>
+    api.get(`/plans/${planId}/knowledge-loop/status`).then(r => r.data),
+  getContext: (planId: string) =>
+    api.get(`/plans/${planId}/knowledge-loop/context`).then(r => r.data),
+  iterate: (planId: string, data: { quality_score: number; rationale?: string; modifications?: string[]; episode_id?: string }) =>
+    api.post(`/plans/${planId}/knowledge-loop/iterate`, data).then(r => r.data),
+  stop: (planId: string) =>
+    api.post(`/plans/${planId}/knowledge-loop/stop`).then(r => r.data),
+};
+
+// BDI Goals API extensions
+export const goalBdiService = {
+  promoteToIntention: (goalId: string) =>
+    api.post(`/goals/${goalId}/promote-to-intention`).then(r => r.data),
+  getPortfolio: (goalId: string) =>
+    api.get(`/goals/${goalId}/portfolio`).then(r => r.data),
+  getCoverage: (goalId: string) =>
+    api.get(`/goals/${goalId}/coverage`).then(r => r.data),
+  getQuality: (goalId: string) =>
+    api.get(`/goals/${goalId}/quality`).then(r => r.data),
 };

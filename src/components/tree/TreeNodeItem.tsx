@@ -9,6 +9,7 @@ import {
   Bot, MessageSquare
 } from 'lucide-react';
 import BottleneckIndicator from '../visualization/BottleneckIndicator';
+import CoherenceIndicator from '../visualization/CoherenceIndicator';
 import { BottleneckNode } from '../../hooks/useBottlenecks';
 
 interface TreeNodeItemProps {
@@ -235,6 +236,9 @@ export const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       {bottlenecks.length > 0 && (
         <BottleneckIndicator nodeId={node.id} bottlenecks={bottlenecks} />
       )}
+
+      {/* BDI Coherence Indicator */}
+      <CoherenceIndicator status={node.coherence_status} />
 
       {/* Agent Indicator */}
       {node.assigned_agent_id && (

@@ -31,13 +31,13 @@ import {
   useDeleteGoal,
   useAddEvaluation,
   useGoalPath,
-  useGoalProgress,
   useGoalKnowledgeGaps,
   GoalV2,
   GoalEvaluation,
   GoalPathNode,
 } from '../hooks/useGoalsV2';
-import { goalDashboardService } from '../services/api';
+import { goalDashboardService, planService } from '../services/api';
+import GoalQualityPanel from '../components/goals/GoalQualityPanel';
 
 // ─── Config ──────────────────────────────────────────────────────
 const TYPE_CONFIG: Record<string, { label: string; color: string; icon: string; bg: string; text: string }> = {
@@ -116,13 +116,46 @@ function StatusDropdown({ currentStatus, onStatusChange }: { currentStatus: stri
 
 // ─── Overview Tab ────────────────────────────────────────────────
 const OverviewTab: React.FC<{ goal: GoalV2; goalId: string }> = ({ goal, goalId }) => {
-  const { data: progressData } = useGoalProgress(goalId);
-  const { data: pathData } = useGoalPath(goalId);
   const { data: gapsData } = useGoalKnowledgeGaps(goalId);
 
-  const progress = progressData?.progress ?? 0;
-  const stats = pathData?.stats;
-  const nodes = pathData?.nodes || [];
+  // Resolve plan names for linked resources
+  const planLinks = (goal.links || []).filter(l => l.linkedType === 'plan');
+  const planIds = planLinks.map(l => l.linkedId);
+  const { data: planNames } = useQuery(
+    ['plan-names', ...planIds],
+    async () => {
+      const names: Record<string, string> = {};
+      for (const id of planIds) {
+        try {
+          const plan = await planService.getPlan(id);
+          names[id] = plan?.title || id.slice(0, 8) + '...';
+        } catch {
+          names[id] = id.slice(0, 8) + '...';
+        }
+      }
+      return names;
+    },
+    { enabled: planIds.length > 0, staleTime: 60000 }
+  );
+
+  // Get progress from dashboard endpoint (same calculation as Mission Control)
+  const { data: dashboardData } = useQuery(
+    ['goal-dashboard-for-detail'],
+    () => goalDashboardService.getDashboard(),
+    { staleTime: 30000 }
+  );
+  const dashboardGoal = (dashboardData?.goals || []).find((g: any) => g.id === goalId);
+  const lp = dashboardGoal?.linked_plan_progress;
+  const progress = lp?.percent_completed ?? 0;
+  const remaining = (lp?.total_nodes || 0) - (lp?.completed_nodes || 0) - (lp?.blocked_nodes || 0);
+  const stats = lp ? {
+    total: lp.total_nodes,
+    completed: lp.completed_nodes,
+    in_progress: Math.max(0, remaining),
+    blocked: lp.blocked_nodes,
+    not_started: 0,
+  } : null;
+
   const coverage = gapsData?.coverage;
   const gaps = gapsData?.gaps || [];
 
@@ -135,8 +168,8 @@ const OverviewTab: React.FC<{ goal: GoalV2; goalId: string }> = ({ goal, goalId 
         </section>
       )}
 
-      {/* Progress from dependency graph */}
-      {nodes.length > 0 && (
+      {/* Progress across all linked plans */}
+      {stats && stats.total > 0 && (
         <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -169,6 +202,9 @@ const OverviewTab: React.FC<{ goal: GoalV2; goalId: string }> = ({ goal, goalId 
         </section>
       )}
 
+      {/* Goal Quality Assessment */}
+      <GoalQualityPanel goalId={goalId} />
+
       {/* Knowledge coverage */}
       {coverage && coverage.total > 0 && (
         <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
@@ -199,29 +235,57 @@ const OverviewTab: React.FC<{ goal: GoalV2; goalId: string }> = ({ goal, goalId 
       {goal.successCriteria && (
         <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Success Criteria</h3>
-          <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg text-xs overflow-auto text-gray-800 dark:text-gray-200">
-            {JSON.stringify(goal.successCriteria, null, 2)}
-          </pre>
+          {Array.isArray(goal.successCriteria) ? (
+            <div className="space-y-2">
+              {goal.successCriteria.map((criterion: any, i: number) => (
+                <div key={i} className="flex items-start gap-3 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <span className="text-emerald-500 mt-0.5">&#x2713;</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {criterion.metric || criterion.name || criterion.title || String(criterion)}
+                    </span>
+                    {criterion.target && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                        — {criterion.target}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : typeof goal.successCriteria === 'object' ? (
+            <div className="space-y-2">
+              {Object.entries(goal.successCriteria).map(([key, value]: [string, any]) => (
+                <div key={key} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <span className="text-emerald-500">&#x2713;</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{key}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">— {String(value)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-700 dark:text-gray-300">{String(goal.successCriteria)}</p>
+          )}
         </section>
       )}
 
-      {/* Links */}
+      {/* Linked Plans */}
       {goal.links && goal.links.length > 0 && (
         <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <FolderKanban className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            Linked Resources ({goal.links.length})
+            Linked Plans ({planLinks.length})
           </h3>
           <div className="space-y-1.5">
             {goal.links.map((link) => (
-              <div key={link.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm">
-                <span className="text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{link.linkedType}</span>
+              <div key={link.id} className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm">
+                <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded font-medium">{link.linkedType}</span>
                 {link.linkedType === 'plan' ? (
-                  <Link to={`/app/plans/${link.linkedId}`} className="text-blue-600 dark:text-blue-400 hover:underline truncate">
-                    {link.linkedId.slice(0, 8)}...
+                  <Link to={`/app/plans/${link.linkedId}`} className="text-blue-600 dark:text-blue-400 hover:underline truncate flex-1">
+                    {planNames?.[link.linkedId] || link.linkedId.slice(0, 8) + '...'}
                   </Link>
                 ) : (
-                  <span className="text-gray-700 dark:text-gray-300 font-mono truncate">{link.linkedId.slice(0, 8)}...</span>
+                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{link.linkedId.slice(0, 8)}...</span>
                 )}
               </div>
             ))}
@@ -230,7 +294,7 @@ const OverviewTab: React.FC<{ goal: GoalV2; goalId: string }> = ({ goal, goalId 
       )}
 
       {/* Empty state when no data at all */}
-      {nodes.length === 0 && !goal.description && (!goal.links || goal.links.length === 0) && (
+      {!stats && !goal.description && (!goal.links || goal.links.length === 0) && (
         <div className="text-center py-12">
           <Target className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">This goal doesn't have any linked plans or tasks yet.</p>

@@ -16,12 +16,18 @@ export interface Plan {
   // GitHub integration fields
   github_repo_owner?: string | null;
   github_repo_name?: string | null;
+  // BDI quality assessment
+  quality_score?: number | null;
+  quality_assessed_at?: string | null;
+  quality_rationale?: string | null;
+  coherence_checked_at?: string | null;
 }
 
 // Node Types
 export type NodeType = 'root' | 'phase' | 'task' | 'milestone';
 export type NodeStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'plan_ready';
 export type TaskMode = 'free' | 'research' | 'plan' | 'implement';
+export type CoherenceStatus = 'coherent' | 'stale_beliefs' | 'contradiction_detected' | 'unchecked';
 
 export interface PlanNode {
   id: string;
@@ -44,6 +50,11 @@ export interface PlanNode {
   assigned_agent_at?: string;
   assigned_agent_by?: string;
   task_mode?: TaskMode;
+  // BDI fields
+  coherence_status?: CoherenceStatus;
+  quality_score?: number | null;
+  quality_assessed_at?: string | null;
+  quality_rationale?: string | null;
 }
 
 // Comment Types

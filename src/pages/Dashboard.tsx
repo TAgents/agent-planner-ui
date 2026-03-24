@@ -135,6 +135,8 @@ const typeBadge: Record<string, string> = {
   constraint: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
   metric: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
   principle: 'bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400',
+  desire: 'bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400',
+  intention: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
 };
 
 const GoalCard: React.FC<{ goal: GoalHealth }> = ({ goal }) => {
@@ -153,8 +155,8 @@ const GoalCard: React.FC<{ goal: GoalHealth }> = ({ goal }) => {
             style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
           {goal.title}
         </h3>
-        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${typeBadge[goal.type] || typeBadge.principle}`}>
-          {goal.type}
+        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${typeBadge[(goal as any).goal_type || goal.type] || typeBadge.principle}`}>
+          {(goal as any).goal_type || goal.type}
         </span>
         {pendingCount > 0 && (
           <span className="inline-flex items-center justify-center w-4.5 h-4.5 min-w-[18px] text-[9px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 rounded-full">
@@ -277,7 +279,10 @@ const Dashboard: React.FC = () => {
     { refetchInterval: 30000 }
   );
 
-  const goals = dashboardData?.goals || [];
+  const goals: GoalHealth[] = (dashboardData?.goals || []).map((g: any) => ({
+    ...g,
+    progress: g.progress || g.linked_plan_progress?.percent_completed || 0,
+  }));
   const recentPlans = recentPlansData?.plans || [];
 
   // Fetch pending decisions directly from /dashboard/pending (same source as bell icon)

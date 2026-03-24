@@ -43,6 +43,7 @@ import { NodeType, NodeStatus, Decision, PlanStatus } from '../types';
 
 // Import detail components
 import UnifiedNodeDetails from '../components/details/UnifiedNodeDetails';
+import KnowledgeLoopPanel from '../components/details/KnowledgeLoopPanel';
 
 // Import WebSocket status indicator
 import WebSocketStatus from '../components/websocket/WebSocketStatus';
@@ -781,6 +782,11 @@ const PlanVisualizationEnhanced: React.FC = () => {
           />
         </div>
       )}
+
+      {/* BDI Knowledge Loop Panel */}
+      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+        <KnowledgeLoopPanel planId={planId || ''} />
+      </div>
 
       {/* Main Content - Split Pane Layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
