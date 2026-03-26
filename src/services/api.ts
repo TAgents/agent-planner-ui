@@ -611,6 +611,7 @@ export const nodeService = {
       const response = await request<any>({
         method: 'GET',
         url: `/plans/${planId}/nodes`,
+        params: { include_root: 'true' }, // UI tree requires root node to build hierarchy
       });
       console.log('[api.ts] Raw response received for getNodes:', JSON.stringify(response));
 
