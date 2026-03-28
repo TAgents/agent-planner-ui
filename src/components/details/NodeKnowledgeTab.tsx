@@ -19,7 +19,7 @@ import {
   useCreateGraphitiEpisode,
   useGraphitiStatus,
 } from '../../hooks/useGraphitiKnowledge';
-import { GraphitiFact, GraphitiEntity } from '../../services/api';
+import { GraphitiFact, GraphitiEntity } from '../../services/knowledge.service';
 
 interface NodeKnowledgeTabProps {
   nodeTitle: string;

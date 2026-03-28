@@ -16,7 +16,7 @@ import {
   useGraphitiEpisodes,
   useDeleteEpisode,
 } from '../hooks/useGraphitiKnowledge';
-import { GraphitiEpisode } from '../services/api';
+import { GraphitiEpisode } from '../services/knowledge.service';
 
 // --- Helpers ---
 

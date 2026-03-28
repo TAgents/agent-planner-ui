@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Github, Link as LinkIcon, AlertCircle, Search, Star, Lock, Globe, Loader2 } from 'lucide-react';
-import api, { githubService } from '../../services/api';
+import api from '../../services/api';
+import { githubService } from '../../services/integrations.service';
 
 interface GitHubRepo {
   id: number;

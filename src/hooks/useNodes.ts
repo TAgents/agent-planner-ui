@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useMemo, useCallback } from 'react';
-import { nodeService } from '../services/api';
+import { nodeService } from '../services/nodes.service';
 import { PlanNode } from '../types';
 import { transformToFlowNodes, createFlowEdges } from '../utils/planUtils';
 

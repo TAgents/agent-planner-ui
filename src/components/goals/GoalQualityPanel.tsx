@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from 'react-query';
-import { goalBdiService } from '../../services/api';
+import { goalBdiService } from '../../services/goals.service';
 import { CheckCircle, Circle, AlertTriangle, Lightbulb, Loader2 } from 'lucide-react';
 
 interface GoalQualityPanelProps {

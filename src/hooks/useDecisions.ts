@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { decisionsApi, Decision } from '../services/api';
+import { decisionsApi, Decision } from '../services/decisions.service';
 
 // Hook for listing decisions
 export function useDecisions(

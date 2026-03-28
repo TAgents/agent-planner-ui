@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { coherenceService } from '../../services/api';
+import { coherenceService } from '../../services/knowledge.service';
 import { BarChart3, AlertTriangle, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 interface PlanHealthPanelProps {

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
-import { goalBdiService } from '../services/api';
+import { goalBdiService } from '../services/goals.service';
 import { Plan } from '../types';
 
 // ─── Goal Section ─────────────────────────────────────────────

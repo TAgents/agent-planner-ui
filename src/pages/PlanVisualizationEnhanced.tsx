@@ -36,7 +36,7 @@ import { PresenceIndicator } from '../components/presence/PresenceIndicator';
 // Import existing components
 import { useUI } from '../contexts/UIContext';
 import { usePlan } from '../hooks/usePlans';
-import { planService } from '../services/api';
+import { planService } from '../services/plans.service';
 import { useNodes, useNode } from '../hooks/useNodes';
 import { usePlanEvents } from '../hooks/useWebSocket';
 import { NodeType, NodeStatus, Decision, PlanStatus } from '../types';

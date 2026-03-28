@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Cpu,
 } from 'lucide-react';
-import { nodeViewService } from '../../services/api';
+import { nodeViewService } from '../../services/goals.service';
 
 // ============================================================================
 // Types

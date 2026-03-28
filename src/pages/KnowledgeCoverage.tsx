@@ -5,7 +5,7 @@ import {
   Target, ChevronDown, ChevronRight, CheckCircle, AlertTriangle,
   XCircle, Circle, BookOpen, Loader2, BarChart3
 } from 'lucide-react';
-import { goalBdiService } from '../services/api';
+import { goalBdiService } from '../services/goals.service';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
 
 const KnowledgeCoverage: React.FC = () => {

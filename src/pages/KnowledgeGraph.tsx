@@ -32,7 +32,7 @@ import {
   useGraphitiEntitySearchMutation,
   useGraphitiFactSearchMutation,
 } from '../hooks/useGraphitiKnowledge';
-import { GraphitiEntity, GraphitiFact } from '../services/api';
+import { GraphitiEntity, GraphitiFact } from '../services/knowledge.service';
 
 // --- Custom Entity Node ---
 
