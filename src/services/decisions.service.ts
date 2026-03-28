@@ -1,7 +1,7 @@
 /**
  * Decisions & Agent Requests Service — extracted from api.ts
  */
-import { request } from './api';
+import { request } from './api-client';
 
 // ── Types ──────────────────────────────────────────────────
 

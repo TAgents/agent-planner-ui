@@ -3,7 +3,7 @@
  *
  * Graphiti knowledge graph, BDI coherence, and knowledge loop APIs.
  */
-import { api, request } from './api';
+import { api, request } from './api-client';
 
 // ── Graphiti Types ─────────────────────────────────────────
 

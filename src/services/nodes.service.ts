@@ -4,7 +4,7 @@
  * All node-related API calls: CRUD, status, move, assignments, agent ops.
  */
 import { ApiResponse, PlanNode } from '../types';
-import { request } from './api';
+import { request } from './api-client';
 
 /** Flatten hierarchical node structure into flat array */
 const flattenNodes = (nodes: any[]): PlanNode[] => {

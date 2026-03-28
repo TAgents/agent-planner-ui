@@ -5,7 +5,7 @@
  */
 import axios from 'axios';
 import { ApiResponse, Plan } from '../types';
-import { API_CONFIG, request } from './api';
+import { API_CONFIG, request } from './api-client';
 
 export const planService = {
   getPlans: async (page = 1, limit = 10, status?: string) => {

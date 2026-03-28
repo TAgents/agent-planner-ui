@@ -3,7 +3,7 @@
  *
  * Goal dashboard, BDI goal extensions, and node agent view APIs.
  */
-import { api } from './api';
+import { api } from './api-client';
 
 // ── Goal Dashboard API ─────────────────────────────────────
 

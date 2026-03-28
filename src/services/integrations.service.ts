@@ -1,4 +1,4 @@
-import { request } from './api';
+import { request } from './api-client';
 
 // GitHub integration service
 export const githubService = {

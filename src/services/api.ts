@@ -1,147 +1,11 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission, Dependency, DependencyType, CriticalPathResult, ImpactAnalysis } from '../types';
+import { api, API_CONFIG, request } from './api-client';
 import { planService } from './plans.service';
 import { nodeService } from './nodes.service';
 import { githubService, slackService } from './integrations.service';
 import { decisionsApi, agentRequestApi } from './decisions.service';
 import { graphitiService, coherenceService, knowledgeLoopService } from './knowledge.service';
 import { goalDashboardService, nodeViewService, goalBdiService } from './goals.service';
-
-// API Configuration - only needs the API URL
-const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
-  TIMEOUT: 30000,
-  HEADERS: {
-    'Content-Type': 'application/json',
-  },
-};
-
-if (process.env.NODE_ENV === 'development') {
-  console.log('API Configuration:', {
-    BASE_URL: API_CONFIG.BASE_URL,
-    ENV_VAR: process.env.REACT_APP_API_URL
-  });
-}
-
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
-  headers: API_CONFIG.HEADERS,
-  timeout: API_CONFIG.TIMEOUT,
-});
-
-// Add request interceptor for authentication
-api.interceptors.request.use(
-  (config) => {
-    // Get token from localStorage (stored after login)
-    const sessionStr = localStorage.getItem('auth_session');
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Interceptor checking auth_session:', sessionStr ? 'Found' : 'Not found');
-    }
-
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Parsed session object (keys only):', Object.keys(session));
-        }
-
-        // Try different token field names
-        let token = null;
-        if (session.access_token) {
-          token = session.access_token;
-        } else if (session.accessToken) {
-          token = session.accessToken;
-        } else if (typeof session === 'string') {
-          // Maybe the session IS the token
-          token = session;
-        }
-
-        if (token) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Setting Authorization header with token');
-          }
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        // Send active org context to backend
-        const activeOrgId = localStorage.getItem('active_org_id');
-        if (activeOrgId) {
-          config.headers['X-Organization-Id'] = activeOrgId;
-        }
-
-        if (!token && process.env.NODE_ENV === 'development') {
-          console.warn('No token found in session. Session keys:', Object.keys(session || {}));
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to parse session', e);
-        }
-      }
-    } else if (process.env.NODE_ENV === 'development') {
-      console.warn('No auth_session found in localStorage');
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    // Handle authentication errors - only redirect on protected routes
-    if (error.response?.status === 401) {
-      const currentPath = window.location.pathname;
-      const isProtectedRoute = currentPath.startsWith('/app/') || currentPath === '/app';
-      if (isProtectedRoute) {
-        localStorage.removeItem('auth_session');
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
-// A helper function to debug API calls during development
-const debugApiCall = (method: string, url: string, data?: any) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔶 API ${method}: ${API_CONFIG.BASE_URL}${url}`, data || '');
-    console.log('Headers:', {
-      'Authorization': localStorage.getItem('auth_session') ? 'Bearer [TOKEN]' : 'None',
-      'Content-Type': 'application/json'
-    });
-  }
-};
-
-// Custom error class to preserve error code from API
-class ApiError extends Error {
-  code?: string;
-
-  constructor(message: string, code?: string) {
-    super(message);
-    this.code = code;
-    this.name = 'ApiError';
-  }
-}
-
-// Generic request function
-const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
-  try {
-    // Debug API call
-    debugApiCall(config.method?.toUpperCase() || 'GET', config.url || '', config.data);
-
-    const response: AxiosResponse<T> = await api(config);
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      const code = error.response?.data?.code;
-      throw new ApiError(message, code);
-    }
-    throw error;
-  }
-};
 
 // Authentication endpoints - now using your API instead of direct Supabase
 export const authService = {
@@ -196,7 +60,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   register: async (email: string, password: string, name: string) => {
     try {
       const response = await request<{
@@ -233,7 +97,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   logout: async () => {
     try {
       // Call the API logout endpoint
@@ -418,7 +282,7 @@ export const commentService = {
       url: `/plans/${planId}/nodes/${nodeId}/comments`,
     });
   },
-  
+
   addComment: async (planId: string, nodeId: string, content: string, commentType: string = 'human') => {
     return request<ApiResponse<Comment>>({
       method: 'POST',
@@ -437,7 +301,7 @@ export const activityService = {
       params: { page, limit },
     });
   },
-  
+
   getPlanActivity: async (planId: string, page = 1, limit = 20) => {
     return request<PaginatedResponse<Activity>>({
       method: 'GET',
@@ -486,7 +350,7 @@ export const searchService = {
       params: { q: query },
     });
   },
-  
+
   searchPlan: async (planId: string, query: string) => {
     return request<ApiResponse<any>>({
       method: 'GET',
@@ -494,7 +358,7 @@ export const searchService = {
       params: { q: query },
     });
   },
-  
+
   // New comprehensive plan search endpoint
   searchPlanContents: async (planId: string, query: string) => {
     if (process.env.NODE_ENV === 'development') {
@@ -531,7 +395,7 @@ export const logService = {
       });
 
       console.log('[api.ts] Node exists, fetching logs');
-      
+
       // Now get the logs
       const response = await request<any>({
         method: 'GET',
@@ -586,7 +450,7 @@ export const uploadService = {
   uploadAvatar: async (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
-    
+
     const response = await api.post<{ message: string; avatar_url: string }>(
       '/upload/avatar',
       formData,
@@ -596,7 +460,7 @@ export const uploadService = {
         }
       }
     );
-    
+
     return response.data;
   },
 
@@ -631,160 +495,6 @@ export const userService = {
 // GitHub + Slack — extracted to integrations.service.ts
 export { githubService, slackService };
 export type { SlackStatus, SlackChannel } from './integrations.service';
-
-/* githubService removed — see integrations.service.ts */
-const _githubRemoved = {
-  checkConnection: async () => {
-    return request<{
-      connected: boolean;
-      github_username: string | null;
-      github_avatar_url: string | null;
-    }>({
-      method: 'GET',
-      url: '/github/status',
-    });
-  },
-
-  // List user's GitHub repositories
-  listRepos: async () => {
-    return request<{
-      repos: Array<{
-        id: number;
-        name: string;
-        full_name: string;
-        owner: string;
-        description: string | null;
-        html_url: string;
-        private: boolean;
-        language: string | null;
-        stargazers_count: number;
-        forks_count: number;
-        updated_at: string;
-        default_branch: string;
-      }>;
-    }>({
-      method: 'GET',
-      url: '/github/repos',
-    });
-  },
-
-  // Get repository details
-  getRepo: async (owner: string, name: string) => {
-    return request<{
-      id: number;
-      name: string;
-      full_name: string;
-      owner: string;
-      description: string | null;
-      html_url: string;
-      private: boolean;
-      language: string | null;
-      stargazers_count: number;
-      forks_count: number;
-      open_issues_count: number;
-      updated_at: string;
-      default_branch: string;
-      topics: string[];
-    }>({
-      method: 'GET',
-      url: `/github/repos/${owner}/${name}`,
-    });
-  },
-
-  // Get repository content (README, file structure, languages)
-  getRepoContent: async (owner: string, name: string) => {
-    return request<{
-      readme: string | null;
-      file_structure: Array<{
-        name: string;
-        type: 'file' | 'dir';
-        path: string;
-        size: number;
-      }>;
-      languages: Record<string, number>;
-    }>({
-      method: 'GET',
-      url: `/github/repos/${owner}/${name}/content`,
-    });
-  },
-
-  // Create a single GitHub issue
-  createIssue: async (owner: string, name: string, data: {
-    title: string;
-    body?: string;
-    labels?: string[];
-  }) => {
-    return request<{
-      id: number;
-      number: number;
-      title: string;
-      html_url: string;
-      state: string;
-      created_at: string;
-    }>({
-      method: 'POST',
-      url: `/github/repos/${owner}/${name}/issues`,
-      data,
-    });
-  },
-
-  // Bulk create GitHub issues from plan tasks
-  createIssuesFromTasks: async (owner: string, name: string, data: {
-    tasks: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      context?: string;
-      node_type?: string;
-      status?: string;
-    }>;
-    planTitle: string;
-    planUrl: string;
-  }) => {
-    return request<{
-      created: number;
-      failed: number;
-      results: Array<{
-        task_id: string;
-        task_title: string;
-        issue_number: number;
-        issue_url: string;
-        success: boolean;
-      }>;
-      errors: Array<{
-        task_id: string;
-        task_title: string;
-        error: string;
-        success: boolean;
-      }>;
-    }>({
-      method: 'POST',
-      url: `/github/repos/${owner}/${name}/issues/bulk`,
-      data,
-    });
-  },
-
-  // Search GitHub repositories
-  searchRepos: async (query: string) => {
-    return request<{
-      repos: Array<{
-        id: number;
-        name: string;
-        full_name: string;
-        owner: string;
-        description: string | null;
-        html_url: string;
-        private: boolean;
-        language: string | null;
-        stargazers_count: number;
-      }>;
-    }>({
-      method: 'GET',
-      url: '/github/search',
-      params: { q: query },
-    });
-  },
-};
 
 // Collaboration service for real-time features
 export const collaborationService = {
@@ -915,130 +625,6 @@ export const aiService = {
   },
 };
 
-const apiServices = {
-  auth: authService,
-  plans: planService,
-  nodes: nodeService,
-  comments: commentService,
-  activity: activityService,
-  search: searchService,
-  logs: logService,
-  upload: uploadService,
-  users: userService,
-  github: githubService,
-  collaboration: collaborationService,
-  tokens: tokenService,
-  debug: debugService,
-  ai: aiService,
-};
-
-export { api as axiosInstance };
-// Shared infra exports for domain service files
-export { api, API_CONFIG, request };
-export default apiServices;
-
-// Decisions & Agent Requests — extracted to decisions.service.ts
-export { decisionsApi, agentRequestApi };
-export type { Decision, DecisionOption, AgentRequest } from './decisions.service';
-
-
-// Dashboard Types
-export interface DashboardSummary {
-  pending_decisions_count: number;
-  pending_agent_requests_count: number;
-  active_plans_count: number;
-  tasks_completed_this_week: number;
-  active_goals_count: number;
-  knowledge_entries_count: number;
-}
-
-export interface PendingDecision {
-  id: string;
-  title: string;
-  description?: string;
-  urgency: string;
-  created_at: string;
-  plan_id: string;
-  plan_title: string;
-  node_id?: string;
-}
-
-export interface PendingAgentRequest {
-  id: string;
-  task_title: string;
-  request_type: string;
-  requested_at: string;
-  message?: string;
-  plan_id: string;
-  plan_title: string;
-}
-
-export interface PendingItems {
-  decisions: PendingDecision[];
-  agent_requests: PendingAgentRequest[];
-  total: number;
-}
-
-export interface DashboardPlan {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  progress?: number | null;
-  is_owner: boolean;
-}
-
-export interface DashboardGoal {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  target_date?: string;
-  current_value?: number;
-  target_value?: number;
-  metric_type?: string;
-  progress: number;
-}
-
-// Dashboard API
-export const dashboardApi = {
-  getSummary: async () => {
-    return request<DashboardSummary>({
-      method: 'GET',
-      url: '/dashboard/summary',
-    });
-  },
-
-  getPending: async (limit: number = 5) => {
-    return request<PendingItems>({
-      method: 'GET',
-      url: '/dashboard/pending',
-      params: { limit },
-    });
-  },
-
-  getRecentPlans: async (limit: number = 6) => {
-    return request<{ plans: DashboardPlan[] }>({
-      method: 'GET',
-      url: '/dashboard/recent-plans',
-      params: { limit },
-    });
-  },
-
-  getActiveGoals: async (limit: number = 5) => {
-    return request<{ goals: DashboardGoal[] }>({
-      method: 'GET',
-      url: '/dashboard/active-goals',
-      params: { limit },
-    });
-  },
-
-};
-
-// slackService extracted to integrations.service.ts
-
 // Dependency API
 export const dependencyService = {
   listPlanDependencies: async (planId: string) => {
@@ -1145,13 +731,6 @@ export interface CrossPlanEdge {
   target_status: string;
 }
 
-// Knowledge (Graphiti, Coherence, Knowledge Loop) — extracted to knowledge.service.ts
-export { graphitiService, coherenceService, knowledgeLoopService };
-export type { GraphitiStatus, GraphitiEpisode, GraphitiFact, GraphitiEntity, GraphitiContradiction } from './knowledge.service';
-
-// Goals, Node Agent View, BDI Goals — extracted to goals.service.ts
-export { goalDashboardService, nodeViewService, goalBdiService };
-
 // Organization Types
 export interface Organization {
   id: string;
@@ -1243,6 +822,130 @@ export const claimService = {
     api.delete(`/plans/${planId}/nodes/${nodeId}/claim`, { data: { agent_id: agentId } }).then(r => r.data),
 };
 
-// coherenceService and knowledgeLoopService re-exported above from knowledge.service.ts
+// Dashboard Types
+export interface DashboardSummary {
+  pending_decisions_count: number;
+  pending_agent_requests_count: number;
+  active_plans_count: number;
+  tasks_completed_this_week: number;
+  active_goals_count: number;
+  knowledge_entries_count: number;
+}
 
-// goalBdiService re-exported above from goals.service.ts
+export interface PendingDecision {
+  id: string;
+  title: string;
+  description?: string;
+  urgency: string;
+  created_at: string;
+  plan_id: string;
+  plan_title: string;
+  node_id?: string;
+}
+
+export interface PendingAgentRequest {
+  id: string;
+  task_title: string;
+  request_type: string;
+  requested_at: string;
+  message?: string;
+  plan_id: string;
+  plan_title: string;
+}
+
+export interface PendingItems {
+  decisions: PendingDecision[];
+  agent_requests: PendingAgentRequest[];
+  total: number;
+}
+
+export interface DashboardPlan {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  progress?: number | null;
+  is_owner: boolean;
+}
+
+export interface DashboardGoal {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  target_date?: string;
+  current_value?: number;
+  target_value?: number;
+  metric_type?: string;
+  progress: number;
+}
+
+// Dashboard API
+export const dashboardApi = {
+  getSummary: async () => {
+    return request<DashboardSummary>({
+      method: 'GET',
+      url: '/dashboard/summary',
+    });
+  },
+
+  getPending: async (limit: number = 5) => {
+    return request<PendingItems>({
+      method: 'GET',
+      url: '/dashboard/pending',
+      params: { limit },
+    });
+  },
+
+  getRecentPlans: async (limit: number = 6) => {
+    return request<{ plans: DashboardPlan[] }>({
+      method: 'GET',
+      url: '/dashboard/recent-plans',
+      params: { limit },
+    });
+  },
+
+  getActiveGoals: async (limit: number = 5) => {
+    return request<{ goals: DashboardGoal[] }>({
+      method: 'GET',
+      url: '/dashboard/active-goals',
+      params: { limit },
+    });
+  },
+
+};
+
+const apiServices = {
+  auth: authService,
+  plans: planService,
+  nodes: nodeService,
+  comments: commentService,
+  activity: activityService,
+  search: searchService,
+  logs: logService,
+  upload: uploadService,
+  users: userService,
+  github: githubService,
+  collaboration: collaborationService,
+  tokens: tokenService,
+  debug: debugService,
+  ai: aiService,
+};
+
+export { api as axiosInstance };
+// Shared infra exports for domain service files
+export { api, API_CONFIG, request };
+export default apiServices;
+
+// Decisions & Agent Requests — extracted to decisions.service.ts
+export { decisionsApi, agentRequestApi };
+export type { Decision, DecisionOption, AgentRequest } from './decisions.service';
+
+// Knowledge (Graphiti, Coherence, Knowledge Loop) — extracted to knowledge.service.ts
+export { graphitiService, coherenceService, knowledgeLoopService };
+export type { GraphitiStatus, GraphitiEpisode, GraphitiFact, GraphitiEntity, GraphitiContradiction } from './knowledge.service';
+
+// Goals, Node Agent View, BDI Goals — extracted to goals.service.ts
+export { goalDashboardService, nodeViewService, goalBdiService };
