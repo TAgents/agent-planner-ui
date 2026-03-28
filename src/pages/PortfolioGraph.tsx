@@ -1,176 +1,49 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import {
-  Target, CheckCircle, AlertTriangle, BookOpen, Loader2,
-  ArrowRight, Circle
-} from 'lucide-react';
+import { Compass, Loader2 } from 'lucide-react';
+import { differenceInDays, formatDistanceToNow } from 'date-fns';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
 import { goalBdiService } from '../services/goals.service';
+import { goalDashboardService } from '../services/goals.service';
 import { Plan } from '../types';
 
-// ─── Goal Section ─────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 
-const GoalSection: React.FC<{ goal: any; allPlans: Plan[] }> = ({ goal, allPlans }) => {
-  const { data: portfolio } = useQuery(
-    ['goal-portfolio', goal.id],
-    () => goalBdiService.getPortfolio(goal.id),
-    { staleTime: 30000 }
-  );
+function progressBarColor(pct: number) {
+  if (pct >= 60) return 'bg-emerald-500';
+  if (pct >= 20) return 'bg-amber-500';
+  return 'bg-gray-400 dark:bg-gray-500';
+}
 
-  const linkedPlanIds = new Set(
-    (portfolio?.linked_plans || []).map((lp: any) => lp.plan_id)
-  );
-  const linkedPlans = allPlans.filter(p => linkedPlanIds.has(p.id));
-
-  // Aggregate stats
-  const totalProgress = linkedPlans.length > 0
-    ? Math.round(linkedPlans.reduce((s, p) => s + (p.progress || 0), 0) / linkedPlans.length)
-    : 0;
-
+function ProgressBar({ value }: { value: number }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      {/* Goal header */}
-      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-3">
-          <Target className="w-5 h-5 text-violet-500 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Link
-                to={`/app/goals/${goal.id}`}
-                className="text-base font-semibold text-gray-900 dark:text-white hover:text-violet-600 dark:hover:text-violet-400 transition-colors truncate"
-              >
-                {goal.title}
-              </Link>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
-                goal.goalType === 'intention'
-                  ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-              }`}>
-                {goal.goalType || 'desire'}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-              <span>{linkedPlans.length} plan{linkedPlans.length !== 1 ? 's' : ''}</span>
-              <span>{totalProgress}% progress</span>
-            </div>
-          </div>
-        </div>
+    <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${progressBarColor(value)}`} style={{ width: `${value}%` }} />
       </div>
-
-      {/* Plans grid */}
-      {linkedPlans.length > 0 ? (
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {linkedPlans.map(plan => (
-            <PlanCard key={plan.id} plan={plan} />
-          ))}
-        </div>
-      ) : (
-        <div className="px-5 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-          No plans linked to this goal
-        </div>
-      )}
+      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 w-8 text-right shrink-0">{value}%</span>
     </div>
   );
-};
+}
 
-// ─── Plan Card ────────────────────────────────────────────────
-
-const PlanCard: React.FC<{ plan: Plan }> = ({ plan }) => {
-  const progress = plan.progress || 0;
-  const quality = plan.quality_score != null ? Math.round(plan.quality_score * 100) : null;
-
-  const statusColors: Record<string, string> = {
-    active: 'bg-amber-500',
-    completed: 'bg-emerald-500',
-    draft: 'bg-gray-400',
-    archived: 'bg-gray-400',
-  };
-
+function SectionHeader({ label, count }: { label: string; count: number }) {
   return (
-    <Link
-      to={`/app/plans/${plan.id}`}
-      className="block rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-gray-50 dark:bg-gray-900 p-4 transition-all hover:shadow-md group"
-    >
-      {/* Status + Title */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[plan.status] || 'bg-gray-400'}`} />
-        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate transition-colors">
-          {plan.title}
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 w-8 text-right">
-          {progress}%
-        </span>
-      </div>
-
-      {/* Health indicators */}
-      <div className="flex items-center gap-3 text-[11px]">
-        {/* Quality */}
-        {quality != null && (
-          <div className="flex items-center gap-1" title="Plan quality score">
-            <CheckCircle className={`w-3 h-3 ${quality >= 70 ? 'text-emerald-500' : quality >= 40 ? 'text-amber-500' : 'text-red-500'}`} />
-            <span className={`font-medium ${quality >= 70 ? 'text-emerald-600 dark:text-emerald-400' : quality >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
-              Q:{quality}%
-            </span>
-          </div>
-        )}
-
-        {/* Coherence checked */}
-        {plan.coherence_checked_at ? (
-          <div className="flex items-center gap-1 text-gray-400" title={`Last checked: ${new Date(plan.coherence_checked_at).toLocaleDateString()}`}>
-            <CheckCircle className="w-3 h-3 text-emerald-400" />
-            <span>checked</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 text-gray-400" title="Not yet checked for coherence">
-            <Circle className="w-3 h-3" />
-            <span>unchecked</span>
-          </div>
-        )}
-      </div>
-    </Link>
-  );
-};
-
-// ─── Unlinked Plans Section ───────────────────────────────────
-
-const UnlinkedPlansSection: React.FC<{ plans: Plan[] }> = ({ plans }) => {
-  if (plans.length === 0) return null;
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-amber-200 dark:border-amber-500/30 overflow-hidden">
-      <div className="px-5 py-4 border-b border-amber-100 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
-            Plans without goals ({plans.length})
-          </span>
-        </div>
-        <p className="text-xs text-amber-600/70 dark:text-amber-400/50 mt-1">
-          These plans aren't linked to any goal — consider linking them or archiving if no longer needed
-        </p>
-      </div>
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {plans.map(plan => (
-          <PlanCard key={plan.id} plan={plan} />
-        ))}
-      </div>
+    <div className="flex items-center gap-2 mb-2">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</h2>
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{count}</span>
     </div>
   );
-};
+}
 
-// ─── Main Component ───────────────────────────────────────────
+function healthDot(health: string) {
+  if (health === 'on_track') return 'bg-emerald-500';
+  if (health === 'at_risk') return 'bg-amber-500';
+  return 'bg-red-500';
+}
+
+// ─── Main Component ──────────────────────────────────────────
 
 export default function PortfolioGraph() {
   const { plans, isLoading: plansLoading } = usePlans(1, 100, 'active,draft');
@@ -178,9 +51,9 @@ export default function PortfolioGraph() {
 
   const goals = Array.isArray(goalsData) ? goalsData : (goalsData as any)?.goals || [];
   const activeGoals = goals.filter((g: any) => g.status === 'active');
-
-  // Fetch all goal portfolios to find linked plan IDs
   const goalIds = activeGoals.map((g: any) => g.id);
+
+  // Fetch all portfolios to map plans -> goals
   const { data: allPortfolios, isLoading: portfoliosLoading } = useQuery(
     ['all-goal-portfolios', ...goalIds],
     async () => {
@@ -196,51 +69,222 @@ export default function PortfolioGraph() {
     { enabled: goalIds.length > 0, staleTime: 30000 }
   );
 
-  const linkedPlanIds = new Set<string>(
-    Object.values(allPortfolios || {}).flat()
+  // Fetch goal dashboard for health data
+  const { data: dashboardData } = useQuery(
+    ['goal-dashboard'],
+    () => goalDashboardService.getDashboard(),
+    { staleTime: 30000 }
   );
+
   const isLoading = plansLoading || goalsLoading || portfoliosLoading;
+
+  // Build plan-to-goal lookup
+  const planToGoal: Record<string, { id: string; title: string }> = {};
+  if (allPortfolios) {
+    for (const goal of activeGoals) {
+      const planIds = allPortfolios[goal.id] || [];
+      for (const pid of planIds) {
+        planToGoal[pid] = { id: goal.id, title: goal.title };
+      }
+    }
+  }
+
+  // Categorize plans (priority: Stale > Finish Line > Needs Input > Not Started)
+  const now = new Date();
+  const allPlans = plans || [];
+
+  const stale: Plan[] = [];
+  const finishLine: Plan[] = [];
+  const needsInput: Plan[] = [];
+  const notStarted: Plan[] = [];
+
+  for (const plan of allPlans) {
+    const progress = plan.progress || 0;
+    const daysSinceUpdate = differenceInDays(now, new Date(plan.updated_at));
+    const isStale = daysSinceUpdate >= 7;
+
+    if (isStale) {
+      stale.push(plan);
+    } else if (progress >= 60) {
+      finishLine.push(plan);
+    } else if (progress > 0) {
+      needsInput.push(plan);
+    } else {
+      notStarted.push(plan);
+    }
+  }
+
+  // Sort each bucket
+  finishLine.sort((a, b) => (b.progress || 0) - (a.progress || 0));
+  needsInput.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  stale.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+
+  // Dashboard goals with health
+  const dashboardGoals: any[] = dashboardData?.goals || [];
+
+  // Goal plan counts from portfolio data
+  const goalPlanCounts: Record<string, number> = {};
+  if (allPortfolios) {
+    for (const [gid, pids] of Object.entries(allPortfolios)) {
+      goalPlanCounts[gid] = pids.length;
+    }
+  }
 
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
-        <span className="text-sm text-gray-500">Loading portfolio...</span>
+        <span className="text-sm text-gray-500">Loading strategic overview...</span>
       </div>
     );
   }
 
-  if (activeGoals.length === 0 && (!plans || plans.length === 0)) {
+  const PlanRow = ({ plan, extra }: { plan: Plan; extra?: React.ReactNode }) => {
+    const progress = plan.progress || 0;
+    const goal = planToGoal[plan.id];
     return (
-      <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-        <Target className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-600" />
-        <p className="text-lg font-medium">No goals or plans yet</p>
-        <p className="text-sm mt-1">Create a goal and link plans to see your portfolio</p>
+      <div className="flex items-center gap-3 py-2 px-3 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+        <Link to={`/app/plans/${plan.id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 truncate min-w-0 shrink">
+          {plan.title}
+        </Link>
+        <ProgressBar value={progress} />
+        {extra}
+        {goal && (
+          <Link to={`/app/goals/${goal.id}`} className="text-[11px] text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 whitespace-nowrap shrink-0">
+            {goal.title}
+          </Link>
+        )}
       </div>
     );
-  }
+  };
+
+  const today = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-violet-500" />
-            Portfolio
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {activeGoals.length} goal{activeGoals.length !== 1 ? 's' : ''} · {(plans || []).length} plan{(plans || []).length !== 1 ? 's' : ''}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Compass className="w-5 h-5 text-violet-500" />
+              Strategic Overview
+            </h1>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{today}</p>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            {allPlans.length} plan{allPlans.length !== 1 ? 's' : ''} across {activeGoals.length} goal{activeGoals.length !== 1 ? 's' : ''}
           </p>
         </div>
 
-        {/* Goal sections */}
-        {activeGoals.map((goal: any) => (
-          <GoalSection key={goal.id} goal={goal} allPlans={plans || []} />
-        ))}
+        {/* 1. FINISH LINE */}
+        {finishLine.length > 0 && (
+          <section>
+            <SectionHeader label="Finish Line" count={finishLine.length} />
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              {finishLine.map(plan => <PlanRow key={plan.id} plan={plan} />)}
+            </div>
+          </section>
+        )}
 
-        {/* Plans without goals */}
-        <UnlinkedPlansSection plans={(plans || []).filter((p: Plan) => !linkedPlanIds.has(p.id))} />
+        {/* 2. NEEDS YOUR INPUT */}
+        {needsInput.length > 0 && (
+          <section>
+            <SectionHeader label="Needs Your Input" count={needsInput.length} />
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              {needsInput.map(plan => (
+                <PlanRow key={plan.id} plan={plan} extra={
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
+                    {formatDistanceToNow(new Date(plan.updated_at), { addSuffix: true })}
+                  </span>
+                } />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 3. NOT STARTED */}
+        {notStarted.length > 0 && (
+          <section>
+            <SectionHeader label="Not Started" count={notStarted.length} />
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              {notStarted.map(plan => {
+                const goal = planToGoal[plan.id];
+                return (
+                  <div key={plan.id} className="flex items-center gap-3 py-2 px-3 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                    <Link to={`/app/plans/${plan.id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 truncate min-w-0 flex-1">
+                      {plan.title}
+                    </Link>
+                    {goal && (
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
+                        blocks <Link to={`/app/goals/${goal.id}`} className="text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300">{goal.title}</Link>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 4. STALE */}
+        {stale.length > 0 && (
+          <section>
+            <SectionHeader label="Stale" count={stale.length} />
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-amber-300 dark:border-amber-500/30">
+              {stale.map(plan => {
+                const days = differenceInDays(now, new Date(plan.updated_at));
+                const goal = planToGoal[plan.id];
+                return (
+                  <div key={plan.id} className="flex items-center gap-3 py-2 px-3 border-b border-amber-100 dark:border-amber-500/10 last:border-b-0">
+                    <Link to={`/app/plans/${plan.id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 truncate min-w-0 shrink">
+                      {plan.title}
+                    </Link>
+                    <ProgressBar value={plan.progress || 0} />
+                    <span className={`text-[11px] font-medium whitespace-nowrap shrink-0 ${days >= 14 ? 'text-red-500' : 'text-amber-500'}`}>
+                      {days}d stale
+                    </span>
+                    {goal && (
+                      <Link to={`/app/goals/${goal.id}`} className="text-[11px] text-violet-500 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 whitespace-nowrap shrink-0">
+                        {goal.title}
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 5. GOAL ALIGNMENT */}
+        {(dashboardGoals.length > 0 || activeGoals.length > 0) && (
+          <section>
+            <SectionHeader label="Goal Alignment" count={dashboardGoals.length || activeGoals.length} />
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              {(dashboardGoals.length > 0 ? dashboardGoals : activeGoals).map((goal: any) => (
+                <div key={goal.id} className="flex items-center gap-3 py-2 px-3 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${healthDot(goal.health || 'stale')}`} />
+                  <Link to={`/app/goals/${goal.id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400 truncate min-w-0 shrink">
+                    {goal.title}
+                  </Link>
+                  {goal.progress != null && <ProgressBar value={Math.round(goal.progress * 100)} />}
+                  {goal.linked_plan_progress != null && !goal.progress && <ProgressBar value={Math.round(goal.linked_plan_progress)} />}
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
+                    {goalPlanCounts[goal.id] || 0} plan{(goalPlanCounts[goal.id] || 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state */}
+        {allPlans.length === 0 && activeGoals.length === 0 && (
+          <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+            <Compass className="w-10 h-10 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">No goals or plans yet. Create a goal to get started.</p>
+          </div>
+        )}
       </div>
     </div>
   );
