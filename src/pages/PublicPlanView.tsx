@@ -12,7 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { planService } from '../services/api';
+import { planService } from '../services/plans.service';
 import { formatDate } from '../utils/planUtils';
 import { useAuth } from '../hooks/useAuth';
 import { PlanTreeView } from '../components/tree/PlanTreeView';

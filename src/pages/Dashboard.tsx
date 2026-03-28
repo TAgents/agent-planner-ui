@@ -18,7 +18,10 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { goalDashboardService, nodeService, dashboardApi, decisionsApi } from '../services/api';
+import { dashboardApi } from '../services/api';
+import { goalDashboardService } from '../services/goals.service';
+import { decisionsApi } from '../services/decisions.service';
+import { nodeService } from '../services/nodes.service';
 import { useDashboardSummary, useRecentPlans } from '../hooks/useDashboard';
 import { useRecentActivity, RecentActivityItem } from '../hooks/useRecentActivity';
 import DecisionQueue, { PendingDecision } from '../components/decisions/DecisionQueue';

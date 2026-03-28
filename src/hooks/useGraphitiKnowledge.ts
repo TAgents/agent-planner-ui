@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { graphitiService, GraphitiEpisode, GraphitiFact, GraphitiEntity, GraphitiContradiction } from '../services/api';
+import { graphitiService, GraphitiEpisode, GraphitiFact, GraphitiEntity, GraphitiContradiction } from '../services/knowledge.service';
 
 const GRAPHITI_KEY = 'graphiti';
 

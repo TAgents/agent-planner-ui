@@ -5,7 +5,7 @@ import {
   CheckCircle, Circle, AlertTriangle, ChevronDown, ChevronRight,
   Loader2, BookOpen, Layers, ArrowRight
 } from 'lucide-react';
-import { graphitiService } from '../services/api';
+import { graphitiService } from '../services/knowledge.service';
 
 const KnowledgeCoverageTab: React.FC = () => {
   const { data, isLoading, error } = useQuery(

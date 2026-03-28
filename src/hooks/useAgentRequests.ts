@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { agentRequestApi, AgentRequest } from '../services/api';
+import { agentRequestApi, AgentRequest } from '../services/decisions.service';
 import { useWebSocketEvent } from './useWebSocket';
 import { AGENT_EVENTS } from '../types/websocket';
 

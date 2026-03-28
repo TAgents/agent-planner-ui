@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { planService } from '../services/api';
+import { planService } from '../services/plans.service';
 import { Plan } from '../types';
 
 /**

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Lock, Loader, Info } from 'lucide-react';
 import { PlanVisibility } from '../../types';
-import { planService } from '../../services/api';
+import { planService } from '../../services/plans.service';
 
 interface VisibilityToggleProps {
   planId: string;

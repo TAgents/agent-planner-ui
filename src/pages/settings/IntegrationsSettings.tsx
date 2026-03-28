@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Copy, MessageSquare, Check, X, AlertCircle, RefreshCw, Hash, Unplug, BookOpen, ExternalLink } from 'lucide-react';
 import { SettingsNav } from '../../components/settings/SettingsLayout';
-import { slackService, SlackStatus, SlackChannel } from '../../services/api';
+import { slackService, SlackStatus, SlackChannel } from '../../services/integrations.service';
 
 const IntegrationsSettings: React.FC = () => {
   const [searchParams] = useSearchParams();

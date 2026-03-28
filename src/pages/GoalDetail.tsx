@@ -36,7 +36,8 @@ import {
   GoalEvaluation,
   GoalPathNode,
 } from '../hooks/useGoalsV2';
-import { goalDashboardService, planService } from '../services/api';
+import { goalDashboardService } from '../services/goals.service';
+import { planService } from '../services/plans.service';
 import GoalQualityPanel from '../components/goals/GoalQualityPanel';
 
 // ─── Config ──────────────────────────────────────────────────────
