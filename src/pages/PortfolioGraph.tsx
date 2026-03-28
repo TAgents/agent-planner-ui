@@ -333,8 +333,7 @@ export default function PortfolioGraph() {
                   <Link to={`/app/goals/${goal.id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-violet-600 dark:hover:text-violet-400 truncate min-w-0 shrink">
                     {goal.title}
                   </Link>
-                  {goal.progress != null && <ProgressBar value={Math.round(goal.progress * 100)} />}
-                  {goal.linked_plan_progress != null && !goal.progress && <ProgressBar value={Math.round(goal.linked_plan_progress)} />}
+                  <ProgressBar value={goal.progress || goal.linked_plan_progress?.percent_completed || 0} />
                   <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
                     {goalPlanCounts[goal.id] || 0} plan{(goalPlanCounts[goal.id] || 0) !== 1 ? 's' : ''}
                   </span>
