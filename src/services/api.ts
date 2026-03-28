@@ -1,6 +1,14 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission, Dependency, DependencyType, CriticalPathResult, ImpactAnalysis } from '../types';
 
+// Domain service imports (hoisted to top for ESLint import/first)
+import { planService } from './plans.service';
+import { nodeService } from './nodes.service';
+import { githubService, slackService } from './integrations.service';
+import { decisionsApi, agentRequestApi } from './decisions.service';
+import { graphitiService, coherenceService, knowledgeLoopService } from './knowledge.service';
+import { goalDashboardService, nodeViewService, goalBdiService } from './goals.service';
+
 // API Configuration - only needs the API URL
 const API_CONFIG = {
   BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
@@ -399,11 +407,9 @@ export const authService = {
 };
 
 // Plans endpoints — extracted to plans.service.ts
-import { planService } from './plans.service';
 export { planService };
 
 // Nodes endpoints — extracted to nodes.service.ts
-import { nodeService } from './nodes.service';
 export { nodeService };
 
 // Comments endpoints
@@ -625,7 +631,6 @@ export const userService = {
 };
 
 // GitHub + Slack — extracted to integrations.service.ts
-import { githubService, slackService } from './integrations.service';
 export { githubService, slackService };
 export type { SlackStatus, SlackChannel } from './integrations.service';
 
@@ -935,7 +940,6 @@ export { api, API_CONFIG, request };
 export default apiServices;
 
 // Decisions & Agent Requests — extracted to decisions.service.ts
-import { decisionsApi, agentRequestApi } from './decisions.service';
 export { decisionsApi, agentRequestApi };
 export type { Decision, DecisionOption, AgentRequest } from './decisions.service';
 
@@ -1144,12 +1148,10 @@ export interface CrossPlanEdge {
 }
 
 // Knowledge (Graphiti, Coherence, Knowledge Loop) — extracted to knowledge.service.ts
-import { graphitiService, coherenceService, knowledgeLoopService } from './knowledge.service';
 export { graphitiService, coherenceService, knowledgeLoopService };
 export type { GraphitiStatus, GraphitiEpisode, GraphitiFact, GraphitiEntity, GraphitiContradiction } from './knowledge.service';
 
 // Goals, Node Agent View, BDI Goals — extracted to goals.service.ts
-import { goalDashboardService, nodeViewService, goalBdiService } from './goals.service';
 export { goalDashboardService, nodeViewService, goalBdiService };
 
 // Organization Types
