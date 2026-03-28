@@ -1,7 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse, PaginatedResponse, Plan, PlanNode, Comment, Activity, Log, ApiToken, TokenPermission, Dependency, DependencyType, CriticalPathResult, ImpactAnalysis } from '../types';
-
-// Domain service imports (hoisted to top for ESLint import/first)
 import { planService } from './plans.service';
 import { nodeService } from './nodes.service';
 import { githubService, slackService } from './integrations.service';
