@@ -171,4 +171,26 @@ export const planService = {
       },
     });
   },
+
+  suggestNextTasks: async (planId: string, limit: number = 5) => {
+    return request<{ suggestions: SuggestedTask[]; count: number }>({
+      method: 'GET',
+      url: '/context/suggest',
+      params: { plan_id: planId, limit },
+    });
+  },
 };
+
+export interface SuggestedTask {
+  id: string;
+  title: string;
+  node_type: string;
+  status: string;
+  task_mode: string;
+  description: string;
+  parent_id: string;
+  ready: boolean;
+  unblocks_count: number;
+  knowledge_ready: boolean;
+  reason: string;
+}

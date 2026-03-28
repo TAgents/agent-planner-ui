@@ -16,8 +16,10 @@ import {
   Ban,
   Activity,
   Loader2,
+  Zap,
 } from 'lucide-react';
 import { api } from '../../services/api-client';
+import { planService } from '../../services/plans.service';
 
 interface PlanPulseProps {
   planId: string;
@@ -135,10 +137,20 @@ const PlanPulse: React.FC<PlanPulseProps> = ({ planId }) => {
     () => fetchPulseData(planId),
     {
       enabled: !!planId,
-      refetchInterval: 30000, // refresh every 30s
+      refetchInterval: 30000,
       staleTime: 10000,
     }
   );
+
+  const { data: suggestData } = useQuery(
+    ['plan-suggest', planId],
+    () => planService.suggestNextTasks(planId, 1),
+    {
+      enabled: !!planId,
+      staleTime: 30000,
+    }
+  );
+  const nextTask = suggestData?.suggestions?.[0];
 
   if (isLoading || !data) {
     return (
@@ -193,6 +205,18 @@ const PlanPulse: React.FC<PlanPulseProps> = ({ planId }) => {
           </span>
         ))}
       </div>
+
+      {/* Next task */}
+      {nextTask && (
+        <>
+          <span className="text-gray-300 dark:text-gray-700">·</span>
+          <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 truncate min-w-0">
+            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+            <span className="text-gray-400 dark:text-gray-500 shrink-0">Next:</span>
+            <span className="truncate">{nextTask.title}</span>
+          </span>
+        </>
+      )}
     </div>
   );
 };

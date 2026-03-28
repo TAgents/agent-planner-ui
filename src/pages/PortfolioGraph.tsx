@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { Compass, Loader2 } from 'lucide-react';
+import { Compass, Loader2, Zap, ArrowRight } from 'lucide-react';
 import { differenceInDays, formatDistanceToNow } from 'date-fns';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
 import { goalBdiService } from '../services/goals.service';
 import { goalDashboardService } from '../services/goals.service';
+import { planService, SuggestedTask } from '../services/plans.service';
 import { Plan } from '../types';
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -75,6 +76,32 @@ export default function PortfolioGraph() {
     () => goalDashboardService.getDashboard(),
     { staleTime: 30000 }
   );
+
+  // Fetch suggested next tasks across all active plans
+  const activePlanIds = (plans || []).filter((p: Plan) => p.status === 'active').map((p: Plan) => p.id);
+  const { data: suggestionsData } = useQuery(
+    ['cross-plan-suggestions', ...activePlanIds],
+    async () => {
+      const all: Array<SuggestedTask & { plan_id: string; plan_title: string }> = [];
+      for (const plan of (plans || []).filter((p: Plan) => p.status === 'active').slice(0, 10)) {
+        try {
+          const res = await planService.suggestNextTasks(plan.id, 3);
+          for (const s of res.suggestions || []) {
+            all.push({ ...s, plan_id: plan.id, plan_title: plan.title });
+          }
+        } catch { /* skip */ }
+      }
+      // Sort: RPI research first, then by unblocks_count desc
+      all.sort((a, b) => {
+        if (a.task_mode === 'research' && b.task_mode !== 'research') return -1;
+        if (b.task_mode === 'research' && a.task_mode !== 'research') return 1;
+        return (b.unblocks_count || 0) - (a.unblocks_count || 0);
+      });
+      return all.slice(0, 5);
+    },
+    { enabled: activePlanIds.length > 0, staleTime: 30000 }
+  );
+  const nextUp = suggestionsData || [];
 
   const isLoading = plansLoading || goalsLoading || portfoliosLoading;
 
@@ -176,6 +203,45 @@ export default function PortfolioGraph() {
             {allPlans.length} plan{allPlans.length !== 1 ? 's' : ''} across {activeGoals.length} goal{activeGoals.length !== 1 ? 's' : ''}
           </p>
         </div>
+
+        {/* 0. NEXT UP */}
+        {nextUp.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Next Up</span>
+              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-medium">{nextUp.length}</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-500/20">
+              {nextUp.map((task, i) => (
+                <div key={task.id} className="flex items-center gap-3 py-2.5 px-3 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                  <span className="text-[11px] font-bold text-gray-300 dark:text-gray-600 w-4 text-center shrink-0">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <Link to={`/app/plans/${task.plan_id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 truncate block">
+                      {task.title}
+                    </Link>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{task.plan_title}</span>
+                      {task.task_mode !== 'free' && (
+                        <span className={`text-[9px] px-1 py-0.5 rounded font-medium ${
+                          task.task_mode === 'research' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                          task.task_mode === 'plan' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
+                          'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                        }`}>{task.task_mode}</span>
+                      )}
+                      {task.unblocks_count > 0 && (
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">unblocks {task.unblocks_count}</span>
+                      )}
+                    </div>
+                  </div>
+                  <Link to={`/app/plans/${task.plan_id}`} className="text-gray-300 dark:text-gray-600 hover:text-blue-500 shrink-0">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 1. FINISH LINE */}
         {finishLine.length > 0 && (
