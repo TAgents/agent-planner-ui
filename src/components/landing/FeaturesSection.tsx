@@ -2,11 +2,9 @@ import React from 'react';
 import {
   Bot,
   LayoutList,
-  Globe,
   Zap,
   Users,
   BookOpen,
-  Bell,
   GitBranch,
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -28,14 +26,12 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { icon: Bot, label: 'MCP-native', detail: 'Any MCP-compatible agent can create, update, and track plans out of the box.' },
-  { icon: LayoutList, label: 'Hierarchical plans', detail: 'Phases, tasks, milestones with dependencies and critical path analysis.' },
-  { icon: BookOpen, label: 'Knowledge graph', detail: 'Temporal knowledge via Graphiti — entities, facts, and contradiction detection.' },
-  { icon: Users, label: 'Human-in-the-loop', detail: 'Agents request decisions. You review and approve via the UI or notifications.' },
-  { icon: Zap, label: 'Real-time sync', detail: 'WebSocket updates, live progress, and multi-agent collaboration.' },
-  { icon: GitBranch, label: 'RPI chains', detail: 'Research \u2192 Plan \u2192 Implement workflows with auto-compacted context.' },
-  { icon: Bell, label: 'Notifications', detail: 'Slack, webhooks, email. Know when tasks block, complete, or need decisions.' },
-  { icon: Globe, label: 'Public plans', detail: 'Share plans publicly for open-source transparency and collaboration.' },
+  { icon: Bot, label: 'Persistent context', detail: 'Decisions, research, and rationale stored in a temporal knowledge graph. Available to every agent, every session.' },
+  { icon: LayoutList, label: 'Structured coordination', detail: 'Goals, tasks, and dependency edges that every MCP-connected client reads from and writes to.' },
+  { icon: BookOpen, label: 'Knowledge that compounds', detail: 'Graphiti-backed temporal graph with entity extraction, fact tracking, and contradiction detection across sessions.' },
+  { icon: Users, label: 'Human oversight', detail: 'Decision queues, goal health metrics, and a full audit trail of what was decided and why.' },
+  { icon: GitBranch, label: 'Research-to-implementation', detail: 'RPI chains with automatic context compaction. Research output flows into downstream implementation context.' },
+  { icon: Zap, label: 'Multi-agent coordination', detail: 'Task claims, real-time sync, and shared state. Multiple agents work the same plan without conflicts.' },
 ];
 
 export const FeaturesSection: React.FC = () => {
@@ -48,7 +44,7 @@ export const FeaturesSection: React.FC = () => {
             Capabilities
           </span>
           <span className="font-mono text-[0.65rem]" style={{ color: c.textMuted }}>
-            8 tools
+            What it solves
           </span>
         </div>
 

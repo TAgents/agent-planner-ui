@@ -34,7 +34,7 @@ export const SocialProofSection: React.FC = () => {
               Quick start
             </div>
             <h3 className="font-display text-2xl font-semibold tracking-tight leading-snug" style={{ color: c.text }}>
-              Connect your agent in 60 seconds
+              Connect any agent in 60 seconds
             </h3>
             <div className="flex flex-col gap-2 mt-6">
               {['Sign in and generate an API token', 'Add the MCP server config', 'Ask your agent to create a plan'].map((step, i) => (
@@ -94,7 +94,7 @@ export const SocialProofSection: React.FC = () => {
                 className="inline-block px-2.5 py-0.5 rounded font-mono text-[0.75rem]"
                 style={{ background: c.surface, border: `1px solid ${c.borderSubtle}`, color: c.textSec }}
               >
-                "Create a plan for building a REST API"
+                "Check my goals and suggest what to work on next"
               </code>
             </p>
           </div>

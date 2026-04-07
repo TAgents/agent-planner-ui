@@ -49,8 +49,7 @@ export const HeroSection: React.FC = () => {
           className="font-display font-bold leading-[1.1] mt-10 max-w-[700px] landing-fade-up landing-delay-3"
           style={{ fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', color: c.text, letterSpacing: '-0.03em' }}
         >
-          The planning backend<br />
-          your{' '}
+          Structured planning for{' '}
           <span className="relative" style={{ color: c.amber }}>
             AI agents
             <span
@@ -58,7 +57,7 @@ export const HeroSection: React.FC = () => {
               style={{ background: c.amber, opacity: 0.3 }}
             />
           </span>{' '}
-          deserve.
+          that persists.
         </h2>
 
         {/* Subtitle */}
@@ -66,8 +65,7 @@ export const HeroSection: React.FC = () => {
           className="mt-6 max-w-[520px] font-light landing-fade-up landing-delay-4"
           style={{ color: c.textSec, fontSize: '1.05rem', lineHeight: 1.7 }}
         >
-          Hierarchical plans, dependency tracking, knowledge graph, and
-          real-time sync. Works with Claude, ChatGPT, Cursor, Windsurf, Cline, and any MCP client.
+          Plans, dependencies, decisions, and a temporal knowledge graph that your agents share across sessions, tools, and teams. Connect any MCP client and give your agents the coordination substrate they're missing.
         </p>
 
         {/* CTAs */}
@@ -85,7 +83,7 @@ export const HeroSection: React.FC = () => {
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            Get Started
+            Get started
             <ArrowRight className="w-4 h-4" />
           </Link>
 
