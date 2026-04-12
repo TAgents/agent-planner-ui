@@ -16,7 +16,7 @@
     "@types/react-dom": "^18.0.11",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@xyflow/react": "^12.10.1",
-    "axios": "^1.13.5",
+    "axios": "^1.15.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.22",
     "lucide-react": "^0.279.0",
