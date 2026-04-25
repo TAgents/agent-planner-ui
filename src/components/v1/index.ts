@@ -1,0 +1,36 @@
+/**
+ * v1 redesign — shared chrome primitives.
+ * Built per design_handoff_agentplanner/03-component-inventory.md.
+ *
+ * These are the base primitives every Phase 1+ page composes from.
+ * Existing (legacy) components live elsewhere under src/components/ and
+ * remain unchanged during the migration window.
+ */
+export { AppShell } from './AppShell';
+export type { AppShellProps, AppShellNavId, AppShellNavItem } from './AppShell';
+
+export { Card } from './Card';
+export type { CardProps } from './Card';
+
+export { Pill } from './Pill';
+export type { PillProps, PillColor } from './Pill';
+
+export { Kicker } from './Kicker';
+export type { KickerProps } from './Kicker';
+
+export { SectionHead } from './SectionHead';
+export type { SectionHeadProps } from './SectionHead';
+
+export { StatusDot } from './StatusDot';
+export type { StatusDotProps } from './StatusDot';
+
+export { StatusSpine } from './StatusSpine';
+export type { StatusSpineProps } from './StatusSpine';
+
+export { ProposedChip } from './ProposedChip';
+export type { ProposedChipProps } from './ProposedChip';
+
+export { TokenBlock } from './TokenBlock';
+export type { TokenBlockProps } from './TokenBlock';
+
+export { cn } from './cn';
