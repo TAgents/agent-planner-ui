@@ -9,8 +9,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // v1 redesign — semantic surface + text tokens (theme-aware via CSS vars)
+        bg: 'rgb(var(--bg) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        'surface-hi': 'rgb(var(--surface-hi) / <alpha-value>)',
+        border: 'rgb(var(--border) / <alpha-value>)',
+        'border-hi': 'rgb(var(--border-hi) / <alpha-value>)',
+        text: 'rgb(var(--text) / <alpha-value>)',
+        'text-sec': 'rgb(var(--text-sec) / <alpha-value>)',
+        'text-muted': 'rgb(var(--text-muted) / <alpha-value>)',
         // Accent palette
         amber: {
+          DEFAULT: 'rgb(var(--amber) / <alpha-value>)',
+          soft: 'rgb(var(--amber) / 0.15)',
           50:  '#fdf8ef',
           100: '#fbefd5',
           200: '#f7dba4',
@@ -21,6 +32,22 @@ module.exports = {
           700: '#7a5418',
           800: '#654417',
           900: '#553916',
+        },
+        // Semantic accents — DEFAULT only; default Tailwind scales preserved via extend's deep-merge
+        emerald: {
+          DEFAULT: 'rgb(var(--emerald) / <alpha-value>)',
+          soft: 'rgb(var(--emerald) / 0.18)',
+        },
+        red: {
+          DEFAULT: 'rgb(var(--red) / <alpha-value>)',
+          soft: 'rgb(var(--red) / 0.16)',
+        },
+        violet: {
+          DEFAULT: 'rgb(var(--violet) / <alpha-value>)',
+          soft: 'rgb(var(--violet) / 0.18)',
+        },
+        slate: {
+          DEFAULT: 'rgb(var(--slate) / <alpha-value>)',
         },
         teal: {
           50:  '#f0fdf9',
@@ -85,9 +112,10 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        display: ['Bricolage Grotesque', 'serif'],
-        body: ['Figtree', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        // v1 redesign uses Space Grotesk for both display and body. Legacy stacks kept as fallback for in-flight components.
+        display: ['Space Grotesk', 'Bricolage Grotesque', 'system-ui', 'sans-serif'],
+        body: ['Space Grotesk', 'Figtree', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       spacing: {
         '72': '18rem',

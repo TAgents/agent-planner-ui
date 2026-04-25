@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * v1 redesign design tokens (per design_handoff_agentplanner/02-design-tokens.md).
+ * Values are space-separated rgb triplets so Tailwind can mix in alpha via
+ * `rgb(var(--token) / <alpha-value>)`. Legacy --ob-* vars are still defined in
+ * tailwind.config.js for in-flight components during migration.
+ */
+:root {
+  --bg:          250 250 247; /* #fafaf7 */
+  --surface:     255 255 255; /* #ffffff */
+  --surface-hi:  244 242 236; /* #f4f2ec */
+  --border:      232 228 220; /* #e8e4dc */
+  --border-hi:   212 207 197; /* #d4cfc5 */
+  --text:         22  20  15; /* #16140f */
+  --text-sec:     90  84  72; /* #5a5448 */
+  --text-muted:  138 132 116; /* #8a8474 */
+  --amber:       184 136  46; /* #b8882e */
+  --emerald:      61 122 110; /* #3d7a6e */
+  --red:         176  56  56; /* #b03838 */
+  --violet:       93  79 138; /* #5d4f8a */
+  --slate:       160 152 130; /* #a09882 */
+}
+.dark {
+  --bg:           14  12  10; /* #0e0c0a */
+  --surface:      22  20  15; /* #16140f */
+  --surface-hi:   30  27  21; /* #1e1b15 */
+  --border:       42  38  30; /* #2a261e */
+  --border-hi:    58  53  40; /* #3a3528 */
+  --text:        237 232 223; /* #ede8df */
+  --text-sec:    160 152 130; /* #a09882 */
+  --text-muted:  107  99  84; /* #6b6354 */
+  --amber:       212 162  78; /* #d4a24e */
+  --emerald:      91 168 154; /* #5ba89a */
+  --red:         201  74  74; /* #c94a4a */
+  --violet:      138 124 184; /* #8a7cb8 */
+  --slate:        74  68  56; /* #4a4438 */
+}
+
 /* Outside @layer so it has higher specificity — prevents white flash and overscroll */
 html {
   background-color: #ffffff;
