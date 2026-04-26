@@ -48,6 +48,7 @@ import ExploreClone from './pages/ExploreClone';
 const Knowledge = React.lazy(() => import('./pages/Knowledge'));
 const KnowledgeTimelineV1 = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
 const KnowledgeCoverageV1 = React.lazy(() => import('./pages/KnowledgeCoverageV1'));
+const KnowledgeGraphV1 = React.lazy(() => import('./pages/KnowledgeGraphV1'));
 const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
 
 // Create a React Query client
@@ -112,6 +113,7 @@ const App: React.FC = () => {
                   <Route path="knowledge" element={<Navigate to="/app/knowledge/timeline" replace />} />
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimelineV1 /></ErrorBoundary>} />
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverageV1 /></ErrorBoundary>} />
+                  <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraphV1 /></ErrorBoundary>} />
                   <Route path="knowledge/legacy" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="settings" element={<Settings />} />
