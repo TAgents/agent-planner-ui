@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
+import { AuthSplitLayout } from '../../components/v1';
 import { calculatePasswordStrength } from '../../utils/passwordStrength';
 
 interface FormData {
@@ -153,19 +154,21 @@ const Register: React.FC = () => {
     }`;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <img src="/logo.png" alt="AgentPlanner" className="w-8 h-8 rounded-lg" />
-            <span className="text-lg font-bold text-gray-900 dark:text-white">AgentPlanner</span>
+    <AuthSplitLayout
+      kicker="◆ Create account"
+      title="Start steering agents"
+      subtitle="Pick a workspace, drop your agent in, watch it pick up goals."
+      altCta={
+        <span>
+          {'Already have an account? '}
+          <Link to="/login" className="text-amber underline">
+            Sign in
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Create account</h1>
-        </div>
-
-        {/* Card */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+          {'.'}
+        </span>
+      }
+    >
+      <div>
           {errors.general && (
             <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 rounded-md text-sm flex items-center gap-2">
               <XCircle className="w-4 h-4 flex-shrink-0" />
@@ -244,14 +247,8 @@ const Register: React.FC = () => {
               )}
             </button>
           </form>
-        </div>
-
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-          Already have an account?{' '}
-          <Link to="/login" className="text-amber-600 dark:text-amber-400 hover:underline">Sign in</Link>
-        </p>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 };
 

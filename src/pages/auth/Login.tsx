@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
+import { AuthSplitLayout } from '../../components/v1';
 
 interface LocationState {
   from?: Location;
@@ -93,19 +94,21 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <img src="/logo.png" alt="AgentPlanner" className="w-8 h-8 rounded-lg" />
-            <span className="text-lg font-bold text-gray-900 dark:text-white">AgentPlanner</span>
+    <AuthSplitLayout
+      kicker="◆ Sign in"
+      title="Welcome back"
+      subtitle="Pick up where your agents left off."
+      altCta={
+        <span>
+          {'No account? '}
+          <Link to="/register" className="text-amber underline">
+            Create one
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Sign in</h1>
-        </div>
-
-        {/* Card */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+          {'.'}
+        </span>
+      }
+    >
+      <div>
           {resendSuccess && (
             <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-3 py-2 rounded-md text-sm">
               Verification email sent. Check your inbox.
@@ -214,16 +217,8 @@ const Login: React.FC = () => {
               )}
             </button>
           </form>
-        </div>
-
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-          No account?{' '}
-          <Link to="/register" className="text-amber-600 dark:text-amber-400 hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 };
 

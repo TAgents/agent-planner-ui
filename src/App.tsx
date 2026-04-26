@@ -71,8 +71,8 @@ const App: React.FC = () => {
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Landing />} />
                 <Route path="/explore" element={<ExplorePlansPage />} />
-                <Route path="/public/plans/:planId" element={<PublicPlanView />} />
-                <Route path="/public/plans/:planId/v1" element={<PublicPlanV1 />} />
+                <Route path="/public/plans/:planId" element={<PublicPlanV1 />} />
+                <Route path="/public/plans/:planId/legacy" element={<PublicPlanView />} />
               </Route>
 
               {/* Legal Pages */}
@@ -97,17 +97,18 @@ const App: React.FC = () => {
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="plans" element={<PlansList />} />
                   <Route path="plans/create" element={<CreatePlan />} />
-                  <Route path="plans/:planId" element={<PlanVisualization />} />
-                  <Route path="plans/:planId/tree" element={<PlanTree />} />
+                  <Route path="plans/:planId" element={<PlanTree />} />
+                  <Route path="plans/:planId/graph" element={<PlanVisualization />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<ErrorBoundary><GoalsList /></ErrorBoundary>} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
                   {/* Legacy v2 routes redirect to unified goals */}
                   <Route path="goals-v2" element={<Navigate to="/app/goals" replace />} />
                   <Route path="goals-v2/:goalId" element={<Navigate to="/app/goals" replace />} />
-                  <Route path="knowledge" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
+                  <Route path="knowledge" element={<Navigate to="/app/knowledge/timeline" replace />} />
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimelineV1 /></ErrorBoundary>} />
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverageV1 /></ErrorBoundary>} />
+                  <Route path="knowledge/legacy" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
