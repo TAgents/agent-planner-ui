@@ -26,7 +26,7 @@ import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Connections from './pages/settings/Connections';
 import GoalsList from './pages/GoalsV2';
-import GoalDetail from './pages/GoalDetail';
+import GoalDetail from './pages/GoalDetailV1'; // v1 redesign — was ./pages/GoalDetail
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import OrganizationSettings from './pages/settings/OrganizationSettings';
