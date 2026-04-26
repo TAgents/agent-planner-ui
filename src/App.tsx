@@ -24,6 +24,7 @@ import Callback from './pages/auth/Callback';
 import CreatePlan from './pages/plans/CreatePlan';
 import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
+import Connections from './pages/settings/Connections';
 import GoalsList from './pages/GoalsV2';
 import GoalDetail from './pages/GoalDetail';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -102,6 +103,7 @@ const App: React.FC = () => {
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
+                  <Route path="settings/connections" element={<Connections />} />
                   <Route path="settings/organizations" element={<OrganizationSettings />} />
                   <Route path="settings/profile" element={<ProfileSettings />} />
                   <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
