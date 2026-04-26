@@ -14,6 +14,7 @@ import Landing from './pages/Landing';
 import ExplorePlansPage from './pages/ExplorePlansPage';
 import PlansList from './pages/PlansList'; // v1 redesign
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
+import PlanTree from './pages/PlanTree'; // v1 redesign tree view
 import PublicPlanView from './pages/PublicPlanView'; // Public plan viewing
 // import SharedPlans from './pages/SharedPlans'; // Hidden - functionality not fully implemented
 import Login from './pages/auth/Login';
@@ -93,6 +94,7 @@ const App: React.FC = () => {
                   <Route path="plans" element={<PlansList />} />
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanVisualization />} />
+                  <Route path="plans/:planId/tree" element={<PlanTree />} />
                   {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<ErrorBoundary><GoalsList /></ErrorBoundary>} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
