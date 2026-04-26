@@ -34,7 +34,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/MissionControl'; // v1 redesign — was ./pages/Dashboard
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import SelectOrganization from './pages/auth/SelectOrganization';
 import Onboarding from './pages/onboarding/Onboarding';
