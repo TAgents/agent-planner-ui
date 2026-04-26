@@ -37,6 +37,7 @@ import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import SelectOrganization from './pages/auth/SelectOrganization';
 import Onboarding from './pages/onboarding/Onboarding';
+import ConnectPage from './pages/connect/ConnectPage';
 
 // Lazy-load heavy pages (ReactFlow)
 const Knowledge = React.lazy(() => import('./pages/Knowledge'));
@@ -84,6 +85,7 @@ const App: React.FC = () => {
               <Route element={<ProtectedRoute />}>
                 <Route path="/select-org" element={<SelectOrganization />} />
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/connect/:client" element={<ConnectPage />} />
                 <Route path="/app" element={<MainLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="dashboard" element={<Dashboard />} />
