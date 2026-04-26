@@ -52,4 +52,7 @@ export type {
   TestPanelProvenance,
 } from './TestPanel';
 
+export { AuthSplitLayout, SSOButton } from './AuthSplitLayout';
+export type { AuthSplitLayoutProps, SSOButtonProps } from './AuthSplitLayout';
+
 export { cn } from './cn';
