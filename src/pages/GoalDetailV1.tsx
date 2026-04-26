@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import {
   Card,
   Kicker,
@@ -10,6 +11,8 @@ import {
 } from '../components/v1';
 import { useGoalV2, useGoalPath } from '../hooks/useGoalsV2';
 import { useRecentActivity } from '../hooks/useRecentActivity';
+import { useCoherence } from '../hooks/useDashboard';
+import { request } from '../services/api-client';
 
 type Tab = 'briefing' | 'plans' | 'activity';
 
@@ -164,13 +167,7 @@ const GoalDetailV1: React.FC = () => {
                 and stale beliefs inline; this card holds the layout slot.
               </p>
             </Card>
-            <Card pad={20}>
-              <SectionHead kicker="◇ Tensions" title="Hotspots" right={<ProposedChip />} />
-              <p className="text-[12px] leading-[1.55] text-text-sec">
-                Tension hotspots (contradictions, stale beliefs) are surfaced
-                inline on plans for now; the dedicated panel arrives in Phase 4.
-              </p>
-            </Card>
+            <TensionHotspots />
           </div>
         </div>
       )}
@@ -226,6 +223,111 @@ const GoalDetailV1: React.FC = () => {
         </Card>
       )}
     </div>
+  );
+};
+
+/**
+ * Tension Hotspots — list of detected workspace tensions composed from
+ * the existing /coherence/summary + /knowledge/coverage signals. Each
+ * row links to the relevant surface (decisions queue / plan / coverage
+ * page) so a user can drill into the underlying detail.
+ *
+ * Currently org-wide; goal-scoped filtering is a small follow-up that
+ * needs the API to expose per-goal coherence signals.
+ */
+const TensionHotspots: React.FC = () => {
+  const coh = useCoherence();
+  const cov = useQuery<{
+    plans: Array<{
+      plan_id: string;
+      plan_title: string;
+      stale_tasks: Array<{ task_id: string; task_title: string }>;
+      conflict_tasks: Array<{ task_id: string; task_title: string }>;
+    }>;
+  }>(
+    ['knowledge', 'coverage'],
+    () => request({ url: '/knowledge/coverage', method: 'get' }),
+    { staleTime: 60_000 },
+  );
+
+  const sig = coh.data?.signals;
+  const plansWithStale = (cov.data?.plans || []).filter((p) => p.stale_tasks.length > 0);
+  const plansWithConflict = (cov.data?.plans || []).filter((p) => p.conflict_tasks.length > 0);
+  const empty =
+    !sig ||
+    (sig.pending_decisions === 0 &&
+      sig.blocked_tasks === 0 &&
+      plansWithStale.length === 0 &&
+      plansWithConflict.length === 0);
+
+  return (
+    <Card pad={20}>
+      <SectionHead
+        kicker="◇ Tensions"
+        title="Hotspots"
+        right={
+          coh.data ? (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-text-muted">
+              {`${Math.round(coh.data.score * 100)}% coherent`}
+            </span>
+          ) : null
+        }
+      />
+      {empty ? (
+        <p className="text-[12.5px] leading-[1.55] text-text-sec">
+          No active tensions. Nothing's contradicting itself, blocking, or going stale.
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border text-[12.5px]">
+          {sig && sig.pending_decisions > 0 && (
+            <li className="flex items-center justify-between py-2">
+              <span>{`${sig.pending_decisions} decision${sig.pending_decisions === 1 ? '' : 's'} awaiting you`}</span>
+              <Link to="/app" className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber hover:opacity-80">
+                Queue →
+              </Link>
+            </li>
+          )}
+          {sig && sig.blocked_tasks > 0 && (
+            <li className="flex items-center justify-between py-2">
+              <span>{`${sig.blocked_tasks} blocked task${sig.blocked_tasks === 1 ? '' : 's'}`}</span>
+              <Pill color="red">{`${Math.round(sig.blocked_task_ratio * 100)}%`}</Pill>
+            </li>
+          )}
+          {plansWithStale.slice(0, 3).map((p) => (
+            <li key={`stale-${p.plan_id}`} className="flex items-center justify-between py-2">
+              <span className="truncate">
+                {p.plan_title}
+                <span className="ml-2 font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">
+                  {`${p.stale_tasks.length} stale`}
+                </span>
+              </span>
+              <Link
+                to={`/app/plans/${p.plan_id}`}
+                className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber hover:opacity-80"
+              >
+                Open →
+              </Link>
+            </li>
+          ))}
+          {plansWithConflict.slice(0, 3).map((p) => (
+            <li key={`conflict-${p.plan_id}`} className="flex items-center justify-between py-2">
+              <span className="truncate">
+                {p.plan_title}
+                <span className="ml-2 font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">
+                  {`${p.conflict_tasks.length} conflict`}
+                </span>
+              </span>
+              <Link
+                to={`/app/plans/${p.plan_id}`}
+                className="font-mono text-[10px] uppercase tracking-[0.12em] text-red hover:opacity-80"
+              >
+                Resolve →
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 };
 
