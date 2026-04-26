@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import {
   Card,
+  CriticalPathSubway,
   GoalCompass,
   Kicker,
   Pill,
@@ -10,6 +11,7 @@ import {
   type PillColor,
 } from '../components/v1';
 import { useGoalV2, useGoalPath } from '../hooks/useGoalsV2';
+import { useCriticalPath } from '../hooks/useDependencies';
 import { useRecentActivity } from '../hooks/useRecentActivity';
 import { useCoherence } from '../hooks/useDashboard';
 import { request } from '../services/api-client';
@@ -200,6 +202,11 @@ const GoalDetailV1: React.FC = () => {
             </Card>
             <TensionHotspots />
           </div>
+          <div className="lg:col-span-2">
+            <Card pad={20}>
+              <SubwayPanel linkedPlans={linkedPlans} />
+            </Card>
+          </div>
         </div>
       )}
 
@@ -254,6 +261,59 @@ const GoalDetailV1: React.FC = () => {
         </Card>
       )}
     </div>
+  );
+};
+
+/**
+ * SubwayPanel — picks the first linked plan and renders its critical
+ * path as a horizontal subway map. Walks plans top-down so the user
+ * sees the most-immediate path; multi-plan composition (one subway
+ * per linked plan) is a follow-up if morning review wants it.
+ */
+const SubwayPanel: React.FC<{ linkedPlans: Array<{ id: string; title: string }> }> = ({
+  linkedPlans,
+}) => {
+  const firstPlan = linkedPlans[0];
+  const cp = useCriticalPath(firstPlan?.id || '', !!firstPlan);
+
+  if (!firstPlan) {
+    return (
+      <>
+        <SectionHead kicker="◆ Critical path" title="No plans linked yet" />
+        <p className="text-[12.5px] text-text-sec">
+          Link a plan to this goal to see its critical path here.
+        </p>
+      </>
+    );
+  }
+
+  const result = cp.criticalPath as { path?: Array<{ node_id: string; title: string; status: string }> } | undefined;
+  const stations = (result?.path || []).map((p) => ({
+    id: p.node_id,
+    title: p.title,
+    status: p.status,
+    href: `/app/plans/${firstPlan.id}`,
+  }));
+
+  return (
+    <>
+      <SectionHead
+        kicker="◆ Critical path"
+        title={firstPlan.title}
+        right={
+          stations.length > 0 ? (
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              {`${stations.length} station${stations.length === 1 ? '' : 's'}`}
+            </span>
+          ) : null
+        }
+      />
+      {cp.isLoading ? (
+        <p className="text-[12.5px] text-text-muted">Computing path…</p>
+      ) : (
+        <CriticalPathSubway stations={stations} />
+      )}
+    </>
   );
 };
 

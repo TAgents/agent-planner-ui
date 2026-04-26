@@ -64,4 +64,7 @@ export type { CoherenceDialProps } from './CoherenceDial';
 export { GoalCompass } from './GoalCompass';
 export type { GoalCompassProps, GoalCompassAxis } from './GoalCompass';
 
+export { CriticalPathSubway } from './CriticalPathSubway';
+export type { CriticalPathSubwayProps, SubwayStation } from './CriticalPathSubway';
+
 export { cn } from './cn';
