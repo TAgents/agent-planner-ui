@@ -55,4 +55,7 @@ export type {
 export { AuthSplitLayout, SSOButton } from './AuthSplitLayout';
 export type { AuthSplitLayoutProps, SSOButtonProps } from './AuthSplitLayout';
 
+export { Spark } from './Spark';
+export type { SparkProps } from './Spark';
+
 export { cn } from './cn';

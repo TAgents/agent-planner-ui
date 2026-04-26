@@ -915,6 +915,13 @@ export const dashboardApi = {
     });
   },
 
+  getVelocity: async () => {
+    return request<{ series: Array<{ date: string; count: number }>; total: number; days: number }>({
+      method: 'GET',
+      url: '/dashboard/velocity',
+    });
+  },
+
 };
 
 const apiServices = {

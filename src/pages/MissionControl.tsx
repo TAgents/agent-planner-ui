@@ -6,6 +6,7 @@ import {
   Pill,
   ProposedChip,
   SectionHead,
+  Spark,
   StatusDot,
   type PillColor,
 } from '../components/v1';
@@ -14,6 +15,7 @@ import {
   useDashboardSummary,
   usePendingItems,
   useRecentPlans,
+  useVelocity,
 } from '../hooks/useDashboard';
 
 function statusColor(status?: string): PillColor {
@@ -63,6 +65,7 @@ const MissionControl: React.FC = () => {
   const pending = usePendingItems(5);
   const goals = useActiveGoals(5);
   const plans = useRecentPlans(4);
+  const velocity = useVelocity();
 
   const decisions = pending.data?.decisions || [];
   const agentRequests = pending.data?.agent_requests || [];
@@ -94,11 +97,25 @@ const MissionControl: React.FC = () => {
           value={summary.data?.pending_decisions_count ?? '—'}
           sub="Awaiting you"
         />
-        <StatCard
-          label="Done · 7d"
-          value={summary.data?.tasks_completed_this_week ?? '—'}
-          sub="Tasks"
-        />
+        <Card pad={16}>
+          <span className="block font-mono text-[8.5px] uppercase tracking-[0.16em] text-text-muted">
+            Done · 7d
+          </span>
+          <div className="mt-1 flex items-end justify-between gap-3">
+            <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-text">
+              {velocity.data?.total ?? summary.data?.tasks_completed_this_week ?? '—'}
+            </span>
+            {velocity.data?.series && (
+              <Spark
+                values={velocity.data.series.map((p) => p.count)}
+                width={64}
+                height={24}
+                className="opacity-90"
+              />
+            )}
+          </div>
+          <span className="mt-1 block text-[10.5px] text-text-muted">Tasks</span>
+        </Card>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
