@@ -12,7 +12,7 @@ import PublicLayout from './components/layout/PublicLayout';
 // Pages
 import Landing from './pages/Landing';
 import ExplorePlansPage from './pages/ExplorePlansPage';
-import PlansList from './pages/PlansListSimplified'; // Using simplified version
+import PlansList from './pages/PlansList'; // v1 redesign
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
 import PublicPlanView from './pages/PublicPlanView'; // Public plan viewing
 // import SharedPlans from './pages/SharedPlans'; // Hidden - functionality not fully implemented
