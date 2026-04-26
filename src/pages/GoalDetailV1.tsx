@@ -3,9 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import {
   Card,
+  GoalCompass,
   Kicker,
   Pill,
-  ProposedChip,
   SectionHead,
   type PillColor,
 } from '../components/v1';
@@ -161,10 +161,41 @@ const GoalDetailV1: React.FC = () => {
 
           <div className="flex flex-col gap-6">
             <Card pad={20}>
-              <SectionHead kicker="◇ Compass" title="Belief / Desire / Intention" right={<ProposedChip />} />
-              <p className="text-[12px] leading-[1.55] text-text-sec">
-                The Goal Compass wires up in Phase 4. Until then, agents flag tensions
-                and stale beliefs inline; this card holds the layout slot.
+              <SectionHead kicker="◇ Compass" title="Belief / Desire / Intention" />
+              <div className="flex flex-col items-center">
+                <GoalCompass
+                  centerLabel={goal.title}
+                  axes={[
+                    {
+                      label: 'Beliefs',
+                      count: linkedPlans.length,
+                      sub: 'Plans serving this goal',
+                    },
+                    {
+                      label: 'Desires',
+                      count: Array.isArray(goal.successCriteria)
+                        ? goal.successCriteria.length
+                        : goal.successCriteria
+                          ? 1
+                          : 0,
+                      sub: 'Success criteria',
+                    },
+                    {
+                      label: 'Intentions',
+                      count: Array.isArray(goal.evaluations) ? goal.evaluations.length : 0,
+                      sub: 'Evaluations on record',
+                    },
+                    {
+                      label: 'Constraints',
+                      count: Array.isArray(goal.links) ? goal.links.length : 0,
+                      sub: 'Linked entities',
+                    },
+                  ]}
+                />
+              </div>
+              <p className="mt-3 text-[11px] leading-[1.55] text-text-muted">
+                Counts derived from goal links + evaluations + success criteria.
+                Per-axis sub-scoring lands when /goals/:id/coherence ships.
               </p>
             </Card>
             <TensionHotspots />

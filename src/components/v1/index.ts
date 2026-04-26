@@ -61,4 +61,7 @@ export type { SparkProps } from './Spark';
 export { CoherenceDial } from './CoherenceDial';
 export type { CoherenceDialProps } from './CoherenceDial';
 
+export { GoalCompass } from './GoalCompass';
+export type { GoalCompassProps, GoalCompassAxis } from './GoalCompass';
+
 export { cn } from './cn';
