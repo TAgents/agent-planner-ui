@@ -12,6 +12,7 @@ import PublicLayout from './components/layout/PublicLayout';
 // Pages
 import Landing from './pages/Landing';
 import ExplorePlansPage from './pages/ExplorePlansPage';
+import ExploreV1 from './pages/ExploreV1';
 import PlansList from './pages/PlansList'; // v1 redesign
 import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
 import PlanTree from './pages/PlanTree'; // v1 redesign tree view
@@ -73,7 +74,8 @@ const App: React.FC = () => {
               {/* Public Pages with sidebar for logged-in users, top nav for logged-out */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Landing />} />
-                <Route path="/explore" element={<ExplorePlansPage />} />
+                <Route path="/explore" element={<ExploreV1 />} />
+                <Route path="/explore/legacy" element={<ExplorePlansPage />} />
                 <Route path="/public/plans/:planId" element={<PublicPlanV1 />} />
                 <Route path="/public/plans/:planId/legacy" element={<PublicPlanView />} />
               </Route>
