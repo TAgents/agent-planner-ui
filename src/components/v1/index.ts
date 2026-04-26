@@ -44,4 +44,12 @@ export type { SnippetBlockProps, SnippetLine } from './SnippetBlock';
 export { ClientTile } from './ClientTile';
 export type { ClientTileProps } from './ClientTile';
 
+export { TestPanel } from './TestPanel';
+export type {
+  TestPanelProps,
+  TestPanelStatCard,
+  TestPanelError,
+  TestPanelProvenance,
+} from './TestPanel';
+
 export { cn } from './cn';
