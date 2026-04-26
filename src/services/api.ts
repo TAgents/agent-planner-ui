@@ -922,6 +922,27 @@ export const dashboardApi = {
     });
   },
 
+  getCoherence: async () => {
+    return request<{
+      score: number;
+      signals: {
+        pending_decisions: number;
+        stale_plans: number;
+        total_active_plans: number;
+        blocked_tasks: number;
+        total_active_tasks: number;
+        stale_plan_ratio: number;
+        blocked_task_ratio: number;
+      };
+      penalties: { decisions: number; staleness: number; blocked: number; unlinked: number };
+      formula_version: string;
+      computed_at: string;
+    }>({
+      method: 'GET',
+      url: '/coherence/summary',
+    });
+  },
+
 };
 
 const apiServices = {

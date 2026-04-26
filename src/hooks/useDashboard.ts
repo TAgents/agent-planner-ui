@@ -59,6 +59,17 @@ export const useVelocity = () => {
   );
 };
 
+export const useCoherence = () => {
+  return useQuery(
+    ['coherence', 'summary'],
+    () => dashboardApi.getCoherence(),
+    {
+      staleTime: 60_000,
+      refetchInterval: 2 * 60_000,
+    }
+  );
+};
+
 // Re-export types for convenience
 export type {
   DashboardSummary,

@@ -2,9 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Card,
+  CoherenceDial,
   Kicker,
   Pill,
-  ProposedChip,
   SectionHead,
   Spark,
   StatusDot,
@@ -12,6 +12,7 @@ import {
 } from '../components/v1';
 import {
   useActiveGoals,
+  useCoherence,
   useDashboardSummary,
   usePendingItems,
   useRecentPlans,
@@ -66,6 +67,7 @@ const MissionControl: React.FC = () => {
   const goals = useActiveGoals(5);
   const plans = useRecentPlans(4);
   const velocity = useVelocity();
+  const coherence = useCoherence();
 
   const decisions = pending.data?.decisions || [];
   const agentRequests = pending.data?.agent_requests || [];
@@ -216,13 +218,42 @@ const MissionControl: React.FC = () => {
             <SectionHead
               kicker="◇ Coherence"
               title="BDI Dial"
-              right={<ProposedChip />}
+              right={
+                coherence.data?.formula_version ? (
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-text-muted">
+                    {coherence.data.formula_version}
+                  </span>
+                ) : null
+              }
             />
-            <p className="text-[12px] leading-[1.55] text-text-sec">
-              Cross-goal coherence dial wires up in Phase 4. Until then, agents
-              flag contradictions inline; this card stays as a placeholder so
-              the metaphor's place in the layout doesn't shift later.
-            </p>
+            {coherence.data ? (
+              <div className="flex flex-col items-center gap-3">
+                <CoherenceDial
+                  score={coherence.data.score}
+                  caption="Coherence"
+                />
+                <ul className="grid w-full grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-text-sec">
+                  <li className="flex items-center justify-between">
+                    <span>Decisions</span>
+                    <span className="font-mono text-text">{coherence.data.signals.pending_decisions}</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Stale plans</span>
+                    <span className="font-mono text-text">{coherence.data.signals.stale_plans}</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Blocked tasks</span>
+                    <span className="font-mono text-text">{coherence.data.signals.blocked_tasks}</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Active plans</span>
+                    <span className="font-mono text-text">{coherence.data.signals.total_active_plans}</span>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <p className="text-[12px] leading-[1.55] text-text-sec">Computing…</p>
+            )}
           </Card>
 
           <Card pad={20}>
