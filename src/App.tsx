@@ -43,6 +43,7 @@ import ConnectPage from './pages/connect/ConnectPage';
 
 // Lazy-load heavy pages (ReactFlow)
 const Knowledge = React.lazy(() => import('./pages/Knowledge'));
+const KnowledgeTimelineV1 = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
 const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
 
 // Create a React Query client
@@ -102,6 +103,7 @@ const App: React.FC = () => {
                   <Route path="goals-v2" element={<Navigate to="/app/goals" replace />} />
                   <Route path="goals-v2/:goalId" element={<Navigate to="/app/goals" replace />} />
                   <Route path="knowledge" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
+                  <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimelineV1 /></ErrorBoundary>} />
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
