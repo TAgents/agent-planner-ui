@@ -33,4 +33,15 @@ export type { ProposedChipProps } from './ProposedChip';
 export { TokenBlock } from './TokenBlock';
 export type { TokenBlockProps } from './TokenBlock';
 
+export { PrimaryButton, GhostButton } from './Button';
+
+export { StepCard } from './StepCard';
+export type { StepCardProps, StepState } from './StepCard';
+
+export { SnippetBlock } from './SnippetBlock';
+export type { SnippetBlockProps, SnippetLine } from './SnippetBlock';
+
+export { ClientTile } from './ClientTile';
+export type { ClientTileProps } from './ClientTile';
+
 export { cn } from './cn';
