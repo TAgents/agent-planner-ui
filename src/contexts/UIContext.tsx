@@ -135,12 +135,30 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
 export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(uiReducer, defaultState);
 
-  // Always force dark mode
+  // Theme: read from localStorage with prefers-color-scheme as fallback;
+  // dispatch SET_DARK_MODE so the rest of the reducer state stays in sync.
+  // Then the second effect mirrors state.darkMode → <html class="dark">.
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.add('dark');
-    }
+    if (typeof document === 'undefined') return;
+    const stored = localStorage.getItem('ap-theme');
+    let next: boolean;
+    if (stored === 'dark') next = true;
+    else if (stored === 'light') next = false;
+    else next = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    dispatch({ type: 'SET_DARK_MODE', payload: next });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (state.darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('ap-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('ap-theme', 'light');
+    }
+  }, [state.darkMode]);
 
   // Context actions
   const toggleSidebar = () => dispatch({ type: 'TOGGLE_SIDEBAR' });
