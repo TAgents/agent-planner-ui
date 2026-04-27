@@ -1,6 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { axiosInstance } from '../services/api';
 
+export interface GoalProgressStats {
+  total: number;
+  completed: number;
+  in_progress: number;
+  blocked: number;
+  not_started: number;
+  completion_percentage: number;
+}
+
 export interface GoalV2 {
   id: string;
   title: string;
@@ -18,6 +27,7 @@ export interface GoalV2 {
   ownerEmail?: string;
   links?: GoalLink[];
   evaluations?: GoalEvaluation[];
+  progress?: GoalProgressStats;
   children?: GoalV2[];
 }
 
