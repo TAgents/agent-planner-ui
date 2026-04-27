@@ -37,6 +37,7 @@
   <script type="text/babel" src="screen-plan-tree.jsx"></script>
   <script type="text/babel" src="screen-goal-detail.jsx"></script>
   <script type="text/babel" src="screen-plans-list.jsx"></script>
+  <script type="text/babel" src="screen-goals-list.jsx"></script>
   <script type="text/babel" src="screen-portfolio.jsx"></script>
   <script type="text/babel" src="screen-knowledge-coverage.jsx"></script>
   <script type="text/babel" src="screen-knowledge-timeline.jsx"></script>
@@ -61,6 +62,7 @@
       "showExplore": true,
       "showPortfolio": true,
       "showPlansList": true,
+      "showGoalsList": true,
       "showKnowledge": true,
       "showSettings": true,
       "showOnboarding": true,
@@ -192,6 +194,16 @@
               </DCSection>
             )}
 
+            {tweaks.showGoalsList && (
+              <DCSection id="goals-list" title="Goals Index" subtitle="All goals across the workspace — outcome / metric / constraint / principle. Hierarchical with sub-goals nested.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`goals-list-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={920}>
+                    <GoalsList theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
             <DCSection id="goal" title="Goal Detail" subtitle="A single goal opened up: BDI compass, tension hotspots, critical-path subway.">
               {themes.map((th) => (
                 <DCArtboard key={th} id={`goal-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={1100}>
@@ -285,6 +297,7 @@
               <TweakToggle label="Settings → Integrations" value={tweaks.showIntegrations} onChange={(v) => setTweak('showIntegrations', v)} />
               <TweakToggle label="Strategic overview" value={tweaks.showPortfolio} onChange={(v) => setTweak('showPortfolio', v)} />
               <TweakToggle label="Plans index" value={tweaks.showPlansList} onChange={(v) => setTweak('showPlansList', v)} />
+              <TweakToggle label="Goals index" value={tweaks.showGoalsList} onChange={(v) => setTweak('showGoalsList', v)} />
               <TweakToggle label="Knowledge (3 variants)" value={tweaks.showKnowledge} onChange={(v) => setTweak('showKnowledge', v)} />
               <TweakToggle label="Settings" value={tweaks.showSettings} onChange={(v) => setTweak('showSettings', v)} />
               <TweakToggle label="Public plan" value={tweaks.showPublic} onChange={(v) => setTweak('showPublic', v)} />
