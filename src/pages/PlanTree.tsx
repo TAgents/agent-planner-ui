@@ -10,9 +10,10 @@ import {
 import { usePlan } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
 import { commentService, logService } from '../services/api';
+import { nodeService } from '../services/nodes.service';
 import type { PlanNode, NodeStatus, NodeType } from '../types';
 
-type DetailTab = 'details' | 'comments' | 'logs';
+type DetailTab = 'details' | 'comments' | 'logs' | 'agent';
 
 const STATUS_GLYPH: Record<NodeStatus, string> = {
   not_started: '○',
@@ -189,6 +190,7 @@ const PlanTree: React.FC = () => {
             <DetailPanel
               key={selectedNode.id}
               node={selectedNode}
+              planId={safePlanId}
               tab={tab}
               setTab={setTab}
             />
@@ -203,29 +205,67 @@ const PlanTree: React.FC = () => {
   );
 };
 
+const SectionLabel: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <div
+    className={`font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted ${className}`}
+  >
+    {children}
+  </div>
+);
+
 const DetailPanel: React.FC<{
   node: TreeRow;
+  planId: string;
   tab: DetailTab;
   setTab: (t: DetailTab) => void;
-}> = ({ node, tab, setTab }) => {
+}> = ({ node, planId, tab, setTab }) => {
   // Real event kinds per design risk #3 in 05-build-order.md:
   // log_added (logs tab), status_change (logs tab), comment (comments tab).
   // The fictional "reasoning trace" tab does NOT belong here.
   const TABS: { id: DetailTab; label: string }[] = [
     { id: 'details', label: 'Details' },
+    { id: 'agent', label: 'Agent' },
     { id: 'comments', label: 'Comments' },
     { id: 'logs', label: 'Logs' },
   ];
 
+  // Tree list endpoint omits description, timestamps, agent_instructions,
+  // metadata, due_date — fetch the single-node row so the Details + Agent
+  // tabs can render against real data.
+  const fullNode = useQuery(
+    ['plan-tree', planId, node.id, 'detail'],
+    () => nodeService.getNode(planId, node.id),
+    { enabled: !!node.id, staleTime: 30_000 },
+  );
+  // nodeService.getNode wraps as { data: PlanNode, status }
+  const detailedNode = ((fullNode.data as any)?.data as Partial<PlanNode> | undefined) || node;
+
+  // /context returns plan + node + children + recent logs joined — what an
+  // agent that claims this task gets handed first.
+  const context = useQuery(
+    ['plan-tree', planId, node.id, 'context'],
+    () => nodeService.getNodeContext(planId, node.id),
+    { enabled: tab === 'agent' && !!node.id, staleTime: 30_000 },
+  );
+
+  const ancestry = useQuery(
+    ['plan-tree', planId, node.id, 'ancestry'],
+    () => nodeService.getNodeAncestry(planId, node.id),
+    { enabled: tab === 'agent' && !!node.id, staleTime: 30_000 },
+  );
+
   const comments = useQuery(
-    ['plan-tree', node.plan_id, node.id, 'comments'],
-    () => commentService.getComments(node.plan_id, node.id),
+    ['plan-tree', planId, node.id, 'comments'],
+    () => commentService.getComments(planId, node.id),
     { enabled: tab === 'comments', staleTime: 30_000 },
   );
 
   const logs = useQuery(
-    ['plan-tree', node.plan_id, node.id, 'logs'],
-    () => logService.getLogs(node.plan_id, node.id) as Promise<Array<{
+    ['plan-tree', planId, node.id, 'logs'],
+    () => logService.getLogs(planId, node.id) as Promise<Array<{
       id: string;
       log_type?: string;
       content: string;
@@ -272,31 +312,130 @@ const DetailPanel: React.FC<{
       <div className="px-[18px] py-4">
         {tab === 'details' && (
           <div className="text-[12.5px] leading-[1.55] text-text-sec">
-            {node.description ? (
-              <p className="whitespace-pre-wrap">{node.description}</p>
+            {detailedNode.description ? (
+              <p className="whitespace-pre-wrap">{detailedNode.description}</p>
             ) : (
               <p className="text-text-muted">No description.</p>
             )}
             <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
               <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Children</dt>
               <dd>{node.childCount}</dd>
-              {node.task_mode && (
+              {detailedNode.task_mode && (
                 <>
                   <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Mode</dt>
-                  <dd>{node.task_mode}</dd>
+                  <dd>{detailedNode.task_mode}</dd>
                 </>
               )}
-              {node.due_date && (
+              {(detailedNode as any).coherence_status &&
+                (detailedNode as any).coherence_status !== 'unchecked' && (
+                  <>
+                    <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Coherence</dt>
+                    <dd>{(detailedNode as any).coherence_status}</dd>
+                  </>
+                )}
+              {typeof (detailedNode as any).quality_score === 'number' && (
+                <>
+                  <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Quality</dt>
+                  <dd>{Math.round(((detailedNode as any).quality_score as number) * 100)}%</dd>
+                </>
+              )}
+              {detailedNode.due_date && (
                 <>
                   <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Due</dt>
-                  <dd>{node.due_date}</dd>
+                  <dd>{detailedNode.due_date}</dd>
                 </>
               )}
               <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Created</dt>
-              <dd>{relTime(node.created_at)}</dd>
+              <dd>{relTime(detailedNode.created_at)}</dd>
               <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Updated</dt>
-              <dd>{relTime(node.updated_at)}</dd>
+              <dd>{relTime(detailedNode.updated_at)}</dd>
+              <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Node ID</dt>
+              <dd className="truncate font-mono text-[10px]" title={node.id}>
+                {node.id.slice(0, 8)}…
+              </dd>
             </dl>
+          </div>
+        )}
+
+        {tab === 'agent' && (
+          <div className="text-[12.5px] leading-[1.55] text-text-sec">
+            <SectionLabel>Agent instructions</SectionLabel>
+            {detailedNode.agent_instructions ? (
+              <pre className="mt-1 whitespace-pre-wrap rounded-md border border-border bg-bg/60 px-3 py-2 font-mono text-[11px] text-text">
+                {detailedNode.agent_instructions}
+              </pre>
+            ) : (
+              <p className="text-text-muted">
+                No agent instructions set. Agents fall back to the description and
+                ancestry context.
+              </p>
+            )}
+
+            <SectionLabel className="mt-5">Plan context</SectionLabel>
+            {context.isLoading && <p className="text-text-muted">Loading…</p>}
+            {context.data?.plan && (
+              <div className="mt-1 rounded-md border border-border px-3 py-2">
+                <p className="font-display text-[12.5px] font-semibold text-text">
+                  {context.data.plan.title}
+                </p>
+                {context.data.plan.description && (
+                  <p className="mt-1 text-[11.5px] text-text-sec">
+                    {context.data.plan.description}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <SectionLabel className="mt-5">Ancestry</SectionLabel>
+            {ancestry.isLoading && <p className="text-text-muted">Loading…</p>}
+            {ancestry.data && (
+              <ol className="mt-1 flex flex-col gap-[3px] font-mono text-[11px]">
+                {((ancestry.data as any).ancestry ||
+                  (ancestry.data as any).ancestors ||
+                  (Array.isArray(ancestry.data) ? ancestry.data : []) ||
+                  []).map(
+                  (a: any, i: number, arr: any[]) => (
+                    <li key={a.id} className="flex items-center gap-2">
+                      <span className="text-text-muted">
+                        {'·'.repeat(i)}
+                        {i > 0 && '→ '}
+                      </span>
+                      <span className={i === arr.length - 1 ? 'text-text' : 'text-text-sec'}>
+                        {a.title}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-text-muted">
+                        {a.node_type}
+                      </span>
+                    </li>
+                  ),
+                )}
+              </ol>
+            )}
+
+            <SectionLabel className="mt-5">
+              Recent logs the agent will see ({(context.data?.logs || []).length})
+            </SectionLabel>
+            {context.data?.logs && context.data.logs.length === 0 && (
+              <p className="text-text-muted">No logs yet.</p>
+            )}
+            <ul className="mt-1 flex flex-col gap-1 font-mono text-[11px]">
+              {(context.data?.logs || []).slice(0, 6).map((l: any) => (
+                <li key={l.id} className="flex items-start gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-text-muted">
+                    {(l.log_type || 'log').slice(0, 4)}
+                  </span>
+                  <span className="flex-1 truncate text-text-sec" title={l.content}>
+                    {l.content}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-4 text-[10.5px] text-text-muted">
+              The agent also receives a knowledge layer (Graphiti episodes touching
+              this task) when context_depth ≥ 3 — that runs server-side and isn't
+              previewed here.
+            </p>
           </div>
         )}
 
