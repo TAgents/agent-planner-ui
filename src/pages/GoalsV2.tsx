@@ -115,7 +115,14 @@ function attentionRank(a: Attention): number {
   return 4;
 }
 
-function evalSparkSeries(goal: GoalV2): number[] {
+function bdiSparkSeries(goal: GoalV2): number[] {
+  // Server-side: 10-day node_logs density across achieving tasks. Real
+  // BDI signal — a node_log fires whenever an agent makes progress,
+  // claims, comments, or transitions status on an achieving task.
+  if (Array.isArray(goal.density) && goal.density.some((v) => v > 0)) {
+    return goal.density;
+  }
+  // Fallback: evaluations bucket. Empty for unevaluated goals.
   const evals = goal.evaluations || [];
   if (evals.length === 0) return [];
   const buckets: number[] = new Array(10).fill(0);
@@ -290,7 +297,7 @@ function GoalRidge({
       ? 'text-amber'
       : 'text-red';
 
-  const sparkSeries = evalSparkSeries(goal);
+  const sparkSeries = bdiSparkSeries(goal);
   const sparkColorVar =
     goal.status === 'achieved'
       ? 'rgb(var(--emerald) / 1)'
