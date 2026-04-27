@@ -53,10 +53,14 @@ const KnowledgeGraphV1: React.FC = () => {
       entitySearch.mutateAsync({ query: q, maxResults: 30 }),
       factSearch.mutateAsync({ query: q, maxResults: 60 }),
     ]);
+    // useGraphitiEntitySearchMutation already unwraps to { entities: [...], group_id }.
+    // useGraphitiFactSearchMutation already unwraps to { facts: [...], group_id, method }.
+    // Earlier shape `entities.nodes` / `results.facts` was the raw bridge response —
+    // re-reading it here always produced `[]`.
     setState({
       query: q,
-      entities: er.status === 'fulfilled' ? (er.value as any)?.entities?.nodes || [] : [],
-      facts: fr.status === 'fulfilled' ? (fr.value as any)?.results?.facts || [] : [],
+      entities: er.status === 'fulfilled' ? (er.value as any)?.entities || [] : [],
+      facts: fr.status === 'fulfilled' ? (fr.value as any)?.facts || [] : [],
     });
   };
 
