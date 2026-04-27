@@ -11,10 +11,12 @@ import {
   type PillColor,
 } from '../components/v1';
 import { useGoalV2, useGoalPath } from '../hooks/useGoalsV2';
+import { usePlans } from '../hooks/usePlans';
 import { useCriticalPath } from '../hooks/useDependencies';
 import { useRecentActivity } from '../hooks/useRecentActivity';
 import { useCoherence } from '../hooks/useDashboard';
 import { request } from '../services/api-client';
+import type { Plan } from '../types';
 
 type Tab = 'briefing' | 'plans' | 'activity';
 
@@ -58,8 +60,32 @@ const GoalDetailV1: React.FC = () => {
   const [tab, setTab] = useState<Tab>('briefing');
 
   const goal = goalQ.data;
-  const path = pathQ.data as { plans?: Array<{ id: string; title: string; progress?: number }> } | undefined;
-  const linkedPlans = path?.plans || [];
+  const path = pathQ.data;
+
+  // Linked plans come from goal.links (linkedType='plan'). Plan titles +
+  // progress are joined client-side from the workspace plans list. The
+  // older code read `path.plans` which the backend never set, so the
+  // counter and tab body always rendered as empty.
+  const plansResp = usePlans(1, 200);
+  const planById = React.useMemo(() => {
+    const m = new Map<string, Plan>();
+    for (const p of (plansResp.plans || []) as Plan[]) m.set(p.id, p);
+    return m;
+  }, [plansResp.plans]);
+  const linkedPlans = React.useMemo(() => {
+    const links = goal?.links || [];
+    return links
+      .filter((l) => l.linkedType === 'plan')
+      .map((l) => {
+        const p = planById.get(l.linkedId);
+        return {
+          id: l.linkedId,
+          title: p?.title || 'Linked plan',
+          status: p?.status,
+          progress: typeof p?.progress === 'number' ? p.progress : undefined,
+        };
+      });
+  }, [goal?.links, planById]);
 
   if (goalQ.isLoading) {
     return (
@@ -150,7 +176,7 @@ const GoalDetailV1: React.FC = () => {
                       </span>
                       {typeof e.score === 'number' && (
                         <span className="font-mono text-[11px] font-bold text-text">
-                          {Math.round(e.score * 100)}%
+                          {Math.round(e.score)}%
                         </span>
                       )}
                     </div>
