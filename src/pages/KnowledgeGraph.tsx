@@ -225,9 +225,9 @@ function KnowledgeGraphInner() {
 
   // Extract unique episode names for suggested searches
   const suggestedSearches = useMemo(() => {
-    const episodes = episodeData?.episodes || [];
+    const episodes = (episodeData?.episodes || []) as Array<{ name?: string }>;
     const names = episodes
-      .map(ep => ep.name)
+      .map((ep) => ep.name)
       .filter((name): name is string => !!name && name.length > 0)
       .slice(0, 6);
     // Deduplicate

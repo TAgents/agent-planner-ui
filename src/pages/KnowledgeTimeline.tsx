@@ -177,14 +177,14 @@ const KnowledgeTimeline: React.FC = () => {
   const { data: episodeData, isLoading: episodesLoading, refetch } = useGraphitiEpisodes(maxEpisodes, statusData?.available === true);
   const deleteMutation = useDeleteEpisode();
 
-  const episodes = episodeData?.episodes || [];
+  const episodes: GraphitiEpisode[] = (episodeData?.episodes || []) as GraphitiEpisode[];
 
   // Filter episodes
   const filteredEpisodes = useMemo(() => {
     if (!filterText.trim()) return episodes;
     const lower = filterText.toLowerCase();
     return episodes.filter(
-      ep =>
+      (ep: GraphitiEpisode) =>
         ep.name?.toLowerCase().includes(lower) ||
         ep.content?.toLowerCase().includes(lower) ||
         ep.source_description?.toLowerCase().includes(lower)
