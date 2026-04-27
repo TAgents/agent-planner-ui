@@ -1,53 +1,59 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import AppSidebar from './AppSidebar';
 
+/**
+ * PublicLayout — minimal chrome for unauthenticated and read-only public
+ * surfaces (Landing, Explore, /public/plans/:id). Authenticated users see
+ * the same shell here so brand context stays consistent; their in-app
+ * navigation lives behind /app via MainLayout.
+ */
 const PublicLayout: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Show full sidebar with plans for logged-in users
-  // Show simplified sidebar (no plans, with sign in) for logged-out users
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppSidebar 
-        variant={isAuthenticated ? 'full' : 'public'} 
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            aria-label="Open menu"
+    <div className="min-h-screen bg-bg text-text">
+      <header className="flex h-14 items-center justify-between border-b border-border px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <span
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber font-display text-[14px] font-bold text-bg"
+            aria-hidden
           >
-            <Menu className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          </button>
-          
-          <Link to="/" className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="Agent Planner"
-              className="w-7 h-7 rounded-lg"
-            />
-            <span className="font-semibold text-gray-900 dark:text-white">
-              Agent Planner
-            </span>
+            ap
+          </span>
+          <span className="font-display text-[14px] font-semibold tracking-[-0.01em] text-text">
+            AgentPlanner
+          </span>
+        </Link>
+        <nav className="flex items-center gap-3 text-[12px]">
+          <Link to="/explore" className="text-text-sec hover:text-text">
+            Explore
           </Link>
-          
-          {/* Placeholder for right side (keeps logo centered) */}
-          <div className="w-10" />
-        </header>
-
-        <main className="flex-1 overflow-y-auto min-h-0">
-          <Outlet />
-        </main>
-      </div>
+          {isAuthenticated ? (
+            <Link
+              to="/app"
+              className="rounded-md bg-text px-3 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
+            >
+              Open app
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="text-text-sec hover:text-text">
+                Sign in
+              </Link>
+              <Link
+                to="/register"
+                className="rounded-md bg-amber px-3 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
+              >
+                Get started
+              </Link>
+            </>
+          )}
+        </nav>
+      </header>
+      <main>
+        <Outlet />
+      </main>
     </div>
   );
 };

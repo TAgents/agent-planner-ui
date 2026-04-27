@@ -11,14 +11,10 @@ import PublicLayout from './components/layout/PublicLayout';
 
 // Pages
 import Landing from './pages/Landing';
-import ExplorePlansPage from './pages/ExplorePlansPage';
-import ExploreV1 from './pages/ExploreV1';
-import PlansList from './pages/PlansList'; // v1 redesign
-import PlanVisualization from './pages/PlanVisualizationEnhanced'; // Using enhanced version with tree view
-import PlanTree from './pages/PlanTree'; // v1 redesign tree view
-import PublicPlanView from './pages/PublicPlanView'; // Public plan viewing
-import PublicPlanV1 from './pages/PublicPlanV1';
-// import SharedPlans from './pages/SharedPlans'; // Hidden - functionality not fully implemented
+import Explore from './pages/ExploreV1';
+import PlansList from './pages/PlansList';
+import PlanTree from './pages/PlanTree';
+import PublicPlan from './pages/PublicPlanV1';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -29,7 +25,7 @@ import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Connections from './pages/settings/Connections';
 import GoalsList from './pages/GoalsV2';
-import GoalDetail from './pages/GoalDetailV1'; // v1 redesign — was ./pages/GoalDetail
+import GoalDetail from './pages/GoalDetailV1';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
 import OrganizationSettings from './pages/settings/OrganizationSettings';
@@ -37,7 +33,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
-import Dashboard from './pages/MissionControl'; // v1 redesign — was ./pages/Dashboard
+import MissionControl from './pages/MissionControl';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import SelectOrganization from './pages/auth/SelectOrganization';
 import Onboarding from './pages/onboarding/Onboarding';
@@ -46,10 +42,9 @@ import StrategicOverview from './pages/StrategicOverview';
 import ExploreClone from './pages/ExploreClone';
 
 // Lazy-load heavy pages (ReactFlow)
-const Knowledge = React.lazy(() => import('./pages/Knowledge'));
-const KnowledgeTimelineV1 = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
-const KnowledgeCoverageV1 = React.lazy(() => import('./pages/KnowledgeCoverageV1'));
-const KnowledgeGraphV1 = React.lazy(() => import('./pages/KnowledgeGraphV1'));
+const KnowledgeTimeline = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
+const KnowledgeCoverage = React.lazy(() => import('./pages/KnowledgeCoverageV1'));
+const KnowledgeGraph = React.lazy(() => import('./pages/KnowledgeGraphV1'));
 const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
 
 // Create a React Query client
@@ -74,10 +69,8 @@ const App: React.FC = () => {
               {/* Public Pages with sidebar for logged-in users, top nav for logged-out */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Landing />} />
-                <Route path="/explore" element={<ExploreV1 />} />
-                <Route path="/explore/legacy" element={<ExplorePlansPage />} />
-                <Route path="/public/plans/:planId" element={<PublicPlanV1 />} />
-                <Route path="/public/plans/:planId/legacy" element={<PublicPlanView />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/public/plans/:planId" element={<PublicPlan />} />
               </Route>
 
               {/* Legal Pages */}
@@ -99,31 +92,24 @@ const App: React.FC = () => {
                 <Route path="/connect/:client" element={<ConnectPage />} />
                 <Route path="/explore/clone/:sourceId" element={<ExploreClone />} />
                 <Route path="/app" element={<MainLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route index element={<MissionControl />} />
+                  <Route path="dashboard" element={<MissionControl />} />
                   <Route path="strategy" element={<StrategicOverview />} />
                   <Route path="plans" element={<PlansList />} />
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanTree />} />
-                  <Route path="plans/:planId/graph" element={<PlanVisualization />} />
-                  {/* <Route path="shared" element={<SharedPlans />} /> */}
                   <Route path="goals" element={<ErrorBoundary><GoalsList /></ErrorBoundary>} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
-                  {/* Legacy v2 routes redirect to unified goals */}
-                  <Route path="goals-v2" element={<Navigate to="/app/goals" replace />} />
-                  <Route path="goals-v2/:goalId" element={<Navigate to="/app/goals" replace />} />
                   <Route path="knowledge" element={<Navigate to="/app/knowledge/timeline" replace />} />
-                  <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimelineV1 /></ErrorBoundary>} />
-                  <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverageV1 /></ErrorBoundary>} />
-                  <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraphV1 /></ErrorBoundary>} />
-                  <Route path="knowledge/legacy" element={<ErrorBoundary><Knowledge /></ErrorBoundary>} />
+                  <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimeline /></ErrorBoundary>} />
+                  <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverage /></ErrorBoundary>} />
+                  <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraph /></ErrorBoundary>} />
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/integrations" element={<IntegrationsSettings />} />
                   <Route path="settings/connections" element={<Connections />} />
                   <Route path="settings/organizations" element={<OrganizationSettings />} />
                   <Route path="settings/profile" element={<ProfileSettings />} />
-                  <Route path="profile" element={<ProfileSettings />} /> {/* Legacy route */}
                 </Route>
               </Route>
 
