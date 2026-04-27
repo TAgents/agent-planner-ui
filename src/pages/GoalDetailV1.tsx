@@ -162,6 +162,16 @@ const GoalDetailV1: React.FC = () => {
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <Card pad={20}>
             <SectionHead kicker="◆ Briefing" title="Status & next steps" />
+            {(path as any)?.stats && (path as any).stats.total > 0 && (
+              <div className="mb-4 flex items-baseline gap-3 rounded-md border border-border bg-bg/40 px-3 py-2">
+                <span className="font-display text-[24px] font-bold tracking-[-0.02em] text-text">
+                  {Math.round((path as any).stats.completion_percentage)}%
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                  goal · {(path as any).stats.completed} / {(path as any).stats.total} achievers done
+                </span>
+              </div>
+            )}
             <p className="text-[13px] leading-[1.55] text-text-sec">
               {goal.description ||
                 'No briefing copy yet. As agents observe progress, they will summarize here.'}
@@ -189,7 +199,10 @@ const GoalDetailV1: React.FC = () => {
 
           <div className="flex flex-col gap-6">
             <Card pad={20}>
-              <SectionHead kicker="◇ Compass" title="Belief / Desire / Intention" />
+              <SectionHead
+                kicker="◇ Compass"
+                title="Belief · Desire · Intention · Constraint"
+              />
               <div className="flex flex-col items-center">
                 <GoalCompass
                   centerLabel={goal.title}
@@ -242,25 +255,35 @@ const GoalDetailV1: React.FC = () => {
           {linkedPlans.length === 0 ? (
             <p className="text-sm text-text-sec">No plans link to this goal yet.</p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {linkedPlans.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    to={`/app/plans/${p.id}`}
-                    className="flex items-center justify-between gap-3 rounded-md border border-border px-4 py-3 transition-colors hover:bg-surface-hi/40"
-                  >
-                    <span className="truncate font-display text-[13.5px] font-semibold text-text">
-                      {p.title}
-                    </span>
-                    {typeof p.progress === 'number' && (
-                      <span className="font-mono text-[11px] tabular-nums text-text-sec">
-                        {Math.round(p.progress)}%
+            <>
+              <ul className="flex flex-col gap-2">
+                {linkedPlans.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      to={`/app/plans/${p.id}`}
+                      className="flex items-center justify-between gap-3 rounded-md border border-border px-4 py-3 transition-colors hover:bg-surface-hi/40"
+                    >
+                      <span className="truncate font-display text-[13.5px] font-semibold text-text">
+                        {p.title}
                       </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                      {typeof p.progress === 'number' && (
+                        <span className="flex items-baseline gap-1.5 font-mono text-[11px] tabular-nums text-text-sec">
+                          {Math.round(p.progress)}%
+                          <span className="font-mono text-[8.5px] uppercase tracking-[0.1em] text-text-muted">
+                            plan
+                          </span>
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[10.5px] text-text-muted">
+                Per-row % is the plan's own completion. The goal's overall
+                completion uses only achiever tasks (see Briefing) and may
+                differ — both are correct, they answer different questions.
+              </p>
+            </>
           )}
         </Card>
       )}
