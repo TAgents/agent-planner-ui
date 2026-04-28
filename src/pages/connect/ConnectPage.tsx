@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ClientTile,
@@ -37,38 +37,46 @@ const ConnectPage: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
+  // In-flight guard via ref so the effect can run once per clientId without
+  // tokenLoading appearing in deps (which caused a re-mount loop where the
+  // cleanup cancelled the only path that resets tokenLoading to false).
+  const inFlightRef = useRef<string | null>(null);
 
   const testConnection = useTestConnection();
   const mcpb = useMcpbRelease();
 
   useEffect(() => {
-    if (!clientId || token || tokenLoading) return;
-    let cancelled = false;
+    if (!clientId || token) return;
+    if (inFlightRef.current === clientId) return;
+    inFlightRef.current = clientId;
     setTokenLoading(true);
+    setTokenError(null);
     (async () => {
       try {
         const list = (await tokenService.getTokens()) as ApiToken[] | { data: ApiToken[] };
         const tokens = Array.isArray(list) ? list : list?.data || [];
         const existing = tokens.find((t) => t.token);
-        if (existing?.token && !cancelled) {
+        if (existing?.token) {
           setToken(existing.token);
-        } else {
-          const created = (await tokenService.createToken(`Connect — ${clientId}`, ['read'])) as
-            | ApiToken
-            | { data: ApiToken };
-          const next = 'data' in created ? created.data : created;
-          if (!cancelled) setToken(next.token || null);
+          return;
+        }
+        const created = (await tokenService.createToken(`Connect — ${clientId}`, ['read'])) as
+          | ApiToken
+          | { data: ApiToken };
+        const next = 'data' in created ? created.data : created;
+        setToken(next.token || null);
+        if (!next.token) {
+          setTokenError('Server did not return a token value');
         }
       } catch (err: any) {
-        if (!cancelled) setTokenError(err?.message || 'Could not retrieve a token');
+        const msg = err?.response?.data?.error || err?.message || 'Could not retrieve a token';
+        setTokenError(msg);
       } finally {
-        if (!cancelled) setTokenLoading(false);
+        setTokenLoading(false);
+        inFlightRef.current = null;
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [clientId, token, tokenLoading]);
+  }, [clientId, token]);
 
   const config = clientId ? CLIENT_CONFIGS[clientId] : null;
   const snippetLines = useMemo(
