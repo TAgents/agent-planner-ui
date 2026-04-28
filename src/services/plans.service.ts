@@ -161,6 +161,28 @@ export const planService = {
     return response.data;
   },
 
+  getPublicPlanKnowledgeDigest: async (planId: string, limit = 5) => {
+    const publicApi = axios.create({
+      baseURL: API_CONFIG.BASE_URL,
+      headers: API_CONFIG.HEADERS,
+      timeout: API_CONFIG.TIMEOUT,
+    });
+
+    const response = await publicApi.get(`/plans/public/${planId}/knowledge-digest`, {
+      params: { limit },
+    });
+    return response.data as {
+      available: boolean;
+      episodes: Array<{
+        uuid: string;
+        name: string | null;
+        content: string;
+        created_at: string;
+        source: string | null;
+      }>;
+    };
+  },
+
   forkPlan: async (planId: string) => {
     return request<{ plan: Plan }>({
       method: 'POST',

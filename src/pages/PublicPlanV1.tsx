@@ -90,8 +90,7 @@ function flatten(nodes: ApiNode[], depth = 0, out: FlatRow[] = []): FlatRow[] {
 /**
  * Public Plan v1 — read-only render of a published plan. Reuses the
  * tree row pattern from /app/plans/:planId/tree but without agents,
- * dependency graph, or detail panel write actions. Beliefs digest is
- * a placeholder for the upcoming briefing.knowledge surfacing.
+ * dependency graph, or detail panel write actions.
  *
  * Mounted at /public/plans/:planId-v1 for now (additive).
  */
@@ -101,6 +100,12 @@ const PublicPlanV1: React.FC = () => {
     ['publicPlan-v1', planId],
     () => planService.getPublicPlan(planId!) as Promise<PublicPlanResponse>,
     { enabled: !!planId, retry: 1 },
+  );
+
+  const digestQ = useQuery(
+    ['publicPlan-v1-digest', planId],
+    () => planService.getPublicPlanKnowledgeDigest(planId!, 5),
+    { enabled: !!planId, retry: 0, staleTime: 60_000 },
   );
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -276,11 +281,40 @@ const PublicPlanV1: React.FC = () => {
 
             <Card pad={20}>
               <Kicker className="mb-2">◇ Beliefs digest</Kicker>
-              <p className="text-[12.5px] leading-[1.55] text-text-sec">
-                A summary of what agents have learned in service of this plan
-                will appear here once the public knowledge surface ships
-                (Phase 4 — coherence + critical path; Phase 5 — graph view).
-              </p>
+              {digestQ.isLoading ? (
+                <p className="text-[12.5px] leading-[1.55] text-text-muted">Loading…</p>
+              ) : digestQ.data?.available === false ? (
+                <p className="text-[12.5px] leading-[1.55] text-text-muted">
+                  Knowledge graph offline.
+                </p>
+              ) : (digestQ.data?.episodes?.length ?? 0) === 0 ? (
+                <p className="text-[12.5px] leading-[1.55] text-text-muted">
+                  No agent learnings recorded against this plan yet.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {digestQ.data!.episodes.map((ep) => {
+                    const summary = (ep.name && ep.name.trim().length > 0)
+                      ? ep.name
+                      : (ep.content?.split('\n')[0]?.slice(0, 120) || 'Untitled episode');
+                    const date = ep.created_at
+                      ? new Date(ep.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                      : '';
+                    return (
+                      <li key={ep.uuid} className="flex flex-col gap-1">
+                        <p className="text-[12.5px] leading-[1.55] text-text">
+                          {summary}
+                        </p>
+                        {date && (
+                          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
+                            {date}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card>
           </div>
         </div>
