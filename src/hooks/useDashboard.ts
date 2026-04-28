@@ -48,6 +48,28 @@ export const useActiveGoals = (limit: number = 5) => {
   );
 };
 
+export const useVelocity = () => {
+  return useQuery<{ series: Array<{ date: string; count: number }>; total: number; days: number }>(
+    ['velocity'],
+    () => dashboardApi.getVelocity(),
+    {
+      staleTime: 60_000,
+      refetchInterval: 5 * 60_000,
+    }
+  );
+};
+
+export const useCoherence = () => {
+  return useQuery(
+    ['coherence', 'summary'],
+    () => dashboardApi.getCoherence(),
+    {
+      staleTime: 60_000,
+      refetchInterval: 2 * 60_000,
+    }
+  );
+};
+
 // Re-export types for convenience
 export type {
   DashboardSummary,

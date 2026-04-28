@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#d4a24e"/>
+  <text x="16" y="22" text-anchor="middle"
+        font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="17" font-weight="700" letter-spacing="-0.04em" fill="#0e0c0a">ap</text>
+</svg>

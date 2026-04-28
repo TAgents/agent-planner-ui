@@ -22,10 +22,12 @@ export function useGraphitiEpisodes(maxEpisodes = 20, enabled = true) {
     [GRAPHITI_KEY, 'episodes', maxEpisodes],
     async () => {
       const result = await graphitiService.getEpisodes(maxEpisodes);
-      return {
-        episodes: result.episodes?.episodes || [],
-        group_id: result.group_id,
-      };
+      // Backend now flattens to {episodes: [...], group_id}. Old double-nested
+      // shape {episodes: {episodes: [...]}} kept as fallback for forward-compat.
+      const episodes = Array.isArray(result.episodes)
+        ? result.episodes
+        : (result.episodes as any)?.episodes || [];
+      return { episodes, group_id: result.group_id };
     },
     { enabled, staleTime: 30000 }
   );
@@ -60,7 +62,9 @@ export function useGraphitiEntitySearch(query: string | null, maxResults = 20) {
       if (!query) return { entities: [] as GraphitiEntity[], group_id: '' };
       const result = await graphitiService.searchEntities(query, maxResults);
       return {
-        entities: result.entities?.nodes || [],
+        entities: Array.isArray(result.entities)
+          ? result.entities
+          : (result.entities as any)?.nodes || [],
         group_id: result.group_id,
       };
     },
@@ -75,11 +79,12 @@ export function useGraphitiFactSearchMutation() {
   return useMutation(
     async ({ query, maxResults = 10 }: { query: string; maxResults?: number }) => {
       const result = await graphitiService.searchFacts(query, maxResults);
-      return {
-        facts: result.results?.facts || [],
-        group_id: result.group_id,
-        method: result.method,
-      };
+      // Backend now flattens to {facts: [...], group_id, method}. Old shape
+      // {results: {facts: [...]}} kept as fallback.
+      const facts = Array.isArray((result as any).facts)
+        ? (result as any).facts
+        : result.results?.facts || [];
+      return { facts, group_id: result.group_id, method: result.method };
     }
   );
 }
@@ -92,7 +97,9 @@ export function useGraphitiEntitySearchMutation() {
     async ({ query, maxResults = 20 }: { query: string; maxResults?: number }) => {
       const result = await graphitiService.searchEntities(query, maxResults);
       return {
-        entities: result.entities?.nodes || [],
+        entities: Array.isArray(result.entities)
+          ? result.entities
+          : (result.entities as any)?.nodes || [],
         group_id: result.group_id,
       };
     }
@@ -141,5 +148,24 @@ export function useDeleteEpisode() {
         qc.invalidateQueries([GRAPHITI_KEY, 'episodes']);
       },
     }
+  );
+}
+
+
+/**
+ * Resolve plan/task tethers for a list of Graphiti episode UUIDs. Used
+ * by the Knowledge Graph entity inspector to walk
+ *   entity → facts.episodes → episode_node_links → tasks
+ * in one round-trip.
+ */
+export function useEpisodeTaskLinks(episodeIds: string[]) {
+  const stableKey = [...episodeIds].sort().join(",");
+  return useQuery(
+    [GRAPHITI_KEY, "episode-task-links", stableKey],
+    async () => {
+      if (episodeIds.length === 0) return { links: [] };
+      return graphitiService.getEpisodeTaskLinks(episodeIds);
+    },
+    { enabled: episodeIds.length > 0, staleTime: 30_000 }
   );
 }

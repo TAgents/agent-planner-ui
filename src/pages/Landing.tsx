@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import LandingHeader from '../components/landing/LandingHeader';
 import HeroSection from '../components/landing/HeroSection';
-import SocialProofSection from '../components/landing/SocialProofSection';
 import FeaturesSection from '../components/landing/FeaturesSection';
 import Footer from '../components/landing/Footer';
 
@@ -24,9 +24,9 @@ const Landing: React.FC = () => {
         <link rel="canonical" href="https://agentplanner.io/" />
       </Helmet>
 
-      <div className="landing-noise min-h-screen font-body" style={{ background: '#0e0c0a' }}>
+      <div className="min-h-screen bg-bg font-body text-text">
+        <LandingHeader />
         <HeroSection />
-        <SocialProofSection />
         <FeaturesSection />
         <Footer />
       </div>

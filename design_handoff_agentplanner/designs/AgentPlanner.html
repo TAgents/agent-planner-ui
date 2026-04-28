@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentPlanner — Hi-Fi Designs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ap-font-display: 'Inter', system-ui, sans-serif;
+      --ap-font-body: 'Inter', system-ui, sans-serif;
+      --ap-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    html, body { margin: 0; padding: 0; height: 100%; background: #f0eee9; }
+    body { font-family: var(--ap-font-body); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="shared.jsx"></script>
+  <script type="text/babel" src="connect-shared.jsx"></script>
+  <script type="text/babel" src="screen-landing.jsx"></script>
+  <script type="text/babel" src="screen-mission.jsx"></script>
+  <script type="text/babel" src="screen-plan-tree.jsx"></script>
+  <script type="text/babel" src="screen-goal-detail.jsx"></script>
+  <script type="text/babel" src="screen-plans-list.jsx"></script>
+  <script type="text/babel" src="screen-goals-list.jsx"></script>
+  <script type="text/babel" src="screen-portfolio.jsx"></script>
+  <script type="text/babel" src="screen-knowledge-coverage.jsx"></script>
+  <script type="text/babel" src="screen-knowledge-timeline.jsx"></script>
+  <script type="text/babel" src="screen-knowledge-graph.jsx"></script>
+  <script type="text/babel" src="screen-settings.jsx"></script>
+  <script type="text/babel" src="screen-settings-integrations.jsx"></script>
+  <script type="text/babel" src="screen-onboarding.jsx"></script>
+  <script type="text/babel" src="screen-connect-claude-desktop.jsx"></script>
+  <script type="text/babel" src="screen-connect-others.jsx"></script>
+  <script type="text/babel" src="screen-auth.jsx"></script>
+  <script type="text/babel" src="screen-public.jsx"></script>
+  <script type="text/babel" src="screen-explore.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "defaultTheme": "light",
+      "showLandingHero": true,
+      "showLightVariants": true,
+      "fontPair": "space",
+      "showAuth": true,
+      "showPublic": true,
+      "showExplore": true,
+      "showPortfolio": true,
+      "showPlansList": true,
+      "showGoalsList": true,
+      "showKnowledge": true,
+      "showSettings": true,
+      "showOnboarding": true,
+      "showConnectPages": true,
+      "showIntegrations": true
+    }/*EDITMODE-END*/;
+
+    const FONT_PAIRS = {
+      inter:    { label: 'Inter — neutral, dependable',     display: "'Inter', system-ui, sans-serif",            body: "'Inter', system-ui, sans-serif",            mono: "'JetBrains Mono', ui-monospace, monospace" },
+      geist:    { label: 'Geist — modern, technical',       display: "'Geist', 'Inter', system-ui, sans-serif",   body: "'Geist', 'Inter', system-ui, sans-serif",   mono: "'Geist Mono', ui-monospace, monospace" },
+      plex:     { label: 'IBM Plex — engineering, classic',  display: "'IBM Plex Sans', system-ui, sans-serif",    body: "'IBM Plex Sans', system-ui, sans-serif",    mono: "'IBM Plex Mono', ui-monospace, monospace" },
+      space:    { label: 'Space Grotesk — humanist, soft',   display: "'Space Grotesk', system-ui, sans-serif",    body: "'Space Grotesk', system-ui, sans-serif",    mono: "'JetBrains Mono', ui-monospace, monospace" },
+      bricolage:{ label: 'Bricolage + Figtree — original',   display: "'Bricolage Grotesque', 'Inter', sans-serif",body: "'Figtree', 'Inter', sans-serif",            mono: "'JetBrains Mono', ui-monospace, monospace" },
+      serif:    { label: 'Fraunces + Inter — editorial',     display: "'Fraunces', Georgia, serif",                body: "'Inter', system-ui, sans-serif",            mono: "'JetBrains Mono', ui-monospace, monospace" },
+    };
+
+    function applyFontPair(key) {
+      const f = FONT_PAIRS[key] || FONT_PAIRS.inter;
+      const r = document.documentElement.style;
+      r.setProperty('--ap-font-display', f.display);
+      r.setProperty('--ap-font-body', f.body);
+      r.setProperty('--ap-font-mono', f.mono);
+    }
+
+    function App() {
+      const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const themes = tweaks.showLightVariants ? ['dark', 'light'] : [tweaks.defaultTheme];
+
+      React.useEffect(() => { applyFontPair(tweaks.fontPair); }, [tweaks.fontPair]);
+
+      return (
+        <>
+          <DesignCanvas>
+            {tweaks.showLandingHero && (
+              <DCSection id="landing" title="Marketing landing" subtitle="Brand-forward entry into the product.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`landing-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1180} height={760}>
+                    <Landing theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showAuth && (
+              <DCSection id="auth" title="Auth" subtitle="Signup with workspace creation. Login uses the same shell.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`auth-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1100} height={720}>
+                    <AuthSignup theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showOnboarding && (
+              <DCSection id="onboarding" title="Onboarding wizard" subtitle="Soft-locks the dashboard until the user connects an agent and runs a successful briefing(). Single-page, 3 steps, ends in green.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`onboarding-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1180} height={1080}>
+                    <Onboarding theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showConnectPages && (
+              <DCSection id="connect" title="/connect/<client>" subtitle="Per-client install pages. Bookmarkable, linkable, embedded into Settings → Integrations as one source of truth.">
+                {themes.map((th) => (
+                  <DCArtboard key={`cd-${th}`} id={`connect-claude-desktop-${th}`} label={`Claude Desktop · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1100} height={1100}>
+                    <ConnectClaudeDesktop theme={th} />
+                  </DCArtboard>
+                ))}
+                {themes.map((th) => (
+                  <DCArtboard key={`cc-${th}`} id={`connect-claude-code-${th}`} label={`Claude Code · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1100} height={1180}>
+                    <ConnectClaudeCode theme={th} />
+                  </DCArtboard>
+                ))}
+                {themes.map((th) => (
+                  <DCArtboard key={`cur-${th}`} id={`connect-cursor-${th}`} label={`Cursor / VS Code / Windsurf · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1100} height={1280}>
+                    <ConnectCursor theme={th} />
+                  </DCArtboard>
+                ))}
+                {themes.map((th) => (
+                  <DCArtboard key={`oc-${th}`} id={`connect-openclaw-${th}`} label={`OpenClaw · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1100} height={1240}>
+                    <ConnectOpenClaw theme={th} />
+                  </DCArtboard>
+                ))}
+                {themes.map((th) => (
+                  <DCArtboard key={`gpt-${th}`} id={`connect-chatgpt-${th}`} label={`ChatGPT · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1100} height={1080}>
+                    <ConnectChatGPT theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showIntegrations && (
+              <DCSection id="integrations" title="Settings → Integrations" subtitle="Steady state. Hybrid table with inline detail row. Live polling indicator. The trust layer.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`integrations-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={960}>
+                    <SettingsIntegrations theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            <DCSection id="mission" title="Mission Control" subtitle="The first thing you see — what's in motion, what needs you, what's drifting.">
+              {themes.map((th) => (
+                <DCArtboard key={th} id={`mission-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={1040}>
+                  <MissionControl theme={th} />
+                </DCArtboard>
+              ))}
+            </DCSection>
+
+            {tweaks.showPortfolio && (
+              <DCSection id="portfolio" title="Strategic Overview" subtitle="Cross-plan attention spectrum — where to spend the next hour.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`portfolio-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={1180}>
+                    <Portfolio theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showPlansList && (
+              <DCSection id="plans-list" title="Plans Index" subtitle="All plans across the workspace, sorted by attention urgency.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`plans-list-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={860}>
+                    <PlansList theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showGoalsList && (
+              <DCSection id="goals-list" title="Goals Index" subtitle="All goals across the workspace — outcome / metric / constraint / principle. Hierarchical with sub-goals nested.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`goals-list-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={920}>
+                    <GoalsList theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            <DCSection id="goal" title="Goal Detail" subtitle="A single goal opened up: BDI compass, tension hotspots, critical-path subway.">
+              {themes.map((th) => (
+                <DCArtboard key={th} id={`goal-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={1100}>
+                  <GoalDetail theme={th} />
+                </DCArtboard>
+              ))}
+            </DCSection>
+
+            <DCSection id="plan" title="Plan Tree" subtitle="Hierarchical plans with a status spine, BDI context, and live agent presence.">
+              {themes.map((th) => (
+                <DCArtboard key={th} id={`plan-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={860}>
+                  <PlanTree theme={th} />
+                </DCArtboard>
+              ))}
+            </DCSection>
+
+            {tweaks.showKnowledge && (
+              <DCSection id="knowledge" title="Knowledge — three lenses" subtitle="What the agents know — Coverage (do we have it?), Timeline (when did we learn it?), Graph (how is it connected?).">
+                {themes.map((th) => (
+                  <DCArtboard key={`cov-${th}`} id={`knowledge-coverage-${th}`} label={`Coverage · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1280} height={1080}>
+                    <KnowledgeCoverage theme={th} />
+                  </DCArtboard>
+                ))}
+                {themes.map((th) => (
+                  <DCArtboard key={`tl-${th}`} id={`knowledge-timeline-${th}`} label={`Timeline · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1280} height={1080}>
+                    <KnowledgeTimeline theme={th} />
+                  </DCArtboard>
+                ))}
+                {themes.map((th) => (
+                  <DCArtboard key={`gr-${th}`} id={`knowledge-graph-${th}`} label={`Graph · ${th === 'dark' ? 'Dark' : 'Light'}`} width={1280} height={860}>
+                    <KnowledgeGraph theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showSettings && (
+              <DCSection id="settings" title="Settings" subtitle="Org config, connected agents, MCP setup — the workspace plumbing.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`settings-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1280} height={900}>
+                    <Settings theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showPublic && (
+              <DCSection id="public" title="Public Plan" subtitle="Read-only sharing surface for plans published outside the workspace.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`public-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1100} height={1280}>
+                    <PublicPlan theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+
+            {tweaks.showExplore && (
+              <DCSection id="explore" title="Explore" subtitle="Community-published plans — fork into your workspace.">
+                {themes.map((th) => (
+                  <DCArtboard key={th} id={`explore-${th}`} label={th === 'dark' ? 'A · Dark' : 'B · Light'} width={1180} height={1180}>
+                    <Explore theme={th} />
+                  </DCArtboard>
+                ))}
+              </DCSection>
+            )}
+          </DesignCanvas>
+
+          <TweaksPanel title="Tweaks">
+            <TweakSection title="Typography">
+              <TweakSelect
+                label="Font pair"
+                value={tweaks.fontPair}
+                onChange={(v) => setTweak('fontPair', v)}
+                options={Object.entries(FONT_PAIRS).map(([k, v]) => ({ label: v.label, value: k }))}
+              />
+            </TweakSection>
+            <TweakSection title="Theme">
+              <TweakToggle label="Show light variants" value={tweaks.showLightVariants} onChange={(v) => setTweak('showLightVariants', v)} />
+              <TweakRadio
+                label="If single theme"
+                value={tweaks.defaultTheme}
+                onChange={(v) => setTweak('defaultTheme', v)}
+                options={[{ label: 'Dark', value: 'dark' }, { label: 'Light', value: 'light' }]}
+              />
+            </TweakSection>
+            <TweakSection title="Sections">
+              <TweakToggle label="Landing" value={tweaks.showLandingHero} onChange={(v) => setTweak('showLandingHero', v)} />
+              <TweakToggle label="Auth" value={tweaks.showAuth} onChange={(v) => setTweak('showAuth', v)} />
+              <TweakToggle label="Onboarding wizard" value={tweaks.showOnboarding} onChange={(v) => setTweak('showOnboarding', v)} />
+              <TweakToggle label="Connect pages (5)" value={tweaks.showConnectPages} onChange={(v) => setTweak('showConnectPages', v)} />
+              <TweakToggle label="Settings → Integrations" value={tweaks.showIntegrations} onChange={(v) => setTweak('showIntegrations', v)} />
+              <TweakToggle label="Strategic overview" value={tweaks.showPortfolio} onChange={(v) => setTweak('showPortfolio', v)} />
+              <TweakToggle label="Plans index" value={tweaks.showPlansList} onChange={(v) => setTweak('showPlansList', v)} />
+              <TweakToggle label="Goals index" value={tweaks.showGoalsList} onChange={(v) => setTweak('showGoalsList', v)} />
+              <TweakToggle label="Knowledge (3 variants)" value={tweaks.showKnowledge} onChange={(v) => setTweak('showKnowledge', v)} />
+              <TweakToggle label="Settings" value={tweaks.showSettings} onChange={(v) => setTweak('showSettings', v)} />
+              <TweakToggle label="Public plan" value={tweaks.showPublic} onChange={(v) => setTweak('showPublic', v)} />
+              <TweakToggle label="Explore" value={tweaks.showExplore} onChange={(v) => setTweak('showExplore', v)} />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

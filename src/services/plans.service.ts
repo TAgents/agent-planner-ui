@@ -161,6 +161,13 @@ export const planService = {
     return response.data;
   },
 
+  forkPlan: async (planId: string) => {
+    return request<{ plan: Plan }>({
+      method: 'POST',
+      url: `/plans/${planId}/fork`,
+    });
+  },
+
   linkGitHubRepo: async (planId: string, owner: string, name: string) => {
     return request<ApiResponse<Plan>>({
       method: 'PUT',

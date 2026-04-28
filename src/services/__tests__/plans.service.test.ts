@@ -4,11 +4,15 @@
  */
 import { planService } from '../plans.service';
 
-// Mock the api module's request function
+// Mock the api-client module — that's what the service imports `request`
+// from. plans.service points at './api-client' directly, so the older
+// `jest.mock('../api', ...)` was a no-op (axios actually fired and JSDOM
+// rejected the localhost call as cross-origin).
 const mockRequest = jest.fn();
-jest.mock('../api', () => ({
+jest.mock('../api-client', () => ({
   request: (...args: any[]) => mockRequest(...args),
   API_CONFIG: { BASE_URL: 'http://localhost:3000', HEADERS: {}, TIMEOUT: 30000 },
+  api: { defaults: { baseURL: 'http://localhost:3000' } },
 }));
 
 beforeEach(() => {

@@ -61,6 +61,23 @@ export const authService = {
     }
   },
 
+  /**
+   * List the OAuth providers configured on the API. Drives the
+   * conditional SSO row on Login/Register — if the provider isn't
+   * configured server-side, the button doesn't render. Each entry's
+   * `authorize_url` already has the right client_id, scope, and
+   * redirect_uri baked in; the UI just appends `&state=<provider>`
+   * before redirecting so the callback knows which exchange to run.
+   */
+  listOAuthProviders: async () => {
+    return request<{
+      providers: Array<{ id: 'google' | 'github'; label: string; authorize_url: string }>;
+    }>({
+      method: 'GET',
+      url: '/auth/oauth/providers',
+    });
+  },
+
   register: async (email: string, password: string, name: string) => {
     try {
       const response = await request<{
@@ -912,6 +929,35 @@ export const dashboardApi = {
       method: 'GET',
       url: '/dashboard/active-goals',
       params: { limit },
+    });
+  },
+
+  getVelocity: async () => {
+    return request<{ series: Array<{ date: string; count: number }>; total: number; days: number }>({
+      method: 'GET',
+      url: '/dashboard/velocity',
+    });
+  },
+
+  getCoherence: async () => {
+    return request<{
+      score: number;
+      signals: {
+        pending_decisions: number;
+        stale_plans: number;
+        total_active_plans: number;
+        blocked_tasks: number;
+        total_active_tasks: number;
+        stale_plan_ratio: number;
+        blocked_task_ratio: number;
+        contradictions?: number;
+      };
+      penalties: { decisions: number; staleness: number; blocked: number; unlinked: number };
+      formula_version: string;
+      computed_at: string;
+    }>({
+      method: 'GET',
+      url: '/coherence/summary',
     });
   },
 

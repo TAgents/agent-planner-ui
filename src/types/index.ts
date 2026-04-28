@@ -13,6 +13,23 @@ export interface Plan {
   updated_at: string;
   metadata?: Record<string, any>;
   progress?: number; // Calculated client-side
+  /**
+   * Per-status node breakdown used by the Plans Index segmented bar.
+   * Server-computed from listNodesByPlan, so consumers don't need to
+   * re-fetch nodes just to render a progress preview.
+   */
+  stats?: {
+    total: number;
+    done: number;
+    doing: number;
+    blocked: number;
+    todo: number;
+    percentage: number;
+  };
+  /** Goals that link to this plan (bulk-fetched server-side). */
+  goal_tethers?: Array<{ goal_id: string; goal_title: string }>;
+  /** Most recent plan_node_log timestamp — used to detect agent activity. */
+  last_agent_log_at?: string | null;
   // GitHub integration fields
   github_repo_owner?: string | null;
   github_repo_name?: string | null;

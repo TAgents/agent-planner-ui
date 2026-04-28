@@ -12,6 +12,14 @@ export interface GraphitiStatus {
   status: { status: string };
 }
 
+export interface EpisodePlanLink {
+  node_id: string;
+  node_title: string;
+  plan_id: string;
+  plan_title: string;
+  link_type: 'supports' | 'contradicts' | 'informs' | string;
+}
+
 export interface GraphitiEpisode {
   uuid: string;
   name: string;
@@ -20,6 +28,8 @@ export interface GraphitiEpisode {
   created_at: string;
   valid_at?: string;
   entity_edges?: Array<{ relation_type: string; source_entity_name: string; target_entity_name: string }>;
+  /** Plan/task attribution from episode_node_links (server-side join). */
+  links?: EpisodePlanLink[];
 }
 
 export interface GraphitiFact {
@@ -92,6 +102,24 @@ export const graphitiService = {
       method: 'POST',
       url: '/knowledge/contradictions',
       data: { query, max_results: maxResults },
+    });
+  },
+
+  /** Bulk lookup: episode UUIDs → linked plan/task tuples (server-side join). */
+  getEpisodeTaskLinks: async (episodeIds: string[]) => {
+    return request<{
+      links: Array<{
+        episode_id: string;
+        node_id: string;
+        node_title: string;
+        plan_id: string;
+        plan_title: string;
+        link_type: string;
+      }>;
+    }>({
+      method: 'POST',
+      url: '/knowledge/episode-task-links',
+      data: { episode_ids: episodeIds },
     });
   },
 
