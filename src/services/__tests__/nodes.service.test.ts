@@ -3,10 +3,12 @@
  */
 import { nodeService } from '../nodes.service';
 
+// Mock api-client (where nodes.service actually imports `request` from).
 const mockRequest = jest.fn();
-jest.mock('../api', () => ({
+jest.mock('../api-client', () => ({
   request: (...args: any[]) => mockRequest(...args),
   API_CONFIG: { BASE_URL: 'http://localhost:3000', HEADERS: {}, TIMEOUT: 30000 },
+  api: { defaults: { baseURL: 'http://localhost:3000' } },
 }));
 
 beforeEach(() => {
