@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
-import { AuthSplitLayout, SSOButton } from '../../components/v1';
+import { AuthSplitLayout } from '../../components/v1';
 import { calculatePasswordStrength } from '../../utils/passwordStrength';
 
 interface FormData {
@@ -169,21 +169,8 @@ const Register: React.FC = () => {
       }
     >
       <div>
-        {/* SSO row — provider IDs match Login. SAML SSO is shown but
-            inert; enterprise tenants flip it on via /api/auth/sso. */}
-        <div className="flex flex-col gap-2.5">
-          <SSOButton provider="google" glyph="G" label="Continue with Google" />
-          <SSOButton provider="github" glyph="◐" label="Continue with GitHub" />
-          <SSOButton provider="microsoft" glyph="⚡" label="Continue with SAML SSO" />
-        </div>
-
-        <div className="my-6 flex items-center gap-3 text-text-muted">
-          <span className="h-px flex-1 bg-border" />
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.18em]">
-            Or with email
-          </span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
+        {/* SSO buttons (Google / GitHub / SAML) intentionally omitted
+            until the OAuth flows are wired on the API side. */}
 
         {errors.general && (
           <div className="mb-4 flex items-center gap-2 rounded-md border border-red/30 bg-red/10 px-3 py-2 text-[12.5px] text-red">

@@ -48,33 +48,17 @@ const DEFAULT_MANIFESTO = (
         and accumulate beliefs together — so nobody loses the thread when the
         context window runs out.
       </p>
-
-      <div className="mt-6 max-w-[42ch] rounded-md border border-border bg-bg/40 px-3 py-2.5">
-        <div className="flex items-start gap-2.5 text-[12px] leading-[1.55]">
-          <span
-            aria-hidden
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet/20 font-mono text-[10.5px] font-semibold text-violet"
-          >
-            β
-          </span>
-          <p className="text-text-sec">
-            <span className="font-mono text-[11px] text-text">researcher-β</span>{' '}
-            picked up where{' '}
-            <span className="font-mono text-[11px] text-text">planner-α</span>{' '}
-            left off.{' '}
-            <span className="font-semibold text-text">3 new beliefs</span>, 1
-            contradiction flagged.
-          </p>
-        </div>
-      </div>
     </div>
 
+    {/* Trust strip kept minimal — only claims we can stand behind today.
+        SOC 2, ISO 27001 and similar belong here once we've actually
+        completed the audit, not before. */}
     <ul className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
-      <li>SOC 2 Type II</li>
-      <li aria-hidden>·</li>
-      <li>EU residency</li>
+      <li>Open core</li>
       <li aria-hidden>·</li>
       <li>MCP-native</li>
+      <li aria-hidden>·</li>
+      <li>Self-host or hosted</li>
     </ul>
   </div>
 );
