@@ -10,6 +10,7 @@ import {
 } from '../components/v1';
 import { usePlans } from '../hooks/usePlans';
 import type { Plan, PlanStatus } from '../types';
+import { agentActivityKind } from './PlansList.helpers';
 
 type StatusFilter = 'all' | PlanStatus;
 
@@ -28,6 +29,37 @@ const STATUS_COLOR: Record<PlanStatus, PillColor> = {
   draft: 'slate',
   completed: 'emerald',
   archived: 'slate',
+};
+
+/**
+ * Segmented progress bar — emerald (done) → amber (doing) → red
+ * (blocked) over a slate (todo) base. Lets the Plans Index communicate
+ * not just "how far" a plan is but "where the work is sitting" at a
+ * glance. Hidden on plans with no tasks.
+ */
+const SegmentedProgress: React.FC<{
+  stats: NonNullable<Plan['stats']>;
+  className?: string;
+}> = ({ stats, className }) => {
+  const total = stats.total || 1;
+  const segs = [
+    { key: 'done', count: stats.done, cls: 'bg-emerald' },
+    { key: 'doing', count: stats.doing, cls: 'bg-amber' },
+    { key: 'blocked', count: stats.blocked, cls: 'bg-red' },
+  ];
+  return (
+    <div
+      className={`flex h-[3px] w-full overflow-hidden rounded-full bg-surface-hi ${className || ''}`}
+      role="img"
+      aria-label={`${stats.done} done, ${stats.doing} in progress, ${stats.blocked} blocked, ${stats.todo} todo of ${total}`}
+    >
+      {segs.map((s) =>
+        s.count > 0 ? (
+          <div key={s.key} className={s.cls} style={{ width: `${(s.count / total) * 100}%` }} />
+        ) : null,
+      )}
+    </div>
+  );
 };
 
 /**
@@ -186,10 +218,60 @@ const PlansList: React.FC = () => {
                       )}
                       {stale && <Pill color="red">Stale · {daysSince(plan.updated_at)}d</Pill>}
                       <Pill color={STATUS_COLOR[plan.status]}>{plan.status}</Pill>
+                      {/* Agent activity within last 5 min → live dot, last hour → recent (idle) */}
+                      {agentActivityKind(plan.last_agent_log_at) === 'live' && (
+                        <span
+                          className="inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.08em] text-emerald"
+                          title={`Last agent log ${relativeTime(plan.last_agent_log_at!)}`}
+                        >
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" aria-hidden />
+                          live
+                        </span>
+                      )}
+                      {agentActivityKind(plan.last_agent_log_at) === 'recent' && (
+                        <span
+                          className="inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.08em] text-text-muted"
+                          title={`Last agent log ${relativeTime(plan.last_agent_log_at!)}`}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-text-muted" aria-hidden />
+                          idle · {relativeTime(plan.last_agent_log_at!)}
+                        </span>
+                      )}
                     </div>
+                    {/* Goal tether — only first goal shown to keep rows tight */}
+                    {plan.goal_tethers && plan.goal_tethers.length > 0 && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                        <span className="font-mono uppercase tracking-[0.1em] text-[9.5px] text-text-muted">
+                          ◆ goal
+                        </span>
+                        <Link
+                          to={`/app/goals/${plan.goal_tethers[0].goal_id}`}
+                          className="max-w-[40ch] truncate text-text-sec underline-offset-2 hover:text-text hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {plan.goal_tethers[0].goal_title}
+                        </Link>
+                        {plan.goal_tethers.length > 1 && (
+                          <span className="font-mono text-[9.5px] text-text-muted">
+                            +{plan.goal_tethers.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
                       <span className="font-mono uppercase tracking-[0.1em] text-[9.5px]">updated</span>
                       <span className="font-mono text-[10px]">{relativeTime(plan.updated_at)}</span>
+                      {plan.stats && plan.stats.total > 0 && (
+                        <>
+                          <span className="text-border-hi">·</span>
+                          <span className="font-mono text-[10px]">
+                            {plan.stats.done}/{plan.stats.total} tasks
+                          </span>
+                          {plan.stats.blocked > 0 && (
+                            <Pill color="red">{plan.stats.blocked} blocked</Pill>
+                          )}
+                        </>
+                      )}
                       {plan.description && (
                         <>
                           <span className="text-border-hi">·</span>
@@ -197,6 +279,9 @@ const PlansList: React.FC = () => {
                         </>
                       )}
                     </div>
+                    {plan.stats && plan.stats.total > 0 && (
+                      <SegmentedProgress className="mt-2" stats={plan.stats} />
+                    )}
                   </div>
                   {typeof plan.progress === 'number' && (
                     <div className="flex-shrink-0 text-right font-display text-sm font-bold tracking-[-0.02em] text-text">

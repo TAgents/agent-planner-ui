@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
-import { AuthSplitLayout } from '../../components/v1';
+import { AuthSplitLayout, SSOButton } from '../../components/v1';
 import { calculatePasswordStrength } from '../../utils/passwordStrength';
 
 interface FormData {
@@ -24,6 +24,21 @@ interface FormErrors {
   general?: string;
 }
 
+/**
+ * Convert workspace name → DNS-safe slug for the live preview line
+ * (`acme-robotics.agentplanner.app`). Server is the source of truth on
+ * submit; this is just a typing affordance.
+ */
+function workspaceSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 40);
+}
+
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -33,12 +48,11 @@ const Register: React.FC = () => {
     confirmPassword: '',
     name: '',
     organization: '',
-    acceptTerms: false,
+    acceptTerms: true,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
@@ -47,25 +61,21 @@ const Register: React.FC = () => {
   const validateField = (name: keyof FormData, value: any): string | undefined => {
     switch (name) {
       case 'email':
-        if (!value) return 'Email is required';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
+        if (!value) return 'Work email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email';
         break;
       case 'password':
         if (!value) return 'Password is required';
         if (value.length < 8) return 'At least 8 characters';
         if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value))
-          return 'Must contain uppercase, lowercase, and numbers';
-        break;
-      case 'confirmPassword':
-        if (!value) return 'Please confirm your password';
-        if (value !== formData.password) return 'Passwords do not match';
+          return 'Must include uppercase, lowercase, and a number';
         break;
       case 'name':
-        if (!value) return 'Name is required';
+        if (!value) return 'Workspace name is required';
         if (value.length < 2) return 'At least 2 characters';
         break;
       case 'acceptTerms':
-        if (!value) return 'Required';
+        if (!value) return 'You must agree to the terms';
         break;
     }
     return undefined;
@@ -75,17 +85,10 @@ const Register: React.FC = () => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
 
-    setFormData(prev => ({ ...prev, [name]: fieldValue }));
+    setFormData((prev) => ({ ...prev, [name]: fieldValue }));
 
     if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-
-    if (name === 'email' || name === 'password' || name === 'confirmPassword') {
-      const error = validateField(name as keyof FormData, fieldValue);
-      if (error && fieldValue) {
-        setErrors(prev => ({ ...prev, [name]: error }));
-      }
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -93,11 +96,9 @@ const Register: React.FC = () => {
     e.preventDefault();
 
     const newErrors: FormErrors = {};
-    Object.keys(formData).forEach(key => {
-      if (key !== 'organization') {
-        const error = validateField(key as keyof FormData, formData[key as keyof FormData]);
-        if (error) newErrors[key as keyof FormErrors] = error;
-      }
+    (['email', 'password', 'name', 'acceptTerms'] as const).forEach((key) => {
+      const error = validateField(key, formData[key]);
+      if (error) newErrors[key] = error;
     });
 
     if (Object.keys(newErrors).length > 0) {
@@ -109,6 +110,9 @@ const Register: React.FC = () => {
     setErrors({});
 
     try {
+      // Re-use the existing /auth/register; workspace creation lives in
+      // the org-flow on first login. Once the API has a single
+      // workspace+account endpoint, swap this call.
       await api.auth.register(formData.email, formData.password, formData.name);
       setRegistrationSuccess(true);
       queryClient.clear();
@@ -116,7 +120,6 @@ const Register: React.FC = () => {
       setTimeout(() => {
         window.dispatchEvent(new Event('auth-change'));
 
-        // Check if user needs to pick an org
         const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
         const orgs = session.user?.organizations || [];
 
@@ -126,10 +129,10 @@ const Register: React.FC = () => {
           if (orgs.length === 1) localStorage.setItem('active_org_id', orgs[0].id);
           navigate('/app/plans', { replace: true });
         }
-      }, 2000);
+      }, 1500);
     } catch (error: any) {
       setErrors({
-        general: error.message || 'Registration failed. Please try again.'
+        general: error.message || 'Registration failed. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -138,115 +141,180 @@ const Register: React.FC = () => {
 
   if (registrationSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
+      <div className="flex min-h-screen items-center justify-center bg-bg px-4 text-text">
         <div className="w-full max-w-sm text-center">
-          <CheckCircle className="mx-auto w-10 h-10 text-green-500 mb-3" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Account created</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Redirecting...</p>
+          <CheckCircle className="mx-auto mb-3 h-10 w-10 text-emerald" />
+          <h2 className="font-display text-[20px] font-semibold tracking-[-0.02em]">
+            Workspace ready
+          </h2>
+          <p className="mt-1 text-[13px] text-text-sec">Redirecting…</p>
         </div>
       </div>
     );
   }
 
-  const inputClass = (field: keyof FormErrors) =>
-    `w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
-      errors[field] ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-    }`;
+  const slug = workspaceSlug(formData.name) || 'workspace';
 
   return (
     <AuthSplitLayout
       kicker="◆ Create account"
-      title="Start steering agents"
-      subtitle="Pick a workspace, drop your agent in, watch it pick up goals."
+      title="Set up your workspace"
       altCta={
         <span>
           {'Already have an account? '}
           <Link to="/login" className="text-amber underline">
             Sign in
           </Link>
-          {'.'}
         </span>
       }
     >
       <div>
-          {errors.general && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 rounded-md text-sm flex items-center gap-2">
-              <XCircle className="w-4 h-4 flex-shrink-0" />
-              {errors.general}
-            </div>
-          )}
+        {/* SSO row — provider IDs match Login. SAML SSO is shown but
+            inert; enterprise tenants flip it on via /api/auth/sso. */}
+        <div className="flex flex-col gap-2.5">
+          <SSOButton provider="google" glyph="G" label="Continue with Google" />
+          <SSOButton provider="github" glyph="◐" label="Continue with GitHub" />
+          <SSOButton provider="microsoft" glyph="⚡" label="Continue with SAML SSO" />
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label htmlFor="name" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-              <input id="name" name="name" type="text" autoComplete="name" required value={formData.name} onChange={handleInputChange} className={inputClass('name')} placeholder="Your name" />
-              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
-            </div>
+        <div className="my-6 flex items-center gap-3 text-text-muted">
+          <span className="h-px flex-1 bg-border" />
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.18em]">
+            Or with email
+          </span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
 
-            <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-              <input id="email" name="email" type="email" autoComplete="email" required value={formData.email} onChange={handleInputChange} className={inputClass('email')} placeholder="you@example.com" />
-              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-            </div>
+        {errors.general && (
+          <div className="mb-4 flex items-center gap-2 rounded-md border border-red/30 bg-red/10 px-3 py-2 text-[12.5px] text-red">
+            <XCircle className="w-4 h-4 flex-shrink-0" />
+            {errors.general}
+          </div>
+        )}
 
-            <div>
-              <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-              <div className="relative">
-                <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={formData.password} onChange={handleInputChange} className={`${inputClass('password')} pr-9`} placeholder="Min 8 characters" />
-                <button type="button" className="absolute inset-y-0 right-0 pr-2.5 flex items-center" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
-                </button>
-              </div>
-              {formData.password && (
-                <div className="mt-1.5 flex items-center gap-2">
-                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1">
-                    <div className={`h-1 rounded-full transition-all ${passwordStrength.color}`} style={{ width: `${(passwordStrength.strength / 5) * 100}%` }} />
-                  </div>
-                  <span className="text-[10px] text-gray-500">{passwordStrength.label}</span>
-                </div>
-              )}
-              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm password</label>
-              <div className="relative">
-                <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required value={formData.confirmPassword} onChange={handleInputChange} className={`${inputClass('confirmPassword')} pr-9`} placeholder="Repeat password" />
-                <button type="button" className="absolute inset-y-0 right-0 pr-2.5 flex items-center" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
-                </button>
-              </div>
-              {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
-            </div>
-
-            <div className="pt-1">
-              <label className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <input name="acceptTerms" type="checkbox" checked={formData.acceptTerms} onChange={handleInputChange} className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-amber-500" />
-                <span>
-                  I agree to the{' '}
-                  <Link to="/terms" target="_blank" className="text-amber-600 dark:text-amber-400 hover:underline">Terms</Link>
-                  {' '}and{' '}
-                  <Link to="/privacy" target="_blank" className="text-amber-600 dark:text-amber-400 hover:underline">Privacy Policy</Link>
-                </span>
-              </label>
-              {errors.acceptTerms && <p className="mt-1 text-xs text-red-500">{errors.acceptTerms}</p>}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-amber-400 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create account'
-              )}
-            </button>
-          </form>
+              Work email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="marcus@acme-robotics.com"
+              className={`w-full rounded-md border bg-surface px-3 py-2 text-[13px] text-text outline-none placeholder:text-text-muted focus:border-amber ${
+                errors.email ? 'border-red/50' : 'border-border'
+              }`}
+            />
+            {errors.email && <p className="mt-1 text-[11px] text-red">{errors.email}</p>}
+          </div>
+
+          <div>
+            <label
+              htmlFor="name"
+              className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted"
+            >
+              Workspace name
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="organization"
+              required
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Acme Robotics"
+              className={`w-full rounded-md border bg-surface px-3 py-2 text-[13px] text-text outline-none placeholder:text-text-muted focus:border-amber ${
+                errors.name ? 'border-red/50' : 'border-border'
+              }`}
+            />
+            <p className="mt-1 font-mono text-[10px] text-text-muted">
+              ↳ {slug}.agentplanner.app
+            </p>
+            {errors.name && <p className="mt-1 text-[11px] text-red">{errors.name}</p>}
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Min 8 characters"
+                className={`w-full rounded-md border bg-surface px-3 py-2 pr-9 text-[13px] text-text outline-none placeholder:text-text-muted focus:border-amber ${
+                  errors.password ? 'border-red/50' : 'border-border'
+                }`}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-text-muted hover:text-text"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {formData.password && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-hi">
+                  <div
+                    className={`h-1 rounded-full transition-all ${passwordStrength.color}`}
+                    style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-text-muted">
+                  {passwordStrength.label}
+                </span>
+              </div>
+            )}
+            {errors.password && <p className="mt-1 text-[11px] text-red">{errors.password}</p>}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating workspace…
+              </>
+            ) : (
+              'Create workspace →'
+            )}
+          </button>
+
+          <p className="text-center text-[11.5px] text-text-sec">
+            By continuing you agree to the{' '}
+            <Link to="/terms" target="_blank" className="text-text underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" target="_blank" className="text-text underline">
+              Privacy notice
+            </Link>
+            .
+          </p>
+        </form>
       </div>
     </AuthSplitLayout>
   );

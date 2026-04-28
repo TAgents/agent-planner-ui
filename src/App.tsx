@@ -24,6 +24,10 @@ import CreatePlan from './pages/plans/CreatePlan';
 import Settings from './pages/Settings';
 import IntegrationsSettings from './pages/settings/IntegrationsSettings';
 import Connections from './pages/settings/Connections';
+import NotificationsSettings from './pages/settings/NotificationsSettings';
+import BillingSettings from './pages/settings/BillingSettings';
+import DangerZone from './pages/settings/DangerZone';
+import SettingsLayout from './components/settings/SettingsLayout';
 import GoalsList from './pages/GoalsV2';
 import GoalDetail from './pages/GoalDetailV1';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -38,6 +42,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import SelectOrganization from './pages/auth/SelectOrganization';
 import Onboarding from './pages/onboarding/Onboarding';
 import ConnectPage from './pages/connect/ConnectPage';
+import ConnectIndex from './pages/connect/ConnectIndex';
 import StrategicOverview from './pages/StrategicOverview';
 import ExploreClone from './pages/ExploreClone';
 
@@ -66,9 +71,12 @@ const App: React.FC = () => {
           <BrowserRouter>
             <React.Suspense fallback={null}>
             <Routes>
-              {/* Public Pages with sidebar for logged-in users, top nav for logged-out */}
+              {/* Landing has its own marketing chrome (dark obsidian) — render
+                  outside PublicLayout so the in-app cream header doesn't clash. */}
+              <Route path="/" element={<Landing />} />
+
+              {/* Public Pages with shared layout (theme-aware top nav) */}
               <Route element={<PublicLayout />}>
-                <Route path="/" element={<Landing />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/public/plans/:planId" element={<PublicPlan />} />
               </Route>
@@ -77,6 +85,9 @@ const App: React.FC = () => {
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/cookies" element={<CookiesPolicy />} />
+
+              {/* Public Connect Picker (deep-linked from marketing) */}
+              <Route path="/connect" element={<ConnectIndex />} />
 
               {/* Authentication Routes */}
               <Route path="/login" element={<Login />} />
@@ -105,11 +116,19 @@ const App: React.FC = () => {
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverage /></ErrorBoundary>} />
                   <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraph /></ErrorBoundary>} />
                   <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="settings/integrations" element={<IntegrationsSettings />} />
-                  <Route path="settings/connections" element={<Connections />} />
-                  <Route path="settings/organizations" element={<OrganizationSettings />} />
-                  <Route path="settings/profile" element={<ProfileSettings />} />
+                  <Route path="settings" element={<SettingsLayout />}>
+                    <Route index element={<Navigate to="profile" replace />} />
+                    <Route path="profile" element={<ProfileSettings />} />
+                    <Route path="organization" element={<OrganizationSettings />} />
+                    <Route path="organizations" element={<Navigate to="../organization" replace />} />
+                    <Route path="agents" element={<IntegrationsSettings />} />
+                    <Route path="integrations" element={<Navigate to="../agents" replace />} />
+                    <Route path="connections" element={<Connections />} />
+                    <Route path="tokens" element={<Settings />} />
+                    <Route path="notifications" element={<NotificationsSettings />} />
+                    <Route path="billing" element={<BillingSettings />} />
+                    <Route path="danger" element={<DangerZone />} />
+                  </Route>
                 </Route>
               </Route>
 

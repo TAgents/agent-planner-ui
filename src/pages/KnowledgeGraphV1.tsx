@@ -15,11 +15,15 @@ import {
   PrimaryButton,
   SectionHead,
 } from '../components/v1';
+import { Link } from 'react-router-dom';
 import {
   useGraphitiEntitySearchMutation,
   useGraphitiFactSearchMutation,
+  useEpisodeTaskLinks,
 } from '../hooks/useGraphitiKnowledge';
 import type { GraphitiEntity, GraphitiFact } from '../services/knowledge.service';
+import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
+import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
 type GraphState = {
   entities: GraphitiEntity[];
@@ -130,19 +134,60 @@ const KnowledgeGraphV1: React.FC = () => {
       )
     : [];
 
+  // Episode UUIDs referenced by the entity's facts. Resolved server-side
+  // (entity → facts → episodes → episode_node_links → tasks) so the
+  // inspector can show a "Linked tasks" panel instead of opaque uuids.
+  const entityEpisodeIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of selectedFacts) {
+      for (const id of f.episodes || []) set.add(id);
+    }
+    return Array.from(set);
+  }, [selectedFacts]);
+  const linksQ = useEpisodeTaskLinks(entityEpisodeIds);
+  // Group raw episode→task links by node so the same task appears once
+  // even if multiple episodes mention the entity.
+  const linkedTasks = useMemo(() => {
+    const byNode = new Map<
+      string,
+      { node_id: string; node_title: string; plan_id: string; plan_title: string; episode_count: number }
+    >();
+    for (const l of linksQ.data?.links || []) {
+      const cur = byNode.get(l.node_id);
+      if (cur) cur.episode_count += 1;
+      else
+        byNode.set(l.node_id, {
+          node_id: l.node_id,
+          node_title: l.node_title,
+          plan_id: l.plan_id,
+          plan_title: l.plan_title,
+          episode_count: 1,
+        });
+    }
+    return Array.from(byNode.values()).sort((a, b) => b.episode_count - a.episode_count);
+  }, [linksQ.data]);
+
+  // Cross-plan entity proxy: count distinct plans the recent links touch
+  // so the header reads "92 entities · 18 cross-plan" matching the design.
+  const crossPlanCount = (() => {
+    const list = (linksQ.data as any)?.links || (Array.isArray(linksQ.data) ? linksQ.data : []);
+    return list.filter(
+      (l: any, _i: number, arr: any[]) => arr.filter((x: any) => x.entity_id === l.entity_id).map((x: any) => x.plan_id).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).length > 1,
+    ).length;
+  })();
+
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-9">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Kicker className="mb-2">◆ Knowledge</Kicker>
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
-            Graph
-          </h1>
-          <p className="mt-1 text-[13px] text-text-sec">
-            Entities and the facts that connect them. Search a topic to render the local neighborhood.
-          </p>
-        </div>
-      </header>
+      <KnowledgeHeader
+        stats={[
+          { value: state.entities.length || '—', label: 'entities' },
+          { value: crossPlanCount || '—', label: 'cross-plan', tone: 'amber' },
+        ]}
+        search={draftQuery}
+        onSearchChange={setDraftQuery}
+        searchPlaceholder="Search entities…"
+      />
+      <KnowledgeTabs />
 
       <form onSubmit={submit} className="mb-6 flex flex-wrap items-center gap-3">
         <input
@@ -166,6 +211,9 @@ const KnowledgeGraphV1: React.FC = () => {
             Clear
           </GhostButton>
         )}
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+          Layout: force-directed
+        </span>
       </form>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -228,6 +276,49 @@ const KnowledgeGraphV1: React.FC = () => {
                         <p className="mt-1 leading-[1.5] text-text-sec">{f.fact}</p>
                       </li>
                     ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Linked tasks — entity → facts → episodes → episode_node_links */}
+              <div>
+                <span className="mb-2 block font-mono text-[9px] uppercase tracking-[0.16em] text-text-muted">
+                  Linked tasks
+                </span>
+                {linksQ.isLoading ? (
+                  <p className="text-[11.5px] text-text-muted">Resolving tethers…</p>
+                ) : linkedTasks.length === 0 ? (
+                  <p className="text-[11.5px] text-text-muted">
+                    No plan tasks reference this entity yet.
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-1.5">
+                    {linkedTasks.slice(0, 6).map((t) => (
+                      <li key={t.node_id}>
+                        <Link
+                          to={`/app/plans/${t.plan_id}?node=${t.node_id}`}
+                          className="flex items-center justify-between gap-2 rounded border border-border bg-surface px-2 py-1 transition-colors hover:border-amber"
+                          title={`${t.episode_count} episode${t.episode_count === 1 ? '' : 's'} reference this entity`}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-display text-[12px] font-medium text-text">
+                              {t.node_title}
+                            </span>
+                            <span className="block truncate font-mono text-[9.5px] uppercase tracking-[0.06em] text-text-muted">
+                              {t.plan_title}
+                            </span>
+                          </span>
+                          <span className="font-mono text-[10px] tabular-nums text-text-sec">
+                            ×{t.episode_count}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                    {linkedTasks.length > 6 && (
+                      <li className="font-mono text-[10px] text-text-muted">
+                        +{linkedTasks.length - 6} more
+                      </li>
+                    )}
                   </ul>
                 )}
               </div>

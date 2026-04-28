@@ -4,18 +4,17 @@ import { AppShell, type AppShellNavId } from '../v1';
 import { useUI } from '../../contexts/UIContext';
 
 /**
- * Resolves the active rail item from the current pathname. Anything under
- * /app/plans, /app/portfolio, /app/strategy maps to 'plans' since they
- * surface a portfolio-style view. /app/goals/* → goals, /app/knowledge/* → know,
+ * Resolves the active rail item from the current pathname.
+ * /app/strategy + /app/portfolio → strategy (where-to-spend-time view),
+ * /app/plans → plans, /app/goals → goals, /app/knowledge → know,
  * everything else (including /app, /app/dashboard, /app/settings) → mission.
  */
 function activeNavId(pathname: string): AppShellNavId {
-  if (pathname.startsWith('/app/goals')) return 'goals';
-  if (pathname.startsWith('/app/plans') ||
-      pathname.startsWith('/app/portfolio') ||
-      pathname.startsWith('/app/strategy')) {
-    return 'plans';
+  if (pathname.startsWith('/app/strategy') || pathname.startsWith('/app/portfolio')) {
+    return 'strategy';
   }
+  if (pathname.startsWith('/app/goals')) return 'goals';
+  if (pathname.startsWith('/app/plans')) return 'plans';
   if (pathname.startsWith('/app/knowledge')) return 'know';
   return 'mission';
 }

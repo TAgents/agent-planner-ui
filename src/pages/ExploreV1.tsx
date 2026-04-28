@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'react-query';
 import {
   Card,
   Kicker,
@@ -8,6 +8,7 @@ import {
   type PillColor,
 } from '../components/v1';
 import { planService } from '../services/plans.service';
+import { useAuth } from '../hooks/useAuth';
 
 type PublicPlan = {
   id: string;
@@ -52,15 +53,30 @@ function relTime(iso: string): string {
  * have a real catalog to link into today.
  */
 const ExploreV1: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [sort, setSort] = useState<SortKey>('recent');
   const [query, setQuery] = useState('');
+  const [forkingId, setForkingId] = useState<string | null>(null);
+
+  const forkMutation = useMutation(
+    async (planId: string) => planService.forkPlan(planId),
+    {
+      onSuccess: (data: any) => {
+        const newId = data?.plan?.id || data?.id;
+        if (newId) navigate(`/app/plans/${newId}`);
+      },
+      onSettled: () => setForkingId(null),
+    },
+  );
 
   const plansQ = useQuery(
     ['publicPlans-v1', sort],
     async () => {
       const res = await planService.getPublicPlans(sort, 100, 0);
-      // The endpoint may wrap in { data, total } or return a bare array.
-      const list = Array.isArray(res) ? res : res?.data || [];
+      // The endpoint returns { plans, total, page, limit, total_pages };
+      // accept a bare array as a defensive fallback for older deployments.
+      const list = Array.isArray(res) ? res : res?.plans || res?.data || [];
       return list as PublicPlan[];
     },
     { staleTime: 60_000 },
@@ -167,29 +183,51 @@ const ExploreV1: React.FC = () => {
       <div className="grid gap-3 sm:grid-cols-2">
         {filtered.map((p) => (
           <Card key={p.id} pad={0}>
-            <Link
-              to={`/public/plans/${p.id}`}
-              className="block px-[18px] py-[14px] transition-colors hover:bg-surface-hi/40"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <span className="block flex-1 truncate font-display text-[14px] font-semibold tracking-[-0.01em] text-text">
-                  {p.title}
-                </span>
-                <Pill color={STATUS_COLOR[p.status] || 'slate'}>{p.status}</Pill>
+            <div className="px-[18px] py-[14px]">
+              <Link
+                to={`/public/plans/${p.id}`}
+                className="block transition-colors hover:opacity-90"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <span className="block flex-1 truncate font-display text-[14px] font-semibold tracking-[-0.01em] text-text hover:underline">
+                    {p.title}
+                  </span>
+                  <Pill color={STATUS_COLOR[p.status] || 'slate'}>{p.status}</Pill>
+                </div>
+                {p.description && (
+                  <p className="mt-1 line-clamp-2 text-[12px] leading-[1.5] text-text-sec">
+                    {p.description}
+                  </p>
+                )}
+              </Link>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-text-muted">
+                <div className="flex flex-wrap items-center gap-2">
+                  {p.owner && <span className="uppercase tracking-[0.1em] text-[9px]">{p.owner.name}</span>}
+                  <span>{`${p.view_count} views`}</span>
+                  {typeof p.fork_count === 'number' && <span>{`${p.fork_count} forks`}</span>}
+                  <span className="text-border-hi">·</span>
+                  <span>{`updated ${relTime(p.updated_at)} ago`}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isAuthenticated) {
+                      navigate(`/login?next=${encodeURIComponent(`/explore/clone/${p.id}`)}`);
+                      return;
+                    }
+                    setForkingId(p.id);
+                    forkMutation.mutate(p.id);
+                  }}
+                  disabled={forkingId === p.id}
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-text-sec transition-colors hover:border-amber hover:text-text disabled:opacity-50"
+                  title="Copy this plan to your workspace"
+                >
+                  {forkingId === p.id ? 'Forking…' : '◐ Fork'}
+                </button>
               </div>
-              {p.description && (
-                <p className="mt-1 line-clamp-2 text-[12px] leading-[1.5] text-text-sec">
-                  {p.description}
-                </p>
-              )}
-              <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[10px] text-text-muted">
-                {p.owner && <span className="uppercase tracking-[0.1em] text-[9px]">{p.owner.name}</span>}
-                <span>{`${p.view_count} views`}</span>
-                {typeof p.fork_count === 'number' && <span>{`${p.fork_count} forks`}</span>}
-                <span className="text-border-hi">·</span>
-                <span>{`updated ${relTime(p.updated_at)} ago`}</span>
-              </div>
-            </Link>
+            </div>
           </Card>
         ))}
       </div>

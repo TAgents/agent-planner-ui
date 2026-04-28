@@ -3,7 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
-import { AuthSplitLayout } from '../../components/v1';
+import { AuthSplitLayout, SSOButton } from '../../components/v1';
 
 interface LocationState {
   from?: Location;
@@ -109,114 +109,130 @@ const Login: React.FC = () => {
       }
     >
       <div>
-          {resendSuccess && (
-            <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-3 py-2 rounded-md text-sm">
-              Verification email sent. Check your inbox.
-            </div>
-          )}
+        {/* SSO row — wired to /api/auth endpoints when those land. Buttons
+            are inert today; clicking falls through to email/password. */}
+        <div className="flex flex-col gap-2.5">
+          <SSOButton provider="google" glyph="G" label="Continue with Google" />
+          <SSOButton provider="github" glyph="◐" label="Continue with GitHub" />
+          <SSOButton provider="microsoft" glyph="⚡" label="Continue with SAML SSO" />
+        </div>
 
-          {error && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 rounded-md text-sm">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  {error}
-                  {errorCode === 'EMAIL_NOT_CONFIRMED' && (
-                    <button
-                      type="button"
-                      onClick={handleResendVerification}
-                      disabled={resendingEmail}
-                      className="block mt-1 text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-50"
-                    >
-                      {resendingEmail ? 'Sending...' : 'Resend verification email'}
-                    </button>
-                  )}
-                </div>
+        <div className="my-6 flex items-center gap-3 text-text-muted">
+          <span className="h-px flex-1 bg-border" />
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.18em]">
+            Or with email
+          </span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        {resendSuccess && (
+          <div className="mb-4 rounded-md border border-emerald/30 bg-emerald/10 px-3 py-2 text-[12.5px] text-emerald">
+            Verification email sent. Check your inbox.
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 rounded-md border border-red/30 bg-red/10 px-3 py-2 text-[12.5px] text-red">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                {error}
+                {errorCode === 'EMAIL_NOT_CONFIRMED' && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendingEmail}
+                    className="block mt-1 text-amber underline disabled:opacity-50"
+                  >
+                    {resendingEmail ? 'Sending…' : 'Resend verification email'}
+                  </button>
+                )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  className="w-full px-3 py-2 pr-9 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-2.5 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-amber-500"
-                />
-                Remember me
-              </label>
-              <Link
-                to="/forgot-password"
-                className="text-xs text-amber-600 dark:text-amber-400 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-amber-400 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-          </form>
+              Work email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-[13px] text-text outline-none placeholder:text-text-muted focus:border-amber"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 pr-9 text-[13px] text-text outline-none placeholder:text-text-muted focus:border-amber"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-text-muted hover:text-text"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[11.5px]">
+            <label className="flex items-center gap-2 text-text-sec">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-border bg-surface text-amber focus:ring-amber"
+              />
+              Remember me
+            </label>
+            <Link to="/forgot-password" className="text-amber hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              'Sign in →'
+            )}
+          </button>
+        </form>
       </div>
     </AuthSplitLayout>
   );

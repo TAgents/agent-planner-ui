@@ -933,6 +933,7 @@ export const dashboardApi = {
         total_active_tasks: number;
         stale_plan_ratio: number;
         blocked_task_ratio: number;
+        contradictions?: number;
       };
       penalties: { decisions: number; staleness: number; blocked: number; unlinked: number };
       formula_version: string;

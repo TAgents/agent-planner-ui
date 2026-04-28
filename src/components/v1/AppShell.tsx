@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from './cn';
 
-export type AppShellNavId = 'mission' | 'goals' | 'plans' | 'know';
+export type AppShellNavId = 'mission' | 'strategy' | 'goals' | 'plans' | 'know';
 
 export type AppShellNavItem = {
   id: AppShellNavId;
@@ -13,6 +13,7 @@ export type AppShellNavItem = {
 
 const DEFAULT_NAV: AppShellNavItem[] = [
   { id: 'mission', label: 'Mission', glyph: 'M', to: '/app' },
+  { id: 'strategy', label: 'Strategy', glyph: 'S', to: '/app/strategy' },
   { id: 'goals', label: 'Goals', glyph: 'G', to: '/app/goals' },
   { id: 'plans', label: 'Plans', glyph: 'P', to: '/app/plans' },
   { id: 'know', label: 'Knowledge', glyph: 'K', to: '/app/knowledge' },

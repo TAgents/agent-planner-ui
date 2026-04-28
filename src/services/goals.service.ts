@@ -10,6 +10,7 @@ import { api } from './api-client';
 export const goalDashboardService = {
   getDashboard: () => api.get('/goals/dashboard').then(r => r.data),
   getBriefing: (goalId: string) => api.get(`/goals/${goalId}/briefing`).then(r => r.data),
+  getCoherence: (goalId: string) => api.get(`/goals/${goalId}/coherence`).then(r => r.data),
 };
 
 // ── Node Agent View API ────────────────────────────────────

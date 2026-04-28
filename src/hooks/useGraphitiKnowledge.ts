@@ -150,3 +150,22 @@ export function useDeleteEpisode() {
     }
   );
 }
+
+
+/**
+ * Resolve plan/task tethers for a list of Graphiti episode UUIDs. Used
+ * by the Knowledge Graph entity inspector to walk
+ *   entity → facts.episodes → episode_node_links → tasks
+ * in one round-trip.
+ */
+export function useEpisodeTaskLinks(episodeIds: string[]) {
+  const stableKey = [...episodeIds].sort().join(",");
+  return useQuery(
+    [GRAPHITI_KEY, "episode-task-links", stableKey],
+    async () => {
+      if (episodeIds.length === 0) return { links: [] };
+      return graphitiService.getEpisodeTaskLinks(episodeIds);
+    },
+    { enabled: episodeIds.length > 0, staleTime: 30_000 }
+  );
+}

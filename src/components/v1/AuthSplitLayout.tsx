@@ -19,28 +19,62 @@ export type AuthSplitLayoutProps = {
 };
 
 const DEFAULT_MANIFESTO = (
-  <div className="max-w-[40ch]">
-    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-muted">
-      ◆ AgentPlanner
-    </span>
-    <h2 className="mt-3 font-display text-[26px] font-bold tracking-[-0.035em] text-text">
-      Agents drive. <br /> You steer.
-    </h2>
-    <p className="mt-4 text-[13.5px] leading-[1.6] text-text-sec">
-      A workspace where AI agents check goals, draft plans, gather knowledge,
-      and execute — while you set direction and review the decisions that
-      matter. Read-only by default; written-back by intent.
-    </p>
-    <ul className="mt-6 flex flex-col gap-2 text-[12.5px] text-text-muted">
-      <li className="flex items-center gap-2">
-        <span className="text-amber">◐</span> Goals + plans + knowledge in one graph
-      </li>
-      <li className="flex items-center gap-2">
-        <span className="text-emerald">✓</span> MCP-native — your agent reads it directly
-      </li>
-      <li className="flex items-center gap-2">
-        <span className="text-violet">↳</span> Open core — your data stays yours
-      </li>
+  <div className="flex h-full max-w-[44ch] flex-col">
+    <div className="flex items-center gap-3">
+      <span
+        aria-hidden
+        className="flex h-9 w-9 items-center justify-center rounded-md bg-amber font-display text-[15px] font-bold text-bg"
+      >
+        ◆
+      </span>
+      <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-text">
+        AgentPlanner
+      </span>
+    </div>
+
+    <div className="my-auto py-12">
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
+        ◆ Plans, beliefs, and decisions — for AI agents
+      </span>
+      <h2 className="mt-5 font-display text-[36px] font-bold leading-[1.1] tracking-[-0.035em] text-text sm:text-[40px]">
+        Your agents
+        <br />
+        <span className="font-serif italic text-amber">need a shared</span>
+        <br />
+        brain.
+      </h2>
+      <p className="mt-5 max-w-[42ch] text-[13.5px] leading-[1.6] text-text-sec">
+        A planning surface where humans and agents track goals, branch plans,
+        and accumulate beliefs together — so nobody loses the thread when the
+        context window runs out.
+      </p>
+
+      <div className="mt-6 max-w-[42ch] rounded-md border border-border bg-bg/40 px-3 py-2.5">
+        <div className="flex items-start gap-2.5 text-[12px] leading-[1.55]">
+          <span
+            aria-hidden
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet/20 font-mono text-[10.5px] font-semibold text-violet"
+          >
+            β
+          </span>
+          <p className="text-text-sec">
+            <span className="font-mono text-[11px] text-text">researcher-β</span>{' '}
+            picked up where{' '}
+            <span className="font-mono text-[11px] text-text">planner-α</span>{' '}
+            left off.{' '}
+            <span className="font-semibold text-text">3 new beliefs</span>, 1
+            contradiction flagged.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <ul className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+      <li>SOC 2 Type II</li>
+      <li aria-hidden>·</li>
+      <li>EU residency</li>
+      <li aria-hidden>·</li>
+      <li>MCP-native</li>
     </ul>
   </div>
 );
@@ -62,14 +96,14 @@ export function AuthSplitLayout({
   return (
     <div className={cn('min-h-screen bg-bg text-text', className)}>
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
-        <aside className="hidden border-r border-border bg-surface px-10 py-12 lg:block">
+        <aside className="hidden flex-col border-r border-border bg-surface px-10 py-10 lg:flex">
           <Link
             to="/"
             className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted hover:text-text"
           >
             ← Back to home
           </Link>
-          <div className="mt-16 flex h-[calc(100%-4rem)] items-center">
+          <div className="mt-6 flex flex-1 flex-col">
             {manifesto || DEFAULT_MANIFESTO}
           </div>
         </aside>

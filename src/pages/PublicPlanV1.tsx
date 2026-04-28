@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import { Helmet } from 'react-helmet-async';
 import {
   Card,
   Kicker,
@@ -9,6 +10,7 @@ import {
 } from '../components/v1';
 import { planService } from '../services/plans.service';
 import type { NodeStatus, NodeType } from '../types';
+import { publicStatus } from './PublicPlanV1.helpers';
 
 type ApiNode = {
   id: string;
@@ -76,7 +78,7 @@ function flatten(nodes: ApiNode[], depth = 0, out: FlatRow[] = []): FlatRow[] {
       id: n.id,
       title: n.title,
       description: n.description,
-      status: n.status,
+      status: publicStatus(n.status),
       nodeType: n.nodeType,
       depth,
     });
@@ -133,9 +135,27 @@ const PublicPlanV1: React.FC = () => {
   }
 
   const plan = planQ.data;
+  const canonicalUrl = `https://agentplanner.io/public/plans/${plan.id}`;
+  const ogImage = `https://agentplanner.io/api/plans/public/${plan.id}/og.svg`;
+  const ogDescription = (plan.description?.slice(0, 200) || 'A shared plan on AgentPlanner').replace(/\s+/g, ' ').trim();
 
   return (
     <div className="min-h-screen bg-bg text-text">
+      <Helmet>
+        <title>{`${plan.title} · AgentPlanner`}</title>
+        <link rel="canonical" href={canonicalUrl} />
+        <meta name="description" content={ogDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={plan.title} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:site_name" content="AgentPlanner" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={plan.title} />
+        <meta name="twitter:description" content={ogDescription} />
+        <meta name="twitter:image" content={ogImage} />
+      </Helmet>
       <header className="border-b border-border bg-surface px-6 py-3 sm:px-9">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between">
           <Link

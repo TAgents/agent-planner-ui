@@ -11,7 +11,10 @@ import { usePlan } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
 import { commentService, logService } from '../services/api';
 import { nodeService } from '../services/nodes.service';
-import type { PlanNode, NodeStatus, NodeType } from '../types';
+import { useNodeDependencies } from '../hooks/useDependencies';
+import { coherenceService } from '../services/knowledge.service';
+import type { PlanNode, NodeStatus, NodeType, Dependency } from '../types';
+import { computeStats, flattenTree, type PlanStats as Stats, type TreeRow } from './PlanTree.helpers';
 
 type DetailTab = 'details' | 'comments' | 'logs' | 'agent';
 
@@ -48,7 +51,47 @@ function relTime(iso?: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-type TreeRow = PlanNode & { depth: number; childCount: number };
+const StatusLegend: React.FC = () => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
+    <span>◇ Status spine</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-3 bg-emerald" />Done</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-3 bg-amber" />In progress</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-3 bg-red" />Blocked</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-3 bg-violet" />Plan ready</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-3 bg-text-muted/50" />Not started</span>
+  </div>
+);
+
+const SegmentedProgress: React.FC<{ stats: Stats; className?: string }> = ({ stats, className }) => {
+  const total = stats.total || 1;
+  const segs = [
+    { key: 'done', count: stats.done, cls: 'bg-emerald' },
+    { key: 'doing', count: stats.doing, cls: 'bg-amber' },
+    { key: 'blocked', count: stats.blocked, cls: 'bg-red' },
+    { key: 'planReady', count: stats.planReady, cls: 'bg-violet' },
+  ];
+  return (
+    <div
+      className={`flex h-[3px] w-full overflow-hidden rounded-full bg-surface-hi ${className || ''}`}
+      role="img"
+      aria-label={`${stats.done} done, ${stats.doing} in progress, ${stats.blocked} blocked, ${stats.todo} todo of ${total}`}
+    >
+      {segs.map((s) =>
+        s.count > 0 ? (
+          <div key={s.key} className={s.cls} style={{ width: `${(s.count / total) * 100}%` }} />
+        ) : null,
+      )}
+    </div>
+  );
+};
+
+const STATUS_BAR_CLS: Record<NodeStatus, string> = {
+  completed: 'bg-emerald',
+  in_progress: 'bg-amber',
+  blocked: 'bg-red',
+  plan_ready: 'bg-violet',
+  not_started: 'bg-text-muted/40',
+};
 
 /** Comments service may return either Comment[] or ApiResponse<Comment[]>. */
 function getCommentList(raw: unknown): any[] {
@@ -59,36 +102,15 @@ function getCommentList(raw: unknown): any[] {
   return [];
 }
 
-/** Flatten the parent_id tree into an indented row list. */
-function flattenTree(nodes: PlanNode[]): TreeRow[] {
-  const byParent = new Map<string | null, PlanNode[]>();
-  for (const n of nodes) {
-    const key = (n.parent_id as string | undefined) || null;
-    const arr = byParent.get(key) || [];
-    arr.push(n);
-    byParent.set(key, arr);
-  }
-  for (const arr of Array.from(byParent.values())) {
-    arr.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
-  }
-  const out: TreeRow[] = [];
-  function walk(parentId: string | null, depth: number) {
-    for (const n of byParent.get(parentId) || []) {
-      const childCount = (byParent.get(n.id) || []).length;
-      out.push({ ...n, depth, childCount });
-      walk(n.id, depth + 1);
-    }
-  }
-  walk(null, 0);
-  return out;
-}
-
 const PlanTree: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const safePlanId = planId || '';
   const { plan } = usePlan(safePlanId);
   const { nodes, isLoading } = useNodes(safePlanId);
   const flat = useMemo(() => flattenTree((nodes as PlanNode[] | undefined) || []), [nodes]);
+  const stats = useMemo(() => computeStats((nodes as PlanNode[] | undefined) || []), [nodes]);
+  const inFlight = stats.doing + stats.blocked + stats.planReady;
+  const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>('details');
@@ -125,10 +147,41 @@ const PlanTree: React.FC = () => {
                 {plan.status}
               </Pill>
               {plan.visibility === 'public' && <Pill color="slate">Public</Pill>}
+              <Link
+                to={`/app/knowledge/timeline?plan=${plan.id}`}
+                title="See knowledge episodes scoped to this plan"
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-text-sec transition-colors hover:border-amber hover:text-text"
+              >
+                <span>◆ Knowledge</span>
+                <span aria-hidden>→</span>
+              </Link>
             </div>
           )}
         </div>
       </header>
+
+      {stats.total > 0 && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <StatusLegend />
+          <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+            <span>{stats.total} node{stats.total === 1 ? '' : 's'}</span>
+            <span aria-hidden>·</span>
+            <span>{stats.done} done</span>
+            <span aria-hidden>·</span>
+            <span>{inFlight} in flight</span>
+            {stats.blocked > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <Pill color="red">{stats.blocked} blocked</Pill>
+              </>
+            )}
+            <span className="ml-1 font-display text-[14px] font-bold tracking-[-0.02em] text-text">
+              {pct}%
+            </span>
+          </div>
+        </div>
+      )}
+      {stats.total > 0 && <SegmentedProgress className="mb-6" stats={stats} />}
 
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <Card pad={0} className="overflow-hidden">
@@ -154,11 +207,18 @@ const PlanTree: React.FC = () => {
                       setSelected(row.id);
                       setTab('details');
                     }}
-                    className={`flex w-full items-center gap-3 px-[18px] py-[10px] text-left transition-colors ${
+                    className={`relative flex w-full items-center gap-3 py-[10px] pr-[18px] text-left transition-colors ${
                       isSelected ? 'bg-surface-hi/60' : 'hover:bg-surface-hi/30'
                     }`}
                     style={{ paddingLeft: 18 + row.depth * 16 }}
                   >
+                    {/* Left status spine — vertical color marker so the tree
+                        reads at a glance the same way the Plans Index row
+                        ornament does. */}
+                    <span
+                      aria-hidden
+                      className={`absolute left-0 top-0 bottom-0 w-[3px] ${STATUS_BAR_CLS[row.status]}`}
+                    />
                     <span
                       className={`font-mono text-[12px] ${
                         row.status === 'blocked'
@@ -174,9 +234,14 @@ const PlanTree: React.FC = () => {
                     >
                       {STATUS_GLYPH[row.status]}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] text-text">
+                    <span
+                      className={`min-w-0 flex-1 truncate text-[13px] ${
+                        row.status === 'completed' ? 'text-text-muted line-through' : 'text-text'
+                      }`}
+                    >
                       {row.title}
                     </span>
+                    {row.status === 'blocked' && <Pill color="red">blocked</Pill>}
                     <Pill color={TYPE_COLOR[row.node_type]}>{row.node_type}</Pill>
                   </button>
                 </li>
@@ -215,6 +280,64 @@ const SectionLabel: React.FC<{ children: React.ReactNode; className?: string }> 
     {children}
   </div>
 );
+
+/**
+ * Single-letter sigil card for the Details right-rail. Mirrors the
+ * A/D/K cards in 01-screen-specs.md so an agent's identity, blocking
+ * dependencies, and knowledge linkage all read at a glance without
+ * diving into Agent/Logs sub-tabs.
+ */
+const SigilCard: React.FC<{
+  letter: string;
+  tone?: 'amber' | 'red' | 'slate';
+  title: string;
+  subtitle?: string;
+  href?: string;
+}> = ({ letter, tone = 'slate', title, subtitle, href }) => {
+  const toneCls =
+    tone === 'amber'
+      ? 'border-amber/40 bg-amber/10 text-amber'
+      : tone === 'red'
+        ? 'border-red/40 bg-red/10 text-red'
+        : 'border-border bg-surface text-text-sec';
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+    href ? (
+      <Link to={href} className="block transition-colors hover:bg-surface-hi/40">
+        {children}
+      </Link>
+    ) : (
+      <div>{children}</div>
+    );
+  return (
+    <Wrapper>
+      <div className="flex items-start gap-3 rounded-md border border-border px-3 py-2.5">
+        <span
+          className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border font-mono text-[12px] font-semibold uppercase ${toneCls}`}
+        >
+          {letter}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[12.5px] font-semibold text-text">{title}</p>
+          {subtitle && (
+            <p className="mt-0.5 truncate text-[11px] text-text-sec" title={subtitle}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+    </Wrapper>
+  );
+};
+
+const LOG_TYPE_LABEL: Record<string, string> = {
+  log_added: 'LOG_ADDED',
+  status_change: 'STATUS_CHANGE',
+  comment: 'COMMENT',
+  reasoning: 'REASONING',
+  decision: 'DECISION',
+  challenge: 'CHALLENGE',
+  progress: 'PROGRESS',
+};
 
 const DetailPanel: React.FC<{
   node: TreeRow;
@@ -272,8 +395,27 @@ const DetailPanel: React.FC<{
       created_at: string;
       user_name?: string;
     }>>,
-    { enabled: tab === 'logs', staleTime: 30_000 },
+    // Details tab also previews the last 3 logs (matches the spec right
+    // rail), so this query runs whenever Details OR Logs is open.
+    { enabled: tab === 'logs' || tab === 'details', staleTime: 30_000 },
   );
+
+  // Upstream dependencies + episode links power the D and K sigil cards
+  // on the Details tab. Both fetch only when Details is in view to keep
+  // tree-row clicks light.
+  const deps = useNodeDependencies(planId, node.id, tab === 'details');
+  const episodeLinks = useQuery(
+    ['plan-tree', planId, node.id, 'episode-links'],
+    () => coherenceService.getNodeEpisodeLinks(planId, node.id) as Promise<unknown>,
+    { enabled: tab === 'details' && !!node.id, staleTime: 60_000 },
+  );
+  const episodeLinkCount = (() => {
+    const raw = episodeLinks.data as any;
+    if (!raw) return 0;
+    if (Array.isArray(raw)) return raw.length;
+    if (Array.isArray(raw.links)) return raw.links.length;
+    return 0;
+  })();
 
   return (
     <Card pad={0} className="overflow-hidden">
@@ -287,6 +429,9 @@ const DetailPanel: React.FC<{
           </div>
           <div className="flex flex-shrink-0 items-center gap-1">
             <Pill color={STATUS_COLOR[node.status]}>{node.status}</Pill>
+            {detailedNode.task_mode && detailedNode.task_mode !== 'free' && (
+              <Pill color="violet">{`${detailedNode.task_mode} mode`}</Pill>
+            )}
             <Pill color={TYPE_COLOR[node.node_type]}>{node.node_type}</Pill>
           </div>
         </div>
@@ -317,6 +462,56 @@ const DetailPanel: React.FC<{
             ) : (
               <p className="text-text-muted">No description.</p>
             )}
+
+            {/* Sigil cards: Agent (A) · Dependencies (D) · Knowledge (K).
+                Each renders only when there's a real signal so the panel
+                stays compact for unassigned/unlinked tasks. */}
+            {(detailedNode.assigned_agent_id || (deps.upstream && deps.upstream.length > 0) || episodeLinkCount > 0) && (
+              <div className="mt-4 flex flex-col gap-2">
+                {detailedNode.assigned_agent_id && (
+                  <SigilCard
+                    letter="A"
+                    tone="amber"
+                    title={`${detailedNode.assigned_agent_id} (agent)`}
+                    subtitle={`${relTime(detailedNode.assigned_agent_at)} · ${
+                      detailedNode.status === 'in_progress' ? 'running' : detailedNode.status
+                    }`}
+                  />
+                )}
+                {deps.upstream && deps.upstream.length > 0 && (
+                  (() => {
+                    const blocking = deps.upstream.filter((d) => d.dependency_type === 'blocks');
+                    const first = blocking[0] || deps.upstream[0];
+                    const count = blocking.length || deps.upstream.length;
+                    return (
+                      <SigilCard
+                        letter="D"
+                        tone={blocking.length > 0 ? 'red' : 'slate'}
+                        title={`↑${count} ${blocking.length > 0 ? 'upstream blocking' : 'upstream'}`}
+                        subtitle={(first as any)?.source_title || (first as any)?.node_title || 'Open dependencies tab for detail'}
+                      />
+                    );
+                  })()
+                )}
+                {episodeLinkCount > 0 ? (
+                  <SigilCard
+                    letter="K"
+                    tone="amber"
+                    title={`${episodeLinkCount} knowledge episode${episodeLinkCount === 1 ? '' : 's'} linked`}
+                    subtitle="Tap to open in the Knowledge timeline"
+                    href={`/app/knowledge/timeline?plan=${planId}`}
+                  />
+                ) : (
+                  <SigilCard
+                    letter="K"
+                    tone="slate"
+                    title="No knowledge linked"
+                    subtitle="Agents flag this when running with no relevant episodes"
+                  />
+                )}
+              </div>
+            )}
+
             <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
               <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Children</dt>
               <dd>{node.childCount}</dd>
@@ -354,6 +549,30 @@ const DetailPanel: React.FC<{
                 {node.id.slice(0, 8)}…
               </dd>
             </dl>
+
+            {/* Last-3 logs preview — same data as the Logs tab, surfaced
+                inline so users don't need to switch tabs to see what
+                just happened on this node. */}
+            {(logs.data?.length || 0) > 0 && (
+              <div className="mt-5 border-t border-border pt-4">
+                <SectionLabel>Logs · last {Math.min(3, logs.data!.length)}</SectionLabel>
+                <ul className="mt-2 flex flex-col gap-2.5">
+                  {logs.data!.slice(0, 3).map((l) => (
+                    <li key={l.id} className="text-[11.5px]">
+                      <div className="mb-0.5 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.12em] text-text-muted">
+                        <span>◆ {l.user_name || 'agent'}</span>
+                        <span aria-hidden>·</span>
+                        <span>{relTime(l.created_at)}</span>
+                        <span className="text-amber">
+                          {LOG_TYPE_LABEL[l.log_type || 'log'] || (l.log_type || 'LOG').toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-text-sec">{l.content}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
