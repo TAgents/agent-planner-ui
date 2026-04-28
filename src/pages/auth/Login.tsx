@@ -4,6 +4,7 @@ import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
 import { AuthSplitLayout } from '../../components/v1';
+import OAuthRow from '../../components/auth/OAuthRow';
 
 interface LocationState {
   from?: Location;
@@ -109,9 +110,7 @@ const Login: React.FC = () => {
       }
     >
       <div>
-        {/* SSO buttons (Google / GitHub / SAML) intentionally omitted
-            until the OAuth flows are wired on the API side. Showing
-            disabled buttons that look real is worse than showing none. */}
+        <OAuthRow />
 
         {resendSuccess && (
           <div className="mb-4 rounded-md border border-emerald/30 bg-emerald/10 px-3 py-2 text-[12.5px] text-emerald">

@@ -4,6 +4,7 @@ import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import api from '../../services/api';
 import { AuthSplitLayout } from '../../components/v1';
+import OAuthRow from '../../components/auth/OAuthRow';
 import { calculatePasswordStrength } from '../../utils/passwordStrength';
 
 interface FormData {
@@ -169,8 +170,7 @@ const Register: React.FC = () => {
       }
     >
       <div>
-        {/* SSO buttons (Google / GitHub / SAML) intentionally omitted
-            until the OAuth flows are wired on the API side. */}
+        <OAuthRow />
 
         {errors.general && (
           <div className="mb-4 flex items-center gap-2 rounded-md border border-red/30 bg-red/10 px-3 py-2 text-[12.5px] text-red">
