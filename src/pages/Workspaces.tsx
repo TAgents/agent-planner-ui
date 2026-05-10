@@ -11,8 +11,21 @@ import {
   cn,
   type ProgressColor,
 } from '../components/v1';
-import { useWorkspaces } from '../hooks/useWorkspaces';
+import { useCreateWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import type { Workspace } from '../types';
+
+function getActiveOrgId(): string | null {
+  const stored = localStorage.getItem('active_org_id');
+  if (stored) return stored;
+  const raw = localStorage.getItem('auth_session');
+  if (!raw) return null;
+  try {
+    const s = JSON.parse(raw);
+    return s?.user?.organizationId || s?.user?.organization_id || null;
+  } catch {
+    return null;
+  }
+}
 
 type HealthFilter = 'all' | 'mine' | 'healthy' | 'waiting' | 'risk' | 'idle' | 'archived';
 
@@ -47,6 +60,7 @@ function relativeTime(iso?: string | null): string {
 const Workspaces: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<HealthFilter>('all');
+  const [showCreate, setShowCreate] = useState(false);
   const includeArchived = filter === 'archived';
   const { data, isLoading, error } = useWorkspaces(undefined, { includeArchived });
   const me = userId();
@@ -81,7 +95,7 @@ const Workspaces: React.FC = () => {
         actions={(
           <div className="flex items-center gap-2">
             <GhostButton onClick={() => navigate('/app/blueprints')}>Fork from Blueprint</GhostButton>
-            <PrimaryButton onClick={() => navigate('/app/workspaces/new')}>Create Workspace</PrimaryButton>
+            <PrimaryButton onClick={() => setShowCreate(true)}>Create Workspace</PrimaryButton>
           </div>
         )}
       />
@@ -100,6 +114,103 @@ const Workspaces: React.FC = () => {
           )}
           {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} />}
         </React.Fragment>
+      </div>
+      {showCreate && (
+        <CreateWorkspaceModal
+          onClose={() => setShowCreate(false)}
+          onCreated={(ws) => {
+            setShowCreate(false);
+            navigate(`/app/workspaces/${ws.id}`);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// ─── Create Workspace modal ──────────────────────────────────────
+
+const CreateWorkspaceModal: React.FC<{
+  onClose: () => void;
+  onCreated: (ws: Workspace) => void;
+}> = ({ onClose, onCreated }) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const create = useCreateWorkspace();
+  const orgId = getActiveOrgId();
+
+  async function submit() {
+    setError(null);
+    if (!title.trim()) {
+      setError('Title is required.');
+      return;
+    }
+    if (!orgId) {
+      setError('No active organization. Switch organization in Settings.');
+      return;
+    }
+    try {
+      const ws = await create.mutateAsync({
+        organization_id: orgId,
+        title: title.trim(),
+        description: description.trim() || undefined,
+      });
+      onCreated(ws);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Failed to create workspace.';
+      setError(msg);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-6"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <Kicker className="block">New workspace</Kicker>
+        <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
+          Create a workspace
+        </h2>
+        <p className="mt-1 text-[12.5px] text-text-sec">
+          A folder under your organization that owns goals and plans. Pure container — no semantic behavior.
+        </p>
+
+        <label className="mt-4 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Title</span>
+          <input
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Growth Engine, Q3 Launch"
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        <label className="mt-3 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Description (optional)</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="What kind of work lives here?"
+            className="mt-1.5 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        {error && (
+          <div className="mt-3 rounded-md border border-red bg-red/[0.08] px-3 py-2 text-[12px] text-red">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <GhostButton onClick={onClose} disabled={create.isLoading}>Cancel</GhostButton>
+          <PrimaryButton onClick={submit} disabled={create.isLoading || !title.trim()}>
+            {create.isLoading ? 'Creating…' : 'Create'}
+          </PrimaryButton>
+        </div>
       </div>
     </div>
   );
