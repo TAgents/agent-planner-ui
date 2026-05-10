@@ -24,6 +24,16 @@ export type ClientConfig = {
   lines: ClientSnippetLine[];
   /** Anchor href on agentplanner.io for the dedicated /connect/<id> page. */
   connectPath: string;
+  /**
+   * Optional fast-path one-liner shown above the main snippet (e.g. a CLI
+   * command that performs the equivalent install without hand-editing JSON).
+   */
+  cli?: {
+    label: string;
+    comment: string;
+    language: 'shell' | 'js';
+    lines: ClientSnippetLine[];
+  };
 };
 
 export const CLIENT_CONFIGS: Record<ClientId, ClientConfig> = {
@@ -45,9 +55,20 @@ export const CLIENT_CONFIGS: Record<ClientId, ClientConfig> = {
     id: 'claude-code',
     glyph: 'CC',
     name: 'Claude Code',
-    sub: 'Add to ~/.mcp.json',
+    sub: 'One-line CLI install',
     comment: 'Add this entry to ~/.mcp.json (or your project .mcp.json).',
     language: 'js',
+    cli: {
+      label: 'Quick install (recommended)',
+      comment: 'Run this once in any terminal — writes to ~/.claude.json.',
+      language: 'shell',
+      lines: [
+        { text: 'claude mcp add agent-planner \\', indent: 0 },
+        { text: '-e USER_API_TOKEN=${TOKEN} \\', indent: 1, color: 'amber' },
+        { text: '-e MCP_CLIENT_LABEL="Claude Code" \\', indent: 1 },
+        { text: '-- npx -y agent-planner-mcp', indent: 1 },
+      ],
+    },
     lines: [
       '{',
       { text: '"mcpServers": {', indent: 1 },

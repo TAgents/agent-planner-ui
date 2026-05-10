@@ -83,6 +83,10 @@ const ConnectPage: React.FC = () => {
     () => (config && token ? inlineToken(config.lines, token) : []),
     [config, token],
   );
+  const cliLines = useMemo(
+    () => (config?.cli && token ? inlineToken(config.cli.lines, token) : []),
+    [config, token],
+  );
 
   if (!clientId || !config) {
     return <Navigate to="/onboarding" replace />;
@@ -162,11 +166,30 @@ const ConnectPage: React.FC = () => {
             2 · Configure {config.name}
           </h2>
           {token ? (
-            <SnippetBlock
-              comment={config.comment}
-              language={config.language}
-              lines={snippetLines}
-            />
+            <div className="flex flex-col gap-4">
+              {config.cli && (
+                <div>
+                  <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+                    {config.cli.label}
+                  </p>
+                  <SnippetBlock
+                    comment={config.cli.comment}
+                    language={config.cli.language}
+                    lines={cliLines}
+                  />
+                </div>
+              )}
+              {config.cli && (
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+                  Or edit the file by hand
+                </p>
+              )}
+              <SnippetBlock
+                comment={config.comment}
+                language={config.language}
+                lines={snippetLines}
+              />
+            </div>
           ) : (
             <p className="text-xs text-text-muted">Token will appear above when ready.</p>
           )}

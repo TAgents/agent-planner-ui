@@ -40,13 +40,18 @@ const PERMISSION_TONE: Record<TokenPermission, PillColor> = {
 
 type ClientFilter = 'all' | 'claude-desktop' | 'claude-code' | 'cursor' | 'openclaw' | 'chatgpt';
 
-const CLIENT_TABS: { id: ClientFilter; label: string; glyph: string; match: (label: string) => boolean }[] = [
+// Each tab's `match` fires if EITHER signal is present:
+//   - origin: client_label from the most recent tool_call (set after first use)
+//   - tokenName: the token's name (set when the token was created)
+// New tokens have no usage yet, so we fall back to the name — which is
+// "Connect — <client>" for the onboarding flow and matches cleanly.
+const CLIENT_TABS: { id: ClientFilter; label: string; glyph: string; match: (origin: string, tokenName: string) => boolean }[] = [
   { id: 'all', label: 'Active connections', glyph: '◇', match: () => true },
-  { id: 'claude-desktop', label: 'Claude Desktop', glyph: 'CD', match: (l) => /claude\s*desktop/i.test(l) },
-  { id: 'claude-code', label: 'Claude Code', glyph: 'CC', match: (l) => /claude\s*code/i.test(l) },
-  { id: 'cursor', label: 'Cursor', glyph: 'C', match: (l) => /cursor/i.test(l) },
-  { id: 'openclaw', label: 'OpenClaw', glyph: 'OC', match: (l) => /openclaw/i.test(l) },
-  { id: 'chatgpt', label: 'ChatGPT', glyph: 'GPT', match: (l) => /chatgpt|openai|gpt/i.test(l) },
+  { id: 'claude-desktop', label: 'Claude Desktop', glyph: 'CD', match: (l, n) => /claude[\s-]*desktop/i.test(l) || /claude[\s-]*desktop/i.test(n) },
+  { id: 'claude-code', label: 'Claude Code', glyph: 'CC', match: (l, n) => /claude[\s-]*code/i.test(l) || /claude[\s-]*code/i.test(n) },
+  { id: 'cursor', label: 'Cursor', glyph: 'C', match: (l, n) => /cursor/i.test(l) || /cursor/i.test(n) },
+  { id: 'openclaw', label: 'OpenClaw', glyph: 'OC', match: (l, n) => /openclaw/i.test(l) || /openclaw/i.test(n) },
+  { id: 'chatgpt', label: 'ChatGPT', glyph: 'GPT', match: (l, n) => /chatgpt|openai|gpt/i.test(l) || /chatgpt|openai|gpt/i.test(n) },
 ];
 
 type Connection = {
@@ -89,7 +94,7 @@ function buildConnections(
 
     const weekCount = tCalls.filter((c) => new Date(c.created_at).getTime() > weekAgo).length;
     const origin = lastCall?.client_label || (token.last_used ? 'Unknown client' : '—');
-    const matchedTab = CLIENT_TABS.find((t) => t.id !== 'all' && t.match(origin));
+    const matchedTab = CLIENT_TABS.find((t) => t.id !== 'all' && t.match(origin, token.name));
     const clientGlyph = matchedTab?.glyph || '◇';
 
     return { token, status, lastCall, recentCalls: tCalls, weekCount, origin, clientGlyph };
@@ -121,7 +126,7 @@ const IntegrationsSettings: React.FC = () => {
     let list = allConnections;
     if (tab !== 'all') {
       const matcher = CLIENT_TABS.find((t) => t.id === tab)?.match || (() => true);
-      list = list.filter((c) => matcher(c.origin));
+      list = list.filter((c) => matcher(c.origin, c.token.name));
     }
     if (filter !== 'all') list = list.filter((c) => c.status === filter);
     list = [...list].sort((a, b) => {
@@ -157,7 +162,7 @@ const IntegrationsSettings: React.FC = () => {
     };
     for (const c of allConnections) {
       for (const t of CLIENT_TABS) {
-        if (t.id !== 'all' && t.match(c.origin)) counts[t.id] += 1;
+        if (t.id !== 'all' && t.match(c.origin, c.token.name)) counts[t.id] += 1;
       }
     }
     return counts;
