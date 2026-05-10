@@ -1,0 +1,221 @@
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  GhostButton,
+  Kicker,
+  ObjectChip,
+  PrimaryButton,
+  Progress,
+  StatusDot,
+  TopBar,
+  cn,
+  type ProgressColor,
+} from '../components/v1';
+import { useWorkspaces } from '../hooks/useWorkspaces';
+import type { Workspace } from '../types';
+
+type HealthFilter = 'all' | 'mine' | 'healthy' | 'waiting' | 'risk' | 'idle' | 'archived';
+
+const FILTERS: { id: HealthFilter; label: string }[] = [
+  { id: 'all',      label: 'All' },
+  { id: 'mine',     label: 'Mine' },
+  { id: 'healthy',  label: 'Healthy' },
+  { id: 'waiting',  label: 'Waiting' },
+  { id: 'risk',     label: 'At risk' },
+  { id: 'idle',     label: 'Idle' },
+  { id: 'archived', label: 'Archived' },
+];
+
+function userId(): string {
+  const raw = localStorage.getItem('auth_session');
+  if (!raw) return '';
+  try { return JSON.parse(raw)?.user?.id ?? ''; } catch { return ''; }
+}
+
+function relativeTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000) return 'just now';
+  const min = Math.floor(ms / 60_000);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  return `${d}d ago`;
+}
+
+const Workspaces: React.FC = () => {
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState<HealthFilter>('all');
+  const includeArchived = filter === 'archived';
+  const { data, isLoading, error } = useWorkspaces(undefined, { includeArchived });
+  const me = userId();
+
+  const all = data?.workspaces ?? [];
+
+  const counts = useMemo(() => ({
+    all:      all.filter((w) => !w.archivedAt).length,
+    mine:     all.filter((w) => w.ownerId === me && !w.archivedAt).length,
+    healthy:  all.filter((w) => !w.archivedAt).length, // placeholder until health is wired
+    waiting:  0,
+    risk:     0,
+    idle:     0,
+    archived: all.filter((w) => !!w.archivedAt).length,
+  }), [all, me]);
+
+  const filtered = useMemo(() => {
+    const live = all.filter((w) => !w.archivedAt);
+    switch (filter) {
+      case 'archived': return all.filter((w) => !!w.archivedAt);
+      case 'mine':     return live.filter((w) => w.ownerId === me);
+      default:         return live;
+    }
+  }, [all, filter, me]);
+
+  return (
+    <div className="flex h-full flex-col">
+      <TopBar
+        kicker="Workspaces"
+        title="Live work in motion"
+        subtitle="Every workspace is a folder under your organization that owns its goals and plans."
+        actions={(
+          <div className="flex items-center gap-2">
+            <GhostButton onClick={() => navigate('/app/blueprints')}>Fork from Blueprint</GhostButton>
+            <PrimaryButton onClick={() => navigate('/app/workspaces/new')}>Create Workspace</PrimaryButton>
+          </div>
+        )}
+      />
+      <div className="flex flex-1 flex-col gap-4 overflow-auto bg-bg p-6">
+        <React.Fragment>
+          <Filters filter={filter} setFilter={setFilter} counts={counts} />
+          {isLoading && <EmptyState>Loading workspaces…</EmptyState>}
+          {error ? <EmptyState tone="error">Failed to load workspaces.</EmptyState> : null}
+          {!isLoading && !error && filtered.length === 0 && (
+            <EmptyState>
+              No workspaces yet.{' '}
+              <Link to="/app/workspaces/new" className="text-amber underline">Create one</Link>
+              {' or '}
+              <Link to="/app/blueprints" className="text-amber underline">fork a Blueprint</Link>.
+            </EmptyState>
+          )}
+          {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} />}
+        </React.Fragment>
+      </div>
+    </div>
+  );
+};
+
+const Filters: React.FC<{
+  filter: HealthFilter;
+  setFilter: (f: HealthFilter) => void;
+  counts: Record<HealthFilter, number>;
+}> = ({ filter, setFilter, counts }) => (
+  <div className="flex flex-wrap items-center gap-4">
+    <div className="flex items-center rounded-lg border border-border bg-surface p-[3px]">
+      {FILTERS.map((f) => {
+        const on = f.id === filter;
+        return (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFilter(f.id)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-[12px] transition-colors',
+              on ? 'bg-surface-hi font-semibold text-text' : 'font-medium text-text-sec hover:text-text',
+            )}
+          >
+            {f.label}
+            <span className="font-mono text-[9.5px] text-text-muted">{counts[f.id] ?? 0}</span>
+          </button>
+        );
+      })}
+    </div>
+    <div className="flex-1" />
+    <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-sec min-w-[220px]">
+      <span className="text-text-muted">⌕</span>
+      <span>Search workspaces, goals, blueprints…</span>
+    </div>
+  </div>
+);
+
+type Health = 'on-track' | 'wait' | 'risk' | 'idle';
+const HEALTH_META: Record<Health, { color: ProgressColor; label: string; tw: string }> = {
+  'on-track': { color: 'emerald', label: 'Healthy',  tw: 'text-emerald' },
+  wait:       { color: 'amber',   label: 'Waiting',  tw: 'text-amber'   },
+  risk:       { color: 'red',     label: 'At risk',  tw: 'text-red'     },
+  idle:       { color: 'text-muted', label: 'Idle',  tw: 'text-text-muted' },
+};
+
+function inferHealth(_w: Workspace): Health {
+  // Health rollup is a future server-side aggregation. For now,
+  // every live workspace shows "on-track" as the neutral default.
+  return 'on-track';
+}
+
+const WorkspaceTable: React.FC<{ rows: Workspace[] }> = ({ rows }) => (
+  <div className="overflow-hidden rounded-xl border border-border bg-surface">
+    <div className="grid grid-cols-[24px_1.8fr_1.5fr_1.3fr_110px_1fr_100px_90px] items-center gap-3.5 border-b border-border bg-surface-hi px-[18px] py-[11px]">
+      <span />
+      {['Workspace', 'Goal', 'Source blueprint', 'Plans', 'Health', 'Progress', 'Updated'].map((h) => (
+        <span key={h} className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">{h}</span>
+      ))}
+    </div>
+    {rows.map((w, i) => {
+      const h = inferHealth(w);
+      const meta = HEALTH_META[h];
+      const isLast = i === rows.length - 1;
+      const goalCount = w.goalCount ?? 0;
+      const planCount = w.planCount ?? 0;
+      // Progress is goal/plan-derived; we don't have a real % yet, so 0.
+      const progress = 0;
+      return (
+        <Link
+          key={w.id}
+          to={`/app/workspaces/${w.id}`}
+          className={cn(
+            'grid grid-cols-[24px_1.8fr_1.5fr_1.3fr_110px_1fr_100px_90px] items-center gap-3.5 px-[18px] py-3.5 transition-colors hover:bg-surface-hi',
+            !isLast && 'border-b border-border',
+          )}
+        >
+          <StatusDot color={meta.color} size={8} ring />
+          <div className="min-w-0">
+            <div className="truncate text-[13px] font-semibold text-text">{w.title}{w.isDefault && (
+              <span className="ml-2 rounded bg-surface-hi px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">Default</span>
+            )}</div>
+            <div className="mt-1 flex items-center gap-1.5 text-[10.5px] text-text-muted">
+              {w.description ? <span className="truncate">{w.description}</span> : <span>—</span>}
+            </div>
+          </div>
+          <div className="min-w-0 text-[10px] text-text-muted">
+            {goalCount > 0
+              ? <span>{goalCount} goal{goalCount !== 1 ? 's' : ''}</span>
+              : <span className="font-mono uppercase tracking-[0.08em] text-amber">— link a goal</span>}
+          </div>
+          <div className="min-w-0">
+            {w.forkedFromBlueprintId
+              ? <ObjectChip kind="blueprint" label="Forked blueprint" dim />
+              : <span className="font-mono text-[10px] text-text-muted">blank start</span>}
+          </div>
+          <div className="font-mono text-[10.5px] text-text-sec">{planCount} plan{planCount !== 1 ? 's' : ''}</div>
+          <div className={cn('font-mono text-[10.5px] tracking-[0.04em]', meta.tw)}>{meta.label}</div>
+          <div className="flex flex-col gap-1">
+            <Progress value={progress} height={3} color={meta.color} />
+            <span className="font-mono text-[9.5px] text-text-muted">{progress}%</span>
+          </div>
+          <span className="font-mono text-[10.5px] text-text-muted">{relativeTime(w.updatedAt)}</span>
+        </Link>
+      );
+    })}
+  </div>
+);
+
+const EmptyState: React.FC<{ children: React.ReactNode; tone?: 'error' }> = ({ children, tone }) => (
+  <div className={cn(
+    'rounded-xl border border-border bg-surface p-8 text-center text-[13px]',
+    tone === 'error' ? 'text-red' : 'text-text-sec',
+  )}>
+    {children}
+  </div>
+);
+
+export default Workspaces;

@@ -1,3 +1,74 @@
+// Workspace Types — folder under an Organization that owns goals + plans
+export interface Workspace {
+  id: string;
+  organizationId: string;
+  ownerId: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  icon?: string | null;
+  isDefault: boolean;
+  archivedAt?: string | null;
+  forkedFromBlueprintId?: string | null;
+  forkedAt?: string | null;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+  // Decorations from GET /workspaces/:id
+  goalCount?: number;
+  planCount?: number;
+  role?: string;
+}
+
+// Blueprint Types — dehydrated reusable shape that forks into a Workspace
+export type BlueprintScope = 'plan' | 'workspace';
+export type BlueprintVisibility = 'private' | 'public' | 'unlisted';
+
+export interface BlueprintPayloadNode {
+  key: string;
+  parent_key?: string | null;
+  node_type: 'phase' | 'task' | 'milestone' | 'root';
+  title: string;
+  description?: string | null;
+  order_index?: number;
+  task_mode?: string;
+  context?: string | null;
+  agent_instructions?: string | null;
+}
+
+export interface BlueprintPayloadDependency {
+  source_key: string;
+  target_key: string;
+  dependency_type: string;
+}
+
+export interface BlueprintPayload {
+  version: number;
+  scope: BlueprintScope;
+  plan?: { title: string; description?: string };
+  nodes?: BlueprintPayloadNode[];
+  dependencies?: BlueprintPayloadDependency[];
+}
+
+export interface Blueprint {
+  id: string;
+  ownerId: string;
+  organizationId?: string | null;
+  title: string;
+  description?: string | null;
+  scope: BlueprintScope;
+  visibility: BlueprintVisibility;
+  version: number;
+  payload: BlueprintPayload;
+  sourceWorkspaceId?: string | null;
+  sourcePlanId?: string | null;
+  forkCount: number;
+  tags?: string[];
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Plan Types
 export type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
 export type PlanVisibility = 'public' | 'private';
