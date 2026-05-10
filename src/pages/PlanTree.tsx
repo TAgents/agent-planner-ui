@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import {
+  Breadcrumb,
   Card,
   Kicker,
   Pill,
@@ -9,6 +10,8 @@ import {
 } from '../components/v1';
 import { usePlan } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
+import { useWorkspace } from '../hooks/useWorkspaces';
+import type { Plan as PlanType } from '../types';
 import { commentService, logService } from '../services/api';
 import { nodeService } from '../services/nodes.service';
 import { useNodeDependencies } from '../hooks/useDependencies';
@@ -123,12 +126,7 @@ const PlanTree: React.FC = () => {
   return (
     <div className="mx-auto max-w-[1280px] px-6 py-10 sm:px-9">
       <header className="mb-8">
-        <Link
-          to="/app/plans"
-          className="font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted hover:text-text"
-        >
-          ← Plans
-        </Link>
+        <PlanBreadcrumb plan={plan} />
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <Kicker className="mb-1">◆ Plan</Kicker>
@@ -703,6 +701,33 @@ const DetailPanel: React.FC<{
         )}
       </div>
     </Card>
+  );
+};
+
+/**
+ * Breadcrumb at the top of a plan: `Plans · …` or, when the plan
+ * lives in a workspace: `Workspaces › <Workspace> › <Plan>`.
+ * Falls back to the legacy "← Plans" affordance while the plan or
+ * workspace is loading so the page never reflows.
+ */
+const PlanBreadcrumb: React.FC<{ plan: PlanType | undefined | null }> = ({ plan }) => {
+  const wsId = plan?.workspace_id || plan?.workspaceId || undefined;
+  const { data: ws } = useWorkspace(wsId);
+
+  if (wsId && ws) {
+    return (
+      <Breadcrumb
+        items={[
+          { label: 'Workspaces', to: '/app/workspaces' },
+          { label: ws.title, to: `/app/workspaces/${ws.id}` },
+          plan?.title || 'Plan',
+        ]}
+      />
+    );
+  }
+  // No workspace yet (personal/no-org plan, or still loading)
+  return (
+    <Breadcrumb items={[{ label: 'Plans', to: '/app/plans' }, plan?.title || 'Plan']} />
   );
 };
 

@@ -104,6 +104,13 @@ export interface Plan {
   // GitHub integration fields
   github_repo_owner?: string | null;
   github_repo_name?: string | null;
+  // Workspace + Blueprint provenance (v1.1)
+  workspace_id?: string | null;
+  workspaceId?: string | null;
+  forked_from_blueprint_id?: string | null;
+  forkedFromBlueprintId?: string | null;
+  forked_at?: string | null;
+  forkedAt?: string | null;
   // BDI quality assessment
   quality_score?: number | null;
   quality_assessed_at?: string | null;

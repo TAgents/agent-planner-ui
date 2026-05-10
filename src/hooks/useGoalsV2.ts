@@ -16,6 +16,9 @@ export interface GoalV2 {
   description: string | null;
   ownerId: string;
   organizationId: string | null;
+  /** v1.1 — Workspace this goal belongs to (folder under the org). */
+  workspaceId?: string | null;
+  workspace_id?: string | null;
   type: 'outcome' | 'constraint' | 'metric' | 'principle';
   status: 'active' | 'achieved' | 'paused' | 'abandoned';
   successCriteria: any;

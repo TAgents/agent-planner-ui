@@ -12,6 +12,8 @@ import {
 } from '../components/v1';
 import { useGoalV2, useGoalPath, useGoalKnowledgeGaps } from '../hooks/useGoalsV2';
 import { usePlans } from '../hooks/usePlans';
+import { useWorkspace } from '../hooks/useWorkspaces';
+import { ObjectChip } from '../components/v1';
 import { useCriticalPath } from '../hooks/useDependencies';
 import { request } from '../services/api-client';
 import { goalDashboardService, goalBdiService } from '../services/goals.service';
@@ -125,13 +127,7 @@ const GoalDetailV1: React.FC = () => {
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10 sm:px-9">
       <header className="mb-7">
-        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
-          <Link to="/app/goals" className="hover:text-text">
-            Goals
-          </Link>
-          <span aria-hidden>›</span>
-          <span className="text-text-sec">{goal.type}</span>
-        </div>
+        <GoalBreadcrumb goal={goal} />
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
@@ -143,6 +139,7 @@ const GoalDetailV1: React.FC = () => {
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
                 created {relTime(goal.createdAt)}
               </span>
+              <WorkspaceChip goal={goal} />
             </div>
             {goal.description && (
               <p className="mt-3 max-w-[64ch] text-[13px] leading-[1.55] text-text-sec">
@@ -798,6 +795,53 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
         </ul>
       )}
     </Card>
+  );
+};
+
+/**
+ * Breadcrumb at the top of a goal detail. Promotes the workspace into
+ * the path when present: `Workspaces › <Workspace> › Goals · <type>`.
+ * Falls back to plain `Goals · <type>` for personal/unscoped goals.
+ */
+const GoalBreadcrumb: React.FC<{ goal: { workspaceId?: string | null; workspace_id?: string | null; type: string } }> = ({ goal }) => {
+  const wsId = goal.workspaceId ?? goal.workspace_id ?? undefined;
+  const { data: ws } = useWorkspace(wsId);
+  return (
+    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+      {wsId && ws ? (
+        <>
+          <Link to="/app/workspaces" className="hover:text-text">Workspaces</Link>
+          <span aria-hidden>›</span>
+          <Link to={`/app/workspaces/${ws.id}`} className="hover:text-text">{ws.title}</Link>
+          <span aria-hidden>›</span>
+        </>
+      ) : null}
+      <Link to="/app/goals" className="hover:text-text">Goals</Link>
+      <span aria-hidden>›</span>
+      <span className="text-text-sec">{goal.type}</span>
+    </div>
+  );
+};
+
+/**
+ * Inline chip rendered next to the goal-status pills, declaring which
+ * workspace the goal lives in. Renders `Personal` for goals without a
+ * workspace (org-less, or pre-backfill rows).
+ */
+const WorkspaceChip: React.FC<{ goal: { workspaceId?: string | null; workspace_id?: string | null } }> = ({ goal }) => {
+  const wsId = goal.workspaceId ?? goal.workspace_id ?? undefined;
+  const { data: ws } = useWorkspace(wsId);
+  if (wsId && ws) {
+    return (
+      <Link to={`/app/workspaces/${ws.id}`} className="inline-flex">
+        <ObjectChip kind="workspace" label={ws.title} />
+      </Link>
+    );
+  }
+  return (
+    <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
+      Personal · no workspace
+    </span>
   );
 };
 
