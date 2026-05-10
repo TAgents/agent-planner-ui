@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQueries } from 'react-query';
 import {
   Card,
   GhostButton,
@@ -15,6 +16,8 @@ import {
 import { useWorkspace } from '../hooks/useWorkspaces';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
+import { activityService } from '../services/api';
+import type { Activity } from '../types';
 
 const WorkspaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -80,10 +83,92 @@ const WorkspaceDetail: React.FC = () => {
           <CollaboratorsPanel ownerId={workspace.ownerId} />
           <ProvenancePanel workspace={workspace} />
         </div>
+        <ActivityTimeline planIds={plans.map((p: any) => p.id)} />
       </div>
     </div>
   );
 };
+
+// ─── Activity timeline ───────────────────────────────────────────
+// Aggregates plan_node_logs from every plan in the workspace, merges
+// client-side, and shows the most recent N entries. The API has no
+// workspace-scoped activity endpoint yet; this is a per-plan fan-out
+// limited to the plans actually inside the workspace, so the request
+// volume is bounded.
+
+type LogRow = { id: string; content: string; created_at: string; planId: string; planTitle?: string; user_name?: string };
+
+const ActivityTimeline: React.FC<{ planIds: string[] }> = ({ planIds }) => {
+  const queries = useQueries(
+    planIds.map((planId) => ({
+      queryKey: ['workspace-activity', planId],
+      queryFn: async () => {
+        const res = await activityService.getPlanActivity(planId, 1, 20);
+        const items: any[] = Array.isArray(res) ? res : (res as any)?.data ?? [];
+        return items.map((it: any): LogRow => ({
+          id: String(it.id),
+          content: String(it.content || it.message || ''),
+          created_at: it.created_at || it.createdAt,
+          planId,
+          planTitle: it.plan_title,
+          user_name: it.user?.name || it.user_name,
+        }));
+      },
+      enabled: !!planId,
+      staleTime: 30_000,
+    })),
+  );
+
+  const merged = queries
+    .flatMap((q) => (q.data as LogRow[] | undefined) ?? [])
+    .filter((r) => !!r.created_at)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 12);
+
+  if (planIds.length === 0) return null;
+
+  return (
+    <PanelShell kicker="Activity" title="Recent movement in this workspace">
+      {merged.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-bg p-6 text-center text-[12px] text-text-muted">
+          No activity logged yet across the plans in this workspace.
+        </div>
+      ) : (
+        <ul className="flex flex-col">
+          {merged.map((e, i) => (
+            <li
+              key={e.id}
+              className={cn(
+                'grid grid-cols-[120px_120px_1fr] items-center gap-4 py-2.5',
+                i > 0 && 'border-t border-border',
+              )}
+            >
+              <span className="font-mono text-[10.5px] text-text-muted">{relTime(e.created_at)}</span>
+              <span className={cn(
+                'truncate text-[11.5px] font-semibold',
+                e.user_name ? 'text-text' : 'text-amber',
+              )}>
+                {e.user_name || 'agent'}
+              </span>
+              <span className="truncate text-[12px] text-text-sec">{e.content}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PanelShell>
+  );
+};
+
+function relTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000) return 'just now';
+  const min = Math.floor(ms / 60_000);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  return `${d}d ago`;
+}
 
 // ─── Sub-panels ─────────────────────────────────────────────────
 

@@ -8,6 +8,20 @@
 import { Blueprint, BlueprintScope, BlueprintVisibility, Plan } from '../types';
 import { request } from './api-client';
 
+export interface BlueprintFork {
+  id: string;
+  title: string;
+  status: string;
+  visibility?: string;
+  ownerId: string;
+  organizationId: string | null;
+  workspaceId: string | null;
+  forkedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  workspace: { id: string; title: string; slug: string } | null;
+}
+
 export const blueprintService = {
   list: async (params?: {
     scope?: BlueprintScope;
@@ -43,6 +57,17 @@ export const blueprintService = {
     return request<void>({
       method: 'DELETE',
       url: `/blueprints/${id}`,
+    });
+  },
+
+  /**
+   * List plans forked from this blueprint, decorated with their workspace.
+   */
+  listForks: async (id: string, params?: { limit?: number }) => {
+    return request<{ forks: BlueprintFork[] }>({
+      method: 'GET',
+      url: `/blueprints/${id}/forks`,
+      params,
     });
   },
 

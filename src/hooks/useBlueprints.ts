@@ -24,6 +24,14 @@ export const useBlueprint = (id?: string) => {
   });
 };
 
+export const useBlueprintForks = (id?: string) => {
+  return useQuery(
+    ['blueprint-forks', id],
+    () => blueprintService.listForks(id as string),
+    { enabled: !!id },
+  );
+};
+
 export const useForkBlueprint = () => {
   const qc = useQueryClient();
   return useMutation(

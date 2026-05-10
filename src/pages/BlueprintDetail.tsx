@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Card,
   GhostButton,
@@ -10,9 +10,10 @@ import {
   TopBar,
   cn,
 } from '../components/v1';
-import { useBlueprint, useForkBlueprint } from '../hooks/useBlueprints';
+import { useBlueprint, useBlueprintForks, useForkBlueprint } from '../hooks/useBlueprints';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import type { Blueprint, BlueprintPayloadNode } from '../types';
+import type { BlueprintFork } from '../services/blueprints.service';
 
 const BlueprintDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +66,7 @@ const BlueprintDetail: React.FC = () => {
           <StructurePreview nodes={nodes} />
           <PayloadInfo bp={bp} />
         </div>
+        <DerivedWorkspaces blueprintId={bp.id} />
         <OutcomeSignals bp={bp} />
       </div>
 
@@ -238,6 +240,87 @@ const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, ch
     <span className="text-text-sec">{children}</span>
   </div>
 );
+
+// ─── Derived Workspaces (forks history) ──────────────────────────
+
+const DerivedWorkspaces: React.FC<{ blueprintId: string }> = ({ blueprintId }) => {
+  const { data, isLoading } = useBlueprintForks(blueprintId);
+  const forks = data?.forks ?? [];
+
+  return (
+    <Card pad={20}>
+      <div className="mb-3 flex items-baseline justify-between">
+        <div>
+          <Kicker className="block">Fork history</Kicker>
+          <div className="mt-1 font-display text-[16px] font-semibold tracking-[-0.02em] text-text">
+            Plans forked from this blueprint
+          </div>
+        </div>
+        <span className="font-mono text-[10px] text-text-muted">{forks.length}</span>
+      </div>
+      {isLoading ? (
+        <div className="rounded-lg border border-dashed border-border bg-bg p-6 text-center text-[12px] text-text-muted">
+          Loading…
+        </div>
+      ) : forks.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-bg p-6 text-center text-[12px] text-text-muted">
+          No forks yet. Click <span className="text-amber font-semibold">Fork into Workspace</span> above to be the first.
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {forks.map((f) => <ForkRow key={f.id} fork={f} />)}
+        </ul>
+      )}
+    </Card>
+  );
+};
+
+const ForkRow: React.FC<{ fork: BlueprintFork }> = ({ fork }) => {
+  const statusColor = fork.status === 'active' ? 'amber'
+    : fork.status === 'completed' ? 'emerald'
+    : 'slate';
+  return (
+    <li>
+      <Link
+        to={`/app/plans/${fork.id}`}
+        className="grid grid-cols-[20px_1fr_minmax(0,200px)_80px] items-center gap-3 rounded-md border border-border bg-bg px-3 py-2.5 transition-colors hover:bg-surface-hi"
+      >
+        <span className={cn(
+          'inline-block h-2 w-2 rounded-full',
+          statusColor === 'amber' ? 'bg-amber' : statusColor === 'emerald' ? 'bg-emerald' : 'bg-slate',
+        )} />
+        <div className="min-w-0">
+          <ObjectChip kind="plan" label={fork.title} />
+        </div>
+        {fork.workspace ? (
+          <Link
+            to={`/app/workspaces/${fork.workspace.id}`}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            className="min-w-0"
+          >
+            <ObjectChip kind="workspace" label={fork.workspace.title} dim />
+          </Link>
+        ) : (
+          <span className="font-mono text-[10px] text-text-muted">no workspace</span>
+        )}
+        <span className="text-right font-mono text-[10px] text-text-muted">
+          {fork.forkedAt ? relTimeShort(fork.forkedAt) : '—'}
+        </span>
+      </Link>
+    </li>
+  );
+};
+
+function relTimeShort(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000) return 'just now';
+  const min = Math.floor(ms / 60_000);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  return `${d}d ago`;
+}
 
 // ─── Outcome signals (proposed) ──────────────────────────────────
 
