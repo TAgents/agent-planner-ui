@@ -13,23 +13,35 @@ const renderHero = () =>
     </HelmetProvider>,
   );
 
-describe('HeroSection "Connects to" inline list', () => {
-  it.each([
-    ['Claude Desktop', '/connect/claude-desktop'],
-    ['Claude Code', '/connect/claude-code'],
-    ['Cursor', '/connect/cursor'],
-    ['Windsurf', '/connect/openclaw'],
-  ])('"%s" link deep-links to %s', (name, href) => {
+/**
+ * Workspace-first hero (v1.1). Asserts the two primary CTAs and the
+ * top-of-hero kicker copy. The old "Connects to" inline client list
+ * was removed when the hero was reframed around Workspace + Blueprint —
+ * /connect/* deep links still work; they just aren't on the hero.
+ */
+describe('HeroSection', () => {
+  it('renders the workspace-first headline', () => {
     renderHero();
-    const link = screen.getByText(name).closest('a');
-    expect(link).not.toBeNull();
-    expect(link).toHaveAttribute('href', href);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn repeatable work into/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/live workspaces/i);
   });
 
-  it('exposes a "$ install mcp" CTA pointing at /connect', () => {
+  it('CTA "Create Workspace" links to /login', () => {
     renderHero();
-    const cta = screen.getByText(/install mcp/i).closest('a');
+    const cta = screen.getByText(/Create Workspace/i).closest('a');
     expect(cta).not.toBeNull();
-    expect(cta).toHaveAttribute('href', '/connect');
+    expect(cta).toHaveAttribute('href', '/login');
+  });
+
+  it('CTA "Explore Blueprints" links to /explore', () => {
+    renderHero();
+    const cta = screen.getByText(/Explore Blueprints/i).closest('a');
+    expect(cta).not.toBeNull();
+    expect(cta).toHaveAttribute('href', '/explore');
+  });
+
+  it('renders the "Operating system for repeatable work" kicker', () => {
+    renderHero();
+    expect(screen.getByText(/Operating system for repeatable work/i)).toBeInTheDocument();
   });
 });
