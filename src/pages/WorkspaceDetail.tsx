@@ -70,7 +70,7 @@ const WorkspaceDetail: React.FC = () => {
         actions={(
           <div className="flex items-center gap-2">
             <GhostButton onClick={() => setShowEdit(true)}>Edit</GhostButton>
-            <PrimaryButton onClick={() => navigate('/app/plans/new')}>New Plan</PrimaryButton>
+            <PrimaryButton onClick={() => navigate(`/app/plans/create?workspace=${id}`)}>New Plan</PrimaryButton>
           </div>
         )}
       />
@@ -78,7 +78,7 @@ const WorkspaceDetail: React.FC = () => {
         <SummaryStrip workspace={workspace} planCount={plans.length} goalCount={goals.length} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GoalsPanel goals={goals} workspaceId={id!} />
-          <PlansPanel plans={plans} />
+          <PlansPanel plans={plans} workspaceId={id!} />
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <CollaboratorsPanel ownerId={workspace.ownerId} />
@@ -345,9 +345,9 @@ const GoalsPanel: React.FC<{ goals: any[]; workspaceId: string }> = ({ goals, wo
   </PanelShell>
 );
 
-const PlansPanel: React.FC<{ plans: any[] }> = ({ plans }) => (
+const PlansPanel: React.FC<{ plans: any[]; workspaceId: string }> = ({ plans, workspaceId }) => (
   <PanelShell kicker="Plans" title="Execution structures" accent="amber" action={
-    <Link to="/app/plans/new" className="text-[11.5px] text-text-sec hover:text-text">New plan →</Link>
+    <Link to={`/app/plans/create?workspace=${workspaceId}`} className="text-[11.5px] text-text-sec hover:text-text">New plan →</Link>
   }>
     {plans.length === 0 && (
       <div className="rounded-lg border border-dashed border-border bg-bg p-6 text-center text-[12px] text-text-muted">

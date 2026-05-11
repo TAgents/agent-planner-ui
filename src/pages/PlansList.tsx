@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Card,
   Kicker,
+  ObjectChip,
   Pill,
   PrimaryButton,
   StatusSpine,
   type PillColor,
 } from '../components/v1';
 import { usePlans } from '../hooks/usePlans';
+import { useWorkspaces } from '../hooks/useWorkspaces';
 import type { Plan, PlanStatus } from '../types';
 import { agentActivityKind } from './PlansList.helpers';
 
@@ -87,15 +89,37 @@ function relativeTime(iso: string | undefined): string {
 
 const PlansList: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading } = usePlans(1, 100);
+  const { data: wsData } = useWorkspaces();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<SortKey>('updated');
   const [query, setQuery] = useState('');
+  const workspaceFilter = searchParams.get('workspace') || 'all';
+  const setWorkspaceFilter = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === 'all') next.delete('workspace');
+    else next.set('workspace', id);
+    setSearchParams(next, { replace: true });
+  };
+
+  const workspacesById = useMemo(() => {
+    const m = new Map<string, { id: string; title: string }>();
+    for (const w of wsData?.workspaces ?? []) m.set(w.id, { id: w.id, title: w.title });
+    return m;
+  }, [wsData]);
 
   const filtered = useMemo<Plan[]>(() => {
     if (!plans) return [];
     let list = [...(plans as Plan[])];
     if (statusFilter !== 'all') list = list.filter((p: Plan) => p.status === statusFilter);
+    if (workspaceFilter !== 'all') {
+      list = list.filter((p: Plan) => {
+        const wsId = (p as any).workspace_id || (p as any).workspaceId;
+        if (workspaceFilter === 'none') return !wsId;
+        return wsId === workspaceFilter;
+      });
+    }
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
@@ -111,7 +135,7 @@ const PlansList: React.FC = () => {
       return new Date(bIso).getTime() - new Date(aIso).getTime();
     });
     return list;
-  }, [plans, statusFilter, sort, query]);
+  }, [plans, statusFilter, workspaceFilter, sort, query]);
 
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = {
@@ -168,6 +192,20 @@ const PlansList: React.FC = () => {
             className="rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:outline-none"
           />
           <select
+            value={workspaceFilter}
+            onChange={(e) => setWorkspaceFilter(e.target.value)}
+            className={`rounded-md border bg-surface px-3 py-[6px] text-xs focus:outline-none ${
+              workspaceFilter !== 'all' ? 'border-amber text-text' : 'border-border text-text-sec'
+            }`}
+            title="Filter by workspace"
+          >
+            <option value="all">Workspace: Any</option>
+            {(wsData?.workspaces ?? []).filter((w) => !w.archivedAt).map((w) => (
+              <option key={w.id} value={w.id}>{w.title}</option>
+            ))}
+            <option value="none">— Unassigned —</option>
+          </select>
+          <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
             className="rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text focus:outline-none"
@@ -218,6 +256,13 @@ const PlansList: React.FC = () => {
                       )}
                       {stale && <Pill color="red">Stale · {daysSince(plan.updated_at)}d</Pill>}
                       <Pill color={STATUS_COLOR[plan.status]}>{plan.status}</Pill>
+                      {(() => {
+                        const wsId = (plan as any).workspace_id || (plan as any).workspaceId;
+                        if (!wsId) return null;
+                        const ws = workspacesById.get(wsId);
+                        if (!ws) return null;
+                        return <ObjectChip kind="workspace" label={ws.title} dim />;
+                      })()}
                       {/* Agent activity within last 5 min → live dot, last hour → recent (idle) */}
                       {agentActivityKind(plan.last_agent_log_at) === 'live' && (
                         <span

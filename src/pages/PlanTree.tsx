@@ -1,17 +1,20 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import {
   Breadcrumb,
   Card,
+  GhostButton,
   Kicker,
   Pill,
+  PrimaryButton,
   type PillColor,
 } from '../components/v1';
-import { usePlan } from '../hooks/usePlans';
+import { usePlan, usePlans } from '../hooks/usePlans';
 import { useNodes } from '../hooks/useNodes';
-import { useWorkspace } from '../hooks/useWorkspaces';
-import type { Plan as PlanType } from '../types';
+import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
+import { useSavePlanAsBlueprint } from '../hooks/useBlueprints';
+import type { Plan as PlanType, BlueprintVisibility } from '../types';
 import { commentService, logService } from '../services/api';
 import { nodeService } from '../services/nodes.service';
 import { useNodeDependencies } from '../hooks/useDependencies';
@@ -117,6 +120,8 @@ const PlanTree: React.FC = () => {
 
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>('details');
+  const [showSaveAsBlueprint, setShowSaveAsBlueprint] = useState(false);
+  const [showMove, setShowMove] = useState(false);
 
   const selectedNode = useMemo(
     () => (selected ? flat.find((n) => n.id === selected) || null : flat[0] || null),
@@ -153,10 +158,30 @@ const PlanTree: React.FC = () => {
                 <span>◆ Knowledge</span>
                 <span aria-hidden>→</span>
               </Link>
+              <GhostButton onClick={() => setShowMove(true)}>
+                Move →
+              </GhostButton>
+              <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>
+                Save as Blueprint →
+              </GhostButton>
             </div>
           )}
         </div>
       </header>
+      {showSaveAsBlueprint && plan && (
+        <SaveAsBlueprintModal
+          planId={plan.id}
+          defaultTitle={plan.title}
+          defaultDescription={plan.description ?? ''}
+          onClose={() => setShowSaveAsBlueprint(false)}
+        />
+      )}
+      {showMove && plan && (
+        <MovePlanModal
+          plan={plan}
+          onClose={() => setShowMove(false)}
+        />
+      )}
 
       {stats.total > 0 && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
@@ -701,6 +726,189 @@ const DetailPanel: React.FC<{
         )}
       </div>
     </Card>
+  );
+};
+
+// ─── Save as Blueprint modal ─────────────────────────────────────
+
+const SaveAsBlueprintModal: React.FC<{
+  planId: string;
+  defaultTitle: string;
+  defaultDescription: string;
+  onClose: () => void;
+}> = ({ planId, defaultTitle, defaultDescription, onClose }) => {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState(defaultTitle);
+  const [description, setDescription] = useState(defaultDescription);
+  const [visibility, setVisibility] = useState<BlueprintVisibility>('private');
+  const [tagsRaw, setTagsRaw] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const save = useSavePlanAsBlueprint();
+
+  async function submit() {
+    setError(null);
+    if (!title.trim()) {
+      setError('Title is required.');
+      return;
+    }
+    try {
+      const bp = await save.mutateAsync({
+        planId,
+        title: title.trim() !== defaultTitle ? title.trim() : undefined,
+        description: description.trim() !== defaultDescription ? description.trim() : undefined,
+        visibility,
+        tags: tagsRaw.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean),
+      });
+      onClose();
+      if (bp?.id) navigate(`/app/blueprints/${bp.id}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to save blueprint.');
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-6"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <Kicker className="block">Save as Blueprint</Kicker>
+        <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
+          Capture this plan's shape
+        </h2>
+        <p className="mt-1 text-[12.5px] text-text-sec">
+          Snapshots the structure (phases, tasks, dependencies, agent instructions).
+          Excludes run-state: statuses, claims, knowledge episodes, logs, decisions.
+        </p>
+
+        <label className="mt-4 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Title</span>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        <label className="mt-3 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Description</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="mt-1.5 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        <label className="mt-3 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Visibility</span>
+          <select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as BlueprintVisibility)}
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          >
+            <option value="private">Private — only me</option>
+            <option value="unlisted">Unlisted — anyone with the link</option>
+            <option value="public">Public — discoverable</option>
+          </select>
+        </label>
+
+        <label className="mt-3 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Tags (comma-separated)</span>
+          <input
+            value={tagsRaw}
+            onChange={(e) => setTagsRaw(e.target.value)}
+            placeholder="e.g. gtm, launch"
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        {error && (
+          <div className="mt-3 rounded-md border border-red bg-red/[0.08] px-3 py-2 text-[12px] text-red">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <GhostButton onClick={onClose} disabled={save.isLoading}>Cancel</GhostButton>
+          <PrimaryButton onClick={submit} disabled={save.isLoading || !title.trim()}>
+            {save.isLoading ? 'Saving…' : 'Save as Blueprint'}
+          </PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Move plan to workspace modal ────────────────────────────────
+
+const MovePlanModal: React.FC<{
+  plan: PlanType;
+  onClose: () => void;
+}> = ({ plan, onClose }) => {
+  const { data: wsData } = useWorkspaces();
+  const { updatePlan } = usePlans(1, 100, undefined, false);
+  const currentId = (plan as any).workspace_id || (plan as any).workspaceId || '';
+  const [target, setTarget] = useState<string>(currentId);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setError(null);
+    try {
+      await updatePlan.mutateAsync({
+        planId: plan.id,
+        data: { workspace_id: target || null } as any,
+      });
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to move plan.');
+    }
+  }
+
+  const dirty = target !== currentId;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-6"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <Kicker className="block">Move plan</Kicker>
+        <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
+          Move "{plan.title}" to a workspace
+        </h2>
+        <p className="mt-1 text-[12.5px] text-text-sec">
+          Plans live inside workspaces (folders under your organization). Unassign to leave the plan org-personal.
+        </p>
+
+        <label className="mt-4 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Workspace</span>
+          <select
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          >
+            <option value="">— Unassigned —</option>
+            {(wsData?.workspaces ?? []).filter((w) => !w.archivedAt).map((w) => (
+              <option key={w.id} value={w.id}>{w.title}{w.isDefault ? ' (default)' : ''}</option>
+            ))}
+          </select>
+        </label>
+
+        {error && (
+          <div className="mt-3 rounded-md border border-red bg-red/[0.08] px-3 py-2 text-[12px] text-red">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <GhostButton onClick={onClose} disabled={updatePlan.isLoading}>Cancel</GhostButton>
+          <PrimaryButton onClick={submit} disabled={updatePlan.isLoading || !dirty}>
+            {updatePlan.isLoading ? 'Moving…' : 'Move'}
+          </PrimaryButton>
+        </div>
+      </div>
+    </div>
   );
 };
 

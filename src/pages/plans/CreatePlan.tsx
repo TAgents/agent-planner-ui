@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useWorkspaces } from '../../hooks/useWorkspaces';
 import { ArrowLeft, Save, Target, ChevronDown, Loader2, Sparkles } from 'lucide-react';
 import { usePlans } from '../../hooks/usePlans';
 import { useCreateGoal } from '../../hooks/useGoalsV2';
@@ -15,6 +16,10 @@ type GoalType = typeof GOAL_TYPES[number]['value'];
 
 const CreatePlan: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const presetWorkspaceId = searchParams.get('workspace') || undefined;
+  const { data: wsData } = useWorkspaces();
+  const presetWorkspace = (wsData?.workspaces ?? []).find((w) => w.id === presetWorkspaceId);
   const createGoal = useCreateGoal();
   const { createPlan } = usePlans();
 
@@ -44,6 +49,7 @@ const CreatePlan: React.FC = () => {
         type: goalType,
         status: 'active',
       };
+      if (presetWorkspaceId) payload.workspace_id = presetWorkspaceId;
 
       if (successCriteria.trim()) {
         payload.successCriteria = { text: successCriteria.trim() };
@@ -72,7 +78,8 @@ const CreatePlan: React.FC = () => {
         title: planTitle,
         description: planDescription,
         status: planStatus,
-      });
+        ...(presetWorkspaceId ? { workspace_id: presetWorkspaceId } : {}),
+      } as any);
 
       let planId;
       if (result?.data?.id) {
@@ -120,6 +127,13 @@ const CreatePlan: React.FC = () => {
               </p>
             </div>
 
+            {/* Pre-selected workspace */}
+            {presetWorkspace && (
+              <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-amber bg-amber/[0.08] px-3 py-1.5 text-[12px] text-text">
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-amber">Workspace</span>
+                <span className="font-semibold">{presetWorkspace.title}</span>
+              </div>
+            )}
             {/* Error */}
             {error && (
               <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg text-sm">

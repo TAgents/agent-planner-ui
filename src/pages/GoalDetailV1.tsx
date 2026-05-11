@@ -4,16 +4,18 @@ import { useQuery } from 'react-query';
 import {
   Card,
   CriticalPathSubway,
+  GhostButton,
   GoalCompass,
   Kicker,
+  ObjectChip,
   Pill,
+  PrimaryButton,
   SectionHead,
   type PillColor,
 } from '../components/v1';
-import { useGoalV2, useGoalPath, useGoalKnowledgeGaps } from '../hooks/useGoalsV2';
+import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal } from '../hooks/useGoalsV2';
 import { usePlans } from '../hooks/usePlans';
-import { useWorkspace } from '../hooks/useWorkspaces';
-import { ObjectChip } from '../components/v1';
+import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import { useCriticalPath } from '../hooks/useDependencies';
 import { request } from '../services/api-client';
 import { goalDashboardService, goalBdiService } from '../services/goals.service';
@@ -48,6 +50,7 @@ const GoalDetailV1: React.FC = () => {
   );
 
   const [tab, setTab] = useState<Tab>('overview');
+  const [showMove, setShowMove] = useState(false);
 
   const goal = goalQ.data;
   const path = pathQ.data;
@@ -154,9 +157,13 @@ const GoalDetailV1: React.FC = () => {
             >
               ◆ Knowledge →
             </Link>
+            <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
           </div>
         </div>
       </header>
+      {showMove && (
+        <MoveGoalModal goal={goal as any} onClose={() => setShowMove(false)} />
+      )}
 
       {/* Hero row — Compass · Quality + Tensions stack */}
       <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -795,6 +802,75 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
         </ul>
       )}
     </Card>
+  );
+};
+
+// ─── Move goal to workspace modal ────────────────────────────────
+
+const MoveGoalModal: React.FC<{
+  goal: { id: string; title: string; workspaceId?: string | null; workspace_id?: string | null };
+  onClose: () => void;
+}> = ({ goal, onClose }) => {
+  const { data: wsData } = useWorkspaces();
+  const update = useUpdateGoal();
+  const currentId = goal.workspaceId ?? goal.workspace_id ?? '';
+  const [target, setTarget] = useState<string>(currentId);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setError(null);
+    try {
+      await update.mutateAsync({ id: goal.id, workspaceId: target || null } as any);
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to move goal.');
+    }
+  }
+
+  const dirty = target !== currentId;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-6"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <Kicker className="block">Move goal</Kicker>
+        <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
+          Move "{goal.title}" to a workspace
+        </h2>
+        <p className="mt-1 text-[12.5px] text-text-sec">
+          Goals live inside workspaces (folders under your organization). Unassign to leave the goal org-personal.
+        </p>
+
+        <label className="mt-4 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Workspace</span>
+          <select
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          >
+            <option value="">— Unassigned —</option>
+            {(wsData?.workspaces ?? []).filter((w) => !w.archivedAt).map((w) => (
+              <option key={w.id} value={w.id}>{w.title}{w.isDefault ? ' (default)' : ''}</option>
+            ))}
+          </select>
+        </label>
+
+        {error && (
+          <div className="mt-3 rounded-md border border-red bg-red/[0.08] px-3 py-2 text-[12px] text-red">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <GhostButton onClick={onClose} disabled={update.isLoading}>Cancel</GhostButton>
+          <PrimaryButton onClick={submit} disabled={update.isLoading || !dirty}>
+            {update.isLoading ? 'Moving…' : 'Move'}
+          </PrimaryButton>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useWorkspaces } from '../hooks/useWorkspaces';
+import { ObjectChip } from '../components/v1';
 import {
   Card,
   Kicker,
@@ -265,9 +267,11 @@ function TypeGlyph({ color, children }: { color: PillColor; children: React.Reac
 function GoalRidge({
   goal,
   pulseDot,
+  workspacesById,
 }: {
   goal: GoalV2 & { depth: number; _attention: Attention };
   pulseDot: boolean;
+  workspacesById?: Map<string, { id: string; title: string }>;
 }) {
   const typeConf = TYPE_CONFIG[goal.type as GoalType] ?? TYPE_CONFIG.outcome;
   const spine: PillColor = STATUS_SPINE[goal.status as GoalStatus] ?? 'slate';
@@ -362,6 +366,13 @@ function GoalRidge({
                       {attention.label}
                     </Pill>
                   )}
+                  {(() => {
+                    const wsId = (goal as any).workspaceId || (goal as any).workspace_id;
+                    if (!wsId || !workspacesById) return null;
+                    const ws = workspacesById.get(wsId);
+                    if (!ws) return null;
+                    return <ObjectChip kind="workspace" label={ws.title} dim />;
+                  })()}
                 </div>
                 <div className="mt-[2px] flex min-w-0 items-center gap-2 text-[10.5px] text-text-muted">
                   <span
@@ -506,11 +517,25 @@ function GoalRidge({
 
 export default function GoalsPage() {
   const { data: tree, isLoading, error } = useGoalsTree();
+  const { data: wsData } = useWorkspaces();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | GoalStatus>('active');
   const [typeFilter, setTypeFilter] = useState<'all' | GoalType>('all');
   const [sort, setSort] = useState<SortKey>('attention');
   const [searchQuery, setSearchQuery] = useState('');
+  const workspaceFilter = searchParams.get('workspace') || 'all';
+  const setWorkspaceFilter = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === 'all') next.delete('workspace');
+    else next.set('workspace', id);
+    setSearchParams(next, { replace: true });
+  };
+  const workspacesById = useMemo(() => {
+    const m = new Map<string, { id: string; title: string }>();
+    for (const w of wsData?.workspaces ?? []) m.set(w.id, { id: w.id, title: w.title });
+    return m;
+  }, [wsData]);
 
   const flatGoals = useMemo(() => flattenGoals(tree || []), [tree]);
 
@@ -547,6 +572,13 @@ export default function GoalsPage() {
     let list = decorated;
     if (statusFilter !== 'all') list = list.filter((g) => g.status === statusFilter);
     if (typeFilter !== 'all') list = list.filter((g) => g.type === typeFilter);
+    if (workspaceFilter !== 'all') {
+      list = list.filter((g: any) => {
+        const wsId = g.workspaceId || g.workspace_id;
+        if (workspaceFilter === 'none') return !wsId;
+        return wsId === workspaceFilter;
+      });
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -569,7 +601,7 @@ export default function GoalsPage() {
       list = [...list].sort((a, b) => a.title.localeCompare(b.title));
     }
     return list;
-  }, [decorated, statusFilter, typeFilter, searchQuery, sort]);
+  }, [decorated, statusFilter, typeFilter, workspaceFilter, searchQuery, sort]);
 
   const activeGoals = statusCounts.active || 0;
   const needLook = decorated.filter(
@@ -643,6 +675,20 @@ export default function GoalsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-[200px] rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
             />
+            <select
+              value={workspaceFilter}
+              onChange={(e) => setWorkspaceFilter(e.target.value)}
+              className={`rounded-md border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] focus:outline-none ${
+                workspaceFilter !== 'all' ? 'border-amber text-text' : 'border-border text-text-sec'
+              }`}
+              title="Filter by workspace"
+            >
+              <option value="all">Workspace: Any</option>
+              {(wsData?.workspaces ?? []).filter((w) => !w.archivedAt).map((w) => (
+                <option key={w.id} value={w.id}>{w.title}</option>
+              ))}
+              <option value="none">— Unassigned —</option>
+            </select>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
@@ -750,6 +796,7 @@ export default function GoalsPage() {
             key={g.id}
             goal={g}
             pulseDot={g.status === 'active'}
+            workspacesById={workspacesById}
           />
         ))}
       </div>
