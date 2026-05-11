@@ -11,10 +11,11 @@ import PublicLayout from './components/layout/PublicLayout';
 
 // Pages
 import Landing from './pages/Landing';
-import Explore from './pages/ExploreV1';
+import Explore from './pages/Explore';
 import PlansList from './pages/PlansList';
 import PlanTree from './pages/PlanTree';
 import PublicPlan from './pages/PublicPlanV1';
+import PublicBlueprint from './pages/PublicBlueprint';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -82,6 +83,7 @@ const App: React.FC = () => {
               {/* Public Pages with shared layout (theme-aware top nav) */}
               <Route element={<PublicLayout />}>
                 <Route path="/explore" element={<Explore />} />
+                <Route path="/public/blueprints/:id" element={<PublicBlueprint />} />
                 <Route path="/public/plans/:planId" element={<PublicPlan />} />
               </Route>
 

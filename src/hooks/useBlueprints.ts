@@ -24,6 +24,19 @@ export const useBlueprint = (id?: string) => {
   });
 };
 
+export const usePublicBlueprints = (params?: { scope?: BlueprintScope; limit?: number }) => {
+  return useQuery(
+    ['blueprints', 'public', params?.scope ?? 'all', params?.limit ?? 50],
+    () => blueprintService.listPublic(params),
+  );
+};
+
+export const usePublicBlueprint = (id?: string) => {
+  return useQuery(['blueprint', 'public', id], () => blueprintService.getPublic(id as string), {
+    enabled: !!id,
+  });
+};
+
 export const useBlueprintForks = (id?: string) => {
   return useQuery(
     ['blueprint-forks', id],

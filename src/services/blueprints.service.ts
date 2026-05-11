@@ -35,6 +35,23 @@ export const blueprintService = {
     });
   },
 
+  /** Public catalog — no auth required. Visibility=public only. */
+  listPublic: async (params?: { scope?: BlueprintScope; limit?: number }) => {
+    return request<{ blueprints: Blueprint[] }>({
+      method: 'GET',
+      url: '/blueprints/public',
+      params,
+    });
+  },
+
+  /** Public detail — no auth. Returns 404 if the Blueprint isn't public or unlisted. */
+  getPublic: async (id: string) => {
+    return request<Blueprint>({
+      method: 'GET',
+      url: `/blueprints/public/${id}`,
+    });
+  },
+
   get: async (id: string) => {
     return request<Blueprint>({
       method: 'GET',
