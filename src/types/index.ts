@@ -50,6 +50,8 @@ export interface BlueprintPayload {
   dependencies?: BlueprintPayloadDependency[];
 }
 
+export type BlueprintTier = 'featured' | 'community' | 'experimental' | 'example';
+
 export interface Blueprint {
   id: string;
   ownerId: string;
@@ -64,6 +66,13 @@ export interface Blueprint {
   sourcePlanId?: string | null;
   forkCount: number;
   tags?: string[];
+  // Gallery curation (v1.1)
+  tier?: BlueprintTier | null;
+  audience?: string[];
+  useCase?: string[];
+  durationLabel?: string | null;
+  outcome?: string | null;
+  whyFork?: string | null;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
