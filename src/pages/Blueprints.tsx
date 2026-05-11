@@ -32,6 +32,7 @@ function relativeTime(iso?: string | null): string {
 
 const Blueprints: React.FC = () => {
   const [tab, setTab] = useState<Tab>('all');
+  const [category, setCategory] = useState<string | null>(null);
   const { data, isLoading, error } = useBlueprints();
   const all = data?.blueprints ?? [];
 
@@ -41,7 +42,22 @@ const Blueprints: React.FC = () => {
     plan:      all.filter((b) => b.scope === 'plan').length,
   }), [all]);
 
-  const filtered = tab === 'all' ? all : all.filter((b) => b.scope === tab);
+  // Distinct categories from each blueprint's first tag, with row counts.
+  const categories = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const b of all) {
+      const cat = b.tags?.[0];
+      if (!cat) continue;
+      m.set(cat, (m.get(cat) ?? 0) + 1);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  }, [all]);
+
+  const filtered = useMemo(() => {
+    let rows = tab === 'all' ? all : all.filter((b) => b.scope === tab);
+    if (category) rows = rows.filter((b) => (b.tags ?? [])[0] === category);
+    return rows;
+  }, [all, tab, category]);
 
   const totals = useMemo(() => {
     const totalForks = all.reduce((acc, b) => acc + (b.forkCount || 0), 0);
@@ -70,11 +86,18 @@ const Blueprints: React.FC = () => {
       <div className="flex flex-1 flex-col gap-[18px] overflow-auto bg-bg p-6">
         <React.Fragment>
           <Hero totals={totals} totalCount={all.length} />
-          <Filters tab={tab} setTab={setTab} counts={counts} />
+          <Filters
+            tab={tab} setTab={setTab} counts={counts}
+            categories={categories} category={category} setCategory={setCategory}
+          />
           {isLoading && <Empty>Loading blueprints…</Empty>}
           {error ? <Empty tone="error">Failed to load blueprints.</Empty> : null}
           {!isLoading && !error && filtered.length === 0 && (
-            <Empty>No blueprints yet. Open a plan and choose <span className="text-amber">Save as Blueprint</span> to capture its structure.</Empty>
+            <Empty>
+              {category || tab !== 'all'
+                ? <>No blueprints match your filters. <button type="button" onClick={() => { setCategory(null); setTab('all'); }} className="text-amber underline">Clear filters</button>.</>
+                : <>No blueprints yet. Open a plan and choose <span className="text-amber">Save as Blueprint</span> to capture its structure.</>}
+            </Empty>
           )}
           {!isLoading && filtered.length > 0 && <Grid items={filtered} />}
         </React.Fragment>
@@ -109,8 +132,11 @@ const Hero: React.FC<{
 
 const Filters: React.FC<{
   tab: Tab; setTab: (t: Tab) => void; counts: Record<Tab, number>;
-}> = ({ tab, setTab, counts }) => (
-  <div className="flex items-center gap-4">
+  categories: Array<[string, number]>;
+  category: string | null;
+  setCategory: (c: string | null) => void;
+}> = ({ tab, setTab, counts, categories, category, setCategory }) => (
+  <div className="flex flex-wrap items-center gap-3">
     <div className="flex items-center rounded-lg border border-border bg-surface p-[3px]">
       {TABS.map((t) => {
         const on = t.id === tab;
@@ -130,7 +156,37 @@ const Filters: React.FC<{
         );
       })}
     </div>
+    {categories.length > 0 && (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Category:</span>
+        <CategoryChip label="All" count={null} on={category === null} onClick={() => setCategory(null)} />
+        {categories.map(([cat, count]) => (
+          <CategoryChip key={cat} label={cat} count={count} on={category === cat} onClick={() => setCategory(cat)} />
+        ))}
+      </div>
+    )}
   </div>
+);
+
+const CategoryChip: React.FC<{
+  label: string;
+  count: number | null;
+  on: boolean;
+  onClick: () => void;
+}> = ({ label, count, on, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+      on
+        ? 'border-amber bg-amber/[0.12] text-text'
+        : 'border-border bg-surface text-text-sec hover:border-border-hi hover:text-text',
+    )}
+  >
+    <span className="capitalize">{label}</span>
+    {count !== null && <span className="font-mono text-[9px] text-text-muted">{count}</span>}
+  </button>
 );
 
 const Grid: React.FC<{ items: Blueprint[] }> = ({ items }) => (

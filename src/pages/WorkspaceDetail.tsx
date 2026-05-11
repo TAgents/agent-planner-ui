@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueries } from 'react-query';
 import {
@@ -13,15 +13,16 @@ import {
   TopBar,
   cn,
 } from '../components/v1';
-import { useWorkspace } from '../hooks/useWorkspaces';
+import { useUpdateWorkspace, useWorkspace } from '../hooks/useWorkspaces';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
 import { activityService } from '../services/api';
-import type { Activity } from '../types';
+import type { Activity, Workspace } from '../types';
 
 const WorkspaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showEdit, setShowEdit] = useState(false);
   const { data: workspace, isLoading, error } = useWorkspace(id);
 
   // Live cross-sections — filtered client-side until /plans + /goals support workspace_id consistently
@@ -68,7 +69,7 @@ const WorkspaceDetail: React.FC = () => {
         }
         actions={(
           <div className="flex items-center gap-2">
-            <GhostButton onClick={() => navigate(`/app/workspaces/${id}/edit`)}>Edit</GhostButton>
+            <GhostButton onClick={() => setShowEdit(true)}>Edit</GhostButton>
             <PrimaryButton onClick={() => navigate('/app/plans/new')}>New Plan</PrimaryButton>
           </div>
         )}
@@ -84,6 +85,94 @@ const WorkspaceDetail: React.FC = () => {
           <ProvenancePanel workspace={workspace} />
         </div>
         <ActivityTimeline planIds={plans.map((p: any) => p.id)} />
+      </div>
+      {showEdit && workspace && (
+        <EditWorkspaceModal
+          workspace={workspace}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// ─── Edit modal ──────────────────────────────────────────────────
+
+const EditWorkspaceModal: React.FC<{
+  workspace: Workspace;
+  onClose: () => void;
+}> = ({ workspace, onClose }) => {
+  const [title, setTitle] = useState(workspace.title);
+  const [description, setDescription] = useState(workspace.description ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const update = useUpdateWorkspace(workspace.id);
+
+  async function submit() {
+    setError(null);
+    if (!title.trim()) {
+      setError('Title is required.');
+      return;
+    }
+    try {
+      await update.mutateAsync({
+        title: title.trim() !== workspace.title ? title.trim() : undefined,
+        description: description.trim() !== (workspace.description ?? '') ? description.trim() : undefined,
+      });
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to save.');
+    }
+  }
+
+  const dirty =
+    title.trim() !== workspace.title ||
+    description.trim() !== (workspace.description ?? '');
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-6"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <Kicker className="block">Edit workspace</Kicker>
+        <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
+          {workspace.title}
+        </h2>
+        <p className="mt-1 text-[12.5px] text-text-sec">
+          Changing the title doesn't change the slug — links stay stable.
+        </p>
+
+        <label className="mt-4 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Title</span>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        <label className="mt-3 block">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Description</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className="mt-1.5 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text outline-none focus:border-amber"
+          />
+        </label>
+
+        {error && (
+          <div className="mt-3 rounded-md border border-red bg-red/[0.08] px-3 py-2 text-[12px] text-red">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <GhostButton onClick={onClose} disabled={update.isLoading}>Cancel</GhostButton>
+          <PrimaryButton onClick={submit} disabled={update.isLoading || !dirty || !title.trim()}>
+            {update.isLoading ? 'Saving…' : 'Save'}
+          </PrimaryButton>
+        </div>
       </div>
     </div>
   );

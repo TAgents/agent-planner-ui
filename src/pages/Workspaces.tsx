@@ -57,9 +57,15 @@ function relativeTime(iso?: string | null): string {
   return `${d}d ago`;
 }
 
+type SourceFilter = 'any' | 'forked' | 'blank';
+type OwnerFilter = 'any' | 'mine';
+
 const Workspaces: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<HealthFilter>('all');
+  const [query, setQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('any');
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>('any');
   const [showCreate, setShowCreate] = useState(false);
   const includeArchived = filter === 'archived';
   const { data, isLoading, error } = useWorkspaces(undefined, { includeArchived });
@@ -79,12 +85,25 @@ const Workspaces: React.FC = () => {
 
   const filtered = useMemo(() => {
     const live = all.filter((w) => !w.archivedAt);
+    let rows: Workspace[];
     switch (filter) {
-      case 'archived': return all.filter((w) => !!w.archivedAt);
-      case 'mine':     return live.filter((w) => w.ownerId === me);
-      default:         return live;
+      case 'archived': rows = all.filter((w) => !!w.archivedAt); break;
+      case 'mine':     rows = live.filter((w) => w.ownerId === me); break;
+      default:         rows = live;
     }
-  }, [all, filter, me]);
+    if (sourceFilter === 'forked') rows = rows.filter((w) => !!w.forkedFromBlueprintId);
+    if (sourceFilter === 'blank')  rows = rows.filter((w) => !w.forkedFromBlueprintId);
+    if (ownerFilter === 'mine')    rows = rows.filter((w) => w.ownerId === me);
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      rows = rows.filter((w) =>
+        w.title.toLowerCase().includes(q) ||
+        (w.description ?? '').toLowerCase().includes(q) ||
+        w.slug.toLowerCase().includes(q),
+      );
+    }
+    return rows;
+  }, [all, filter, me, query, sourceFilter, ownerFilter]);
 
   return (
     <div className="flex h-full flex-col">
@@ -101,15 +120,19 @@ const Workspaces: React.FC = () => {
       />
       <div className="flex flex-1 flex-col gap-4 overflow-auto bg-bg p-6">
         <React.Fragment>
-          <Filters filter={filter} setFilter={setFilter} counts={counts} />
+          <Filters
+            filter={filter} setFilter={setFilter} counts={counts}
+            query={query} setQuery={setQuery}
+            sourceFilter={sourceFilter} setSourceFilter={setSourceFilter}
+            ownerFilter={ownerFilter} setOwnerFilter={setOwnerFilter}
+          />
           {isLoading && <EmptyState>Loading workspaces…</EmptyState>}
           {error ? <EmptyState tone="error">Failed to load workspaces.</EmptyState> : null}
           {!isLoading && !error && filtered.length === 0 && (
             <EmptyState>
-              No workspaces yet.{' '}
-              <Link to="/app/workspaces/new" className="text-amber underline">Create one</Link>
-              {' or '}
-              <Link to="/app/blueprints" className="text-amber underline">fork a Blueprint</Link>.
+              {query || sourceFilter !== 'any' || ownerFilter !== 'any'
+                ? <>No workspaces match your filters. <button type="button" onClick={() => { setQuery(''); setSourceFilter('any'); setOwnerFilter('any'); }} className="text-amber underline">Clear filters</button>.</>
+                : <>No workspaces yet. <button type="button" onClick={() => setShowCreate(true)} className="text-amber underline">Create one</button>{' or '}<Link to="/app/blueprints" className="text-amber underline">fork a Blueprint</Link>.</>}
             </EmptyState>
           )}
           {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} />}
@@ -220,8 +243,14 @@ const Filters: React.FC<{
   filter: HealthFilter;
   setFilter: (f: HealthFilter) => void;
   counts: Record<HealthFilter, number>;
-}> = ({ filter, setFilter, counts }) => (
-  <div className="flex flex-wrap items-center gap-4">
+  query: string;
+  setQuery: (q: string) => void;
+  sourceFilter: SourceFilter;
+  setSourceFilter: (s: SourceFilter) => void;
+  ownerFilter: OwnerFilter;
+  setOwnerFilter: (o: OwnerFilter) => void;
+}> = ({ filter, setFilter, counts, query, setQuery, sourceFilter, setSourceFilter, ownerFilter, setOwnerFilter }) => (
+  <div className="flex flex-wrap items-center gap-3">
     <div className="flex items-center rounded-lg border border-border bg-surface p-[3px]">
       {FILTERS.map((f) => {
         const on = f.id === filter;
@@ -242,12 +271,73 @@ const Filters: React.FC<{
       })}
     </div>
     <div className="flex-1" />
-    <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-sec min-w-[220px]">
+    <label className="flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-sec focus-within:border-amber">
       <span className="text-text-muted">⌕</span>
-      <span>Search workspaces, goals, blueprints…</span>
-    </div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search workspaces, descriptions…"
+        className="min-w-[220px] bg-transparent text-text placeholder:text-text-muted outline-none"
+      />
+      {query && (
+        <button
+          type="button"
+          onClick={() => setQuery('')}
+          aria-label="Clear search"
+          className="text-text-muted hover:text-text"
+        >
+          ×
+        </button>
+      )}
+    </label>
+    <FilterSelect
+      label="Source"
+      value={sourceFilter}
+      onChange={(v) => setSourceFilter(v as SourceFilter)}
+      options={[
+        { value: 'any',    label: 'Any' },
+        { value: 'forked', label: 'Forked' },
+        { value: 'blank',  label: 'Blank start' },
+      ]}
+    />
+    <FilterSelect
+      label="Owner"
+      value={ownerFilter}
+      onChange={(v) => setOwnerFilter(v as OwnerFilter)}
+      options={[
+        { value: 'any',  label: 'Anyone' },
+        { value: 'mine', label: 'Mine' },
+      ]}
+    />
   </div>
 );
+
+const FilterSelect: React.FC<{
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: Array<{ value: string; label: string }>;
+}> = ({ label, value, onChange, options }) => {
+  const active = value !== 'any';
+  return (
+    <label className={cn(
+      'inline-flex items-center gap-1.5 rounded-md border bg-surface pl-2.5 pr-1.5 text-[11.5px]',
+      active ? 'border-amber text-text' : 'border-border text-text-sec',
+    )}>
+      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-text-muted">{label}:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cursor-pointer appearance-none bg-transparent py-1.5 pr-1 outline-none"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+};
 
 type Health = 'on-track' | 'wait' | 'risk' | 'idle';
 const HEALTH_META: Record<Health, { color: ProgressColor; label: string; tw: string }> = {
