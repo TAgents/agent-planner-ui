@@ -12,6 +12,7 @@ import {
   type ProgressColor,
 } from '../components/v1';
 import { useCreateWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
+import { useOrganizations } from '../hooks/useOrganizations';
 import type { Workspace } from '../types';
 
 function getActiveOrgId(): string | null {
@@ -69,6 +70,7 @@ const Workspaces: React.FC = () => {
   const [showCreate, setShowCreate] = useState(false);
   const includeArchived = filter === 'archived';
   const { data, isLoading, error } = useWorkspaces(undefined, { includeArchived });
+  const { byId: orgsById } = useOrganizations();
   const me = userId();
 
   const all = data?.workspaces ?? [];
@@ -135,7 +137,7 @@ const Workspaces: React.FC = () => {
                 : <>No workspaces yet. <button type="button" onClick={() => setShowCreate(true)} className="text-amber underline">Create one</button>{' or '}<Link to="/app/blueprints" className="text-amber underline">fork a Blueprint</Link>.</>}
             </EmptyState>
           )}
-          {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} />}
+          {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} orgsById={orgsById} />}
         </React.Fragment>
       </div>
       {showCreate && (
@@ -353,7 +355,7 @@ function inferHealth(_w: Workspace): Health {
   return 'on-track';
 }
 
-const WorkspaceTable: React.FC<{ rows: Workspace[] }> = ({ rows }) => (
+const WorkspaceTable: React.FC<{ rows: Workspace[]; orgsById: Map<string, { isPersonal: boolean }> }> = ({ rows, orgsById }) => (
   <div className="overflow-hidden rounded-xl border border-border bg-surface">
     <div className="grid grid-cols-[24px_1.8fr_1.5fr_1.3fr_110px_1fr_100px_90px] items-center gap-3.5 border-b border-border bg-surface-hi px-[18px] py-[11px]">
       <span />
@@ -382,6 +384,8 @@ const WorkspaceTable: React.FC<{ rows: Workspace[] }> = ({ rows }) => (
           <div className="min-w-0">
             <div className="truncate text-[13px] font-semibold text-text">{w.title}{w.isDefault && (
               <span className="ml-2 rounded bg-surface-hi px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">Default</span>
+            )}{orgsById.get(w.organizationId)?.isPersonal && (
+              <span className="ml-1.5 rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-sec">Personal</span>
             )}</div>
             <div className="mt-1 flex items-center gap-1.5 text-[10.5px] text-text-muted">
               {w.description ? <span className="truncate">{w.description}</span> : <span>—</span>}

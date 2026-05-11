@@ -14,6 +14,7 @@ import {
   cn,
 } from '../components/v1';
 import { useUpdateWorkspace, useWorkspace } from '../hooks/useWorkspaces';
+import { useOrganizations } from '../hooks/useOrganizations';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
 import { activityService } from '../services/api';
@@ -24,6 +25,8 @@ const WorkspaceDetail: React.FC = () => {
   const navigate = useNavigate();
   const [showEdit, setShowEdit] = useState(false);
   const { data: workspace, isLoading, error } = useWorkspace(id);
+  const { byId: orgsById } = useOrganizations();
+  const isPersonal = workspace ? !!orgsById.get(workspace.organizationId)?.isPersonal : false;
 
   // Live cross-sections — filtered client-side until /plans + /goals support workspace_id consistently
   const { plans: plansArr } = usePlans(1, 100);
@@ -49,6 +52,11 @@ const WorkspaceDetail: React.FC = () => {
             {workspace.isDefault && (
               <span className="rounded bg-surface-hi px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">
                 Default
+              </span>
+            )}
+            {isPersonal && (
+              <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-sec">
+                Personal
               </span>
             )}
           </span>
