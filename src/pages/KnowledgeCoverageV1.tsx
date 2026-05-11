@@ -233,8 +233,8 @@ const KnowledgeCoverageV1: React.FC = () => {
     <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
-          { value: totals.covered, label: 'facts' },
-          { value: totals.gaps, label: 'gaps', tone: 'amber' },
+          { value: `${Math.round(orgRatio * 100)}%`, label: 'coverage' },
+          { value: totals.covered, label: 'tasks with knowledge' },
           { value: totals.contradictions, label: 'contradictions', tone: 'red' },
         ]}
         search={search}
@@ -269,7 +269,7 @@ const KnowledgeCoverageV1: React.FC = () => {
             ◆ Per-plan breakdown
           </span>
           <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
-            Where is knowledge missing?
+            Tasks ready for more context
           </h2>
         </div>
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
