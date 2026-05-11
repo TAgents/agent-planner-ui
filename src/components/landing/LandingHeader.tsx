@@ -10,20 +10,31 @@ const LandingHeader: React.FC = () => {
   return (
     <header className="border-b border-border/60 bg-bg/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-6 py-4 sm:px-9">
-        <Link to="/" className="flex items-center gap-3">
-          <span
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-amber font-mono text-[12px] font-bold text-bg"
-            aria-hidden
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-md bg-amber font-mono text-[12px] font-bold text-bg"
+              aria-hidden
+            >
+              ap
+            </span>
+            <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-text">
+              AgentPlanner
+            </span>
+            <span className="rounded-md border border-border bg-surface px-2 py-[2px] font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-text-sec">
+              Alpha
+            </span>
+          </Link>
+          <a
+            href="https://talkingagents.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted transition-colors hover:text-text sm:inline"
+            title="The team behind AgentPlanner"
           >
-            ap
-          </span>
-          <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-text">
-            AgentPlanner
-          </span>
-          <span className="rounded-md border border-border bg-surface px-2 py-[2px] font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-text-sec">
-            Alpha
-          </span>
-        </Link>
+            by Talking Agents ↗
+          </a>
+        </div>
         <nav className="flex items-center gap-1 text-[13px] sm:gap-5">
           <a
             href="https://github.com/TAgents/agent-planner/blob/main/docs/GETTING_STARTED.md"
@@ -58,5 +69,7 @@ const LandingHeader: React.FC = () => {
     </header>
   );
 };
+
+
 
 export default LandingHeader;
