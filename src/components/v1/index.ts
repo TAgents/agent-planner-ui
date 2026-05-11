@@ -67,4 +67,16 @@ export type { GoalCompassProps, GoalCompassAxis } from './GoalCompass';
 export { CriticalPathSubway } from './CriticalPathSubway';
 export type { CriticalPathSubwayProps, SubwayStation } from './CriticalPathSubway';
 
+export { ObjectChip } from './ObjectChip';
+export type { ObjectChipProps, ObjectChipKind } from './ObjectChip';
+
+export { Breadcrumb } from './Breadcrumb';
+export type { BreadcrumbProps, BreadcrumbItem } from './Breadcrumb';
+
+export { Progress } from './Progress';
+export type { ProgressProps, ProgressColor } from './Progress';
+
+export { TopBar } from './TopBar';
+export type { TopBarProps } from './TopBar';
+
 export { cn } from './cn';

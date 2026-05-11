@@ -45,6 +45,10 @@ import ConnectPage from './pages/connect/ConnectPage';
 import ConnectIndex from './pages/connect/ConnectIndex';
 import StrategicOverview from './pages/StrategicOverview';
 import ExploreClone from './pages/ExploreClone';
+import Workspaces from './pages/Workspaces';
+import WorkspaceDetail from './pages/WorkspaceDetail';
+import Blueprints from './pages/Blueprints';
+import BlueprintDetail from './pages/BlueprintDetail';
 
 // Lazy-load heavy pages (ReactFlow)
 const KnowledgeTimeline = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
@@ -106,6 +110,10 @@ const App: React.FC = () => {
                   <Route index element={<MissionControl />} />
                   <Route path="dashboard" element={<MissionControl />} />
                   <Route path="strategy" element={<StrategicOverview />} />
+                  <Route path="workspaces" element={<ErrorBoundary><Workspaces /></ErrorBoundary>} />
+                  <Route path="workspaces/:id" element={<ErrorBoundary><WorkspaceDetail /></ErrorBoundary>} />
+                  <Route path="blueprints" element={<ErrorBoundary><Blueprints /></ErrorBoundary>} />
+                  <Route path="blueprints/:id" element={<ErrorBoundary><BlueprintDetail /></ErrorBoundary>} />
                   <Route path="plans" element={<PlansList />} />
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanTree />} />

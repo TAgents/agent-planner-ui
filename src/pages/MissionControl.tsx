@@ -4,6 +4,7 @@ import {
   Card,
   CoherenceDial,
   Kicker,
+  ObjectChip,
   Pill,
   Spark,
   type PillColor,
@@ -17,6 +18,9 @@ import {
 } from '../hooks/useDashboard';
 import { goalDashboardService } from '../services/goals.service';
 import { request } from '../services/api-client';
+import { useWorkspaces } from '../hooks/useWorkspaces';
+import { usePlans } from '../hooks/usePlans';
+import type { Plan, Workspace } from '../types';
 
 function relTime(iso?: string): string {
   if (!iso) return 'never';
@@ -347,7 +351,130 @@ const MissionControl: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Workspaces strip — Active workspaces + Recent forks from blueprints */}
+      <WorkspacesStrip />
     </div>
+  );
+};
+
+/**
+ * Two-card strip for Mission Control: live workspaces with the most
+ * recent activity, and the most-recently forked plans (lineage from
+ * blueprints). Renders as nothing when the user has no org / no rows
+ * — Mission Control still works for personal-only accounts.
+ */
+const WorkspacesStrip: React.FC = () => {
+  const { data: wsData } = useWorkspaces();
+  const { plans: planRows } = usePlans(1, 100);
+
+  const workspaces = (wsData?.workspaces ?? [])
+    .filter((w) => !w.archivedAt)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 6);
+
+  const forkedPlans = (Array.isArray(planRows) ? (planRows as Plan[]) : [])
+    .filter((p) => !!(p.forked_from_blueprint_id || p.forkedFromBlueprintId))
+    .sort((a, b) => {
+      const at = (a.forked_at || a.forkedAt) ? new Date(a.forked_at || a.forkedAt!).getTime() : 0;
+      const bt = (b.forked_at || b.forkedAt) ? new Date(b.forked_at || b.forkedAt!).getTime() : 0;
+      return bt - at;
+    })
+    .slice(0, 5);
+
+  if (workspaces.length === 0 && forkedPlans.length === 0) return null;
+
+  return (
+    <section className="mt-8 grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <Card pad={20}>
+        <div className="mb-3 flex items-end justify-between gap-2">
+          <div>
+            <Kicker>◇ Active workspaces</Kicker>
+            <h2 className="mt-1 font-display text-[16px] font-semibold tracking-[-0.02em] text-text">
+              Where work is moving
+            </h2>
+          </div>
+          <Link to="/app/workspaces" className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted hover:text-text">
+            View all →
+          </Link>
+        </div>
+        {workspaces.length === 0 ? (
+          <p className="text-[12.5px] text-text-sec">No workspaces yet.</p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {workspaces.map((w) => <WorkspaceCardRow key={w.id} ws={w} />)}
+          </ul>
+        )}
+      </Card>
+
+      <Card pad={20}>
+        <div className="mb-3 flex items-end justify-between gap-2">
+          <div>
+            <Kicker>◇ Recent forks</Kicker>
+            <h2 className="mt-1 font-display text-[16px] font-semibold tracking-[-0.02em] text-text">
+              Plans launched from blueprints
+            </h2>
+          </div>
+          <Link to="/app/blueprints" className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted hover:text-text">
+            Blueprints →
+          </Link>
+        </div>
+        {forkedPlans.length === 0 ? (
+          <p className="text-[12.5px] text-text-sec">
+            No forks yet. <Link to="/app/blueprints" className="text-amber underline">Browse blueprints</Link> to start one.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {forkedPlans.map((p) => <ForkRow key={p.id} plan={p} />)}
+          </ul>
+        )}
+      </Card>
+    </section>
+  );
+};
+
+const WorkspaceCardRow: React.FC<{ ws: Workspace }> = ({ ws }) => (
+  <li>
+    <Link
+      to={`/app/workspaces/${ws.id}`}
+      className="block rounded-md border border-border bg-bg p-3 transition-colors hover:border-border-hi hover:bg-surface-hi"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-[12.5px] font-semibold text-text">{ws.title}</span>
+        {ws.isDefault && (
+          <span className="rounded bg-surface-hi px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">
+            Default
+          </span>
+        )}
+      </div>
+      <div className="mt-1.5 flex items-center gap-3 font-mono text-[10px] text-text-muted">
+        <span>{ws.goalCount ?? 0} goals</span>
+        <span>{ws.planCount ?? 0} plans</span>
+        <span>· upd {relTime(ws.updatedAt)}</span>
+      </div>
+    </Link>
+  </li>
+);
+
+const ForkRow: React.FC<{ plan: Plan }> = ({ plan }) => {
+  const forkedAt = plan.forked_at || plan.forkedAt;
+  return (
+    <li>
+      <Link
+        to={`/app/plans/${plan.id}`}
+        className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-md border border-border bg-bg p-3 transition-colors hover:border-border-hi hover:bg-surface-hi"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <ObjectChip kind="plan" label={plan.title} />
+          </div>
+          <div className="mt-1 font-mono text-[10px] text-text-muted">
+            forked {forkedAt ? relTime(forkedAt) : '—'}
+          </div>
+        </div>
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-sec">{plan.status}</span>
+      </Link>
+    </li>
   );
 };
 

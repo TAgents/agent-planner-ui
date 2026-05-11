@@ -10,6 +10,8 @@ import { useUI } from '../../contexts/UIContext';
  * everything else (including /app, /app/dashboard, /app/settings) → mission.
  */
 function activeNavId(pathname: string): AppShellNavId {
+  if (pathname.startsWith('/app/workspaces')) return 'workspaces';
+  if (pathname.startsWith('/app/blueprints')) return 'blueprints';
   if (pathname.startsWith('/app/strategy') || pathname.startsWith('/app/portfolio')) {
     return 'strategy';
   }
