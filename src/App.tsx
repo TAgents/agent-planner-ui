@@ -39,6 +39,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
 import MissionControl from './pages/MissionControl';
+import Insights from './pages/Insights';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import SelectOrganization from './pages/auth/SelectOrganization';
 import Onboarding from './pages/onboarding/Onboarding';
@@ -111,6 +112,7 @@ const App: React.FC = () => {
                 <Route path="/app" element={<MainLayout />}>
                   <Route index element={<MissionControl />} />
                   <Route path="dashboard" element={<MissionControl />} />
+                  <Route path="insights" element={<Insights />} />
                   <Route path="strategy" element={<StrategicOverview />} />
                   <Route path="workspaces" element={<ErrorBoundary><Workspaces /></ErrorBoundary>} />
                   <Route path="workspaces/:id" element={<ErrorBoundary><WorkspaceDetail /></ErrorBoundary>} />

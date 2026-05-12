@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Card,
-  CoherenceDial,
   Kicker,
   ObjectChip,
   Pill,
@@ -173,58 +172,24 @@ const MissionControl: React.FC = () => {
         </div>
       </header>
 
-      {/* Hero row: BDI Coherence dial · Today's Pulse + decisions */}
-      <div className="mb-8 grid gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-        <Card pad={20}>
-          <div className="mb-1 flex items-start justify-between gap-2">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
-              ◇ BDI Coherence
-            </span>
-            {coherence.data?.formula_version?.includes('starter') && (
-              <span className="rounded-md border border-dashed border-text-muted/40 px-1.5 py-[2px] font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">
-                ◆ Proposed
-              </span>
-            )}
-          </div>
-          <p className="font-display text-[14px] font-semibold tracking-[-0.01em] text-text">
-            Belief · Desire · Intention
-          </p>
-
-          {coherence.data ? (
-            <div className="mt-4 flex flex-col items-center gap-3">
-              <CoherenceDial
-                score={coherence.data.score}
-                beliefs={beliefs}
-                desires={desires}
-                intentions={intentions}
-                size={196}
-                centerLabel={
-                  <div className="flex flex-col items-center">
-                    <span className="font-display text-[34px] font-bold tracking-[-0.03em] text-text leading-none">
-                      {Math.round(coherence.data.score * 100)}
-                    </span>
-                    <span className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.18em] text-text-muted">
-                      Coherence
-                    </span>
-                    {contradictions > 0 && (
-                      <span className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-amber">
-                        △ {contradictions} contradiction{contradictions === 1 ? '' : 's'}
-                      </span>
-                    )}
-                  </div>
-                }
-              />
-              <div className="grid w-full grid-cols-3 gap-2 pt-1 text-center">
-                <BdiLegend label="Beliefs" pct={Math.round(beliefs * 100)} dot="bg-violet" />
-                <BdiLegend label="Desires" pct={Math.round(desires * 100)} dot="bg-amber" />
-                <BdiLegend label="Intentions" pct={Math.round(intentions * 100)} dot="bg-emerald" />
-              </div>
-            </div>
-          ) : (
-            <p className="mt-4 text-[12px] text-text-sec">Computing…</p>
+      {/* Hero: Today's Pulse + decisions (full width).
+          BDI Coherence dial moved to /app/insights — kept here as a single-line link
+          so the operational answer to "what should I do next?" stays the only thing
+          competing for attention on first load. */}
+      {coherence.data && (
+        <Link
+          to="/app/insights"
+          className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted transition-colors hover:text-text"
+        >
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber" />
+          Coherence: {Math.round(coherence.data.score * 100)}
+          {contradictions > 0 && (
+            <span className="text-amber">· △ {contradictions} contradiction{contradictions === 1 ? '' : 's'}</span>
           )}
-        </Card>
-
+          <span>→ insights</span>
+        </Link>
+      )}
+      <div className="mb-8">
         <Card pad={20}>
           <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
             ◇ Today's Pulse
@@ -316,44 +281,22 @@ const MissionControl: React.FC = () => {
         </Card>
       </div>
 
-      {/* Goal Constellation */}
-      <section>
-        <div className="mb-3 flex items-end justify-between gap-3">
-          <div>
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
-              ◇ Goal constellation
-            </span>
-            <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
-              Health, beliefs, and tension at a glance
-            </h2>
-          </div>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
-            sorted by tension ↓
-          </span>
-        </div>
+      {/* Goal Constellation — collapsible. Auto-expanded when ≤3 goals (you can
+          take it all in at a glance); collapsed by default once the list grows so
+          first-time / part-time users aren't asked to interpret a wall of cards. */}
+      <CollapsibleConstellation
+        sortedGoals={sortedGoals}
+        isLoading={goalsDashboard.isLoading}
+        velocitySeries={velocity.data?.series?.map((p) => p.count) || []}
+        tensionConflict={tensionTotals.conflict}
+      />
 
-        {goalsDashboard.isLoading ? (
-          <p className="text-[12.5px] text-text-sec">Loading…</p>
-        ) : sortedGoals.length === 0 ? (
-          <Card pad={20}>
-            <p className="text-[12.5px] text-text-sec">No active goals yet.</p>
-          </Card>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {sortedGoals.map((g) => (
-              <GoalConstellationCard
-                key={g.id}
-                goal={g}
-                velocitySeries={velocity.data?.series?.map((p) => p.count) || []}
-                coverageContradictions={tensionTotals.conflict}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Workspaces strip — Active workspaces + Recent forks from blueprints */}
-      <WorkspacesStrip />
+      {/* Workspaces / Forks — orientation aids, not the action surface.
+          Tucked below a "more" divider so the page above the fold reads as Pulse +
+          Decisions only on first load. */}
+      <CollapsibleSection label="Workspaces & recent forks">
+        <WorkspacesStrip />
+      </CollapsibleSection>
     </div>
   );
 };
@@ -364,6 +307,79 @@ const MissionControl: React.FC = () => {
  * blueprints). Renders as nothing when the user has no org / no rows
  * — Mission Control still works for personal-only accounts.
  */
+// ─── Progressive-disclosure wrappers ─────────────────────────────
+
+const CollapsibleConstellation: React.FC<{
+  sortedGoals: GoalRow[];
+  isLoading: boolean;
+  velocitySeries: number[];
+  tensionConflict: number;
+}> = ({ sortedGoals, isLoading, velocitySeries, tensionConflict }) => {
+  // Auto-expand when the list is digestible. Once it grows, default to
+  // collapsed so the dashboard hero stays the focal point.
+  const autoOpen = sortedGoals.length > 0 && sortedGoals.length <= 3;
+  const [open, setOpen] = React.useState(autoOpen);
+  React.useEffect(() => { setOpen(autoOpen); }, [autoOpen]);
+
+  return (
+    <section className="mb-7">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mb-3 flex w-full items-end justify-between gap-3 text-left"
+      >
+        <div>
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
+            ◇ Goal constellation
+          </span>
+          <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
+            {sortedGoals.length} active goal{sortedGoals.length === 1 ? '' : 's'}{open ? '' : ' — show'}
+          </h2>
+        </div>
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
+          {open ? 'hide ▴' : 'show ▾'}
+        </span>
+      </button>
+
+      {!open ? null : isLoading ? (
+        <p className="text-[12.5px] text-text-sec">Loading…</p>
+      ) : sortedGoals.length === 0 ? (
+        <Card pad={20}>
+          <p className="text-[12.5px] text-text-sec">No active goals yet.</p>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {sortedGoals.map((g) => (
+            <GoalConstellationCard
+              key={g.id}
+              goal={g}
+              velocitySeries={velocitySeries}
+              coverageContradictions={tensionConflict}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const CollapsibleSection: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <section className="border-t border-dashed border-border pt-5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mb-3 flex w-full items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted transition-colors hover:text-text"
+      >
+        <span>{open ? '▾' : '▸'} {label}</span>
+        <span>{open ? 'hide' : 'more'}</span>
+      </button>
+      {open && children}
+    </section>
+  );
+};
+
 const WorkspacesStrip: React.FC = () => {
   const { data: wsData } = useWorkspaces();
   const { plans: planRows } = usePlans(1, 100);
@@ -477,18 +493,6 @@ const ForkRow: React.FC<{ plan: Plan }> = ({ plan }) => {
     </li>
   );
 };
-
-const BdiLegend: React.FC<{ label: string; pct: number; dot: string }> = ({ label, pct, dot }) => (
-  <div className="flex flex-col items-center gap-0.5">
-    <div className="flex items-center gap-1.5">
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
-        {label}
-      </span>
-    </div>
-    <span className="font-display text-[14px] font-semibold tabular-nums text-text">{pct}%</span>
-  </div>
-);
 
 const PulseStat: React.FC<{
   value: React.ReactNode;

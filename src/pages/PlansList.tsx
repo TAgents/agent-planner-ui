@@ -87,6 +87,119 @@ function relativeTime(iso: string | undefined): string {
   return `${days}d ago`;
 }
 
+function CreatePlanDialog({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const { createPlan } = usePlans();
+  const { data: wsData } = useWorkspaces();
+  const workspaces = wsData?.workspaces ?? [];
+  const defaultWs = workspaces.find((w) => w.isDefault) ?? workspaces[0];
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<'draft' | 'active'>('draft');
+  const [workspaceId, setWorkspaceId] = useState<string | undefined>(defaultWs?.id);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const payload: any = { title, description, status };
+      if (workspaceId) payload.workspace_id = workspaceId;
+      const newPlan = await createPlan.mutateAsync(payload);
+      const planId = newPlan?.id || (newPlan as any)?.plan?.id;
+      onClose();
+      if (planId) navigate(`/app/plans/${planId}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err.message || 'Failed to create plan');
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-[460px] rounded-[10px] border border-border bg-surface p-5 shadow-xl"
+      >
+        <h3 className="mb-4 font-display text-base font-semibold text-text">Create plan</h3>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              Title
+            </label>
+            <input
+              placeholder="What are we shipping?"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              autoFocus
+              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              Description
+            </label>
+            <textarea
+              placeholder="Optional — what's the shape of this work?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as 'draft' | 'active')}
+                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-amber focus:outline-none"
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+              </select>
+            </div>
+            {workspaces.length > 1 && (
+              <div>
+                <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                  Workspace
+                </label>
+                <select
+                  value={workspaceId ?? ''}
+                  onChange={(e) => setWorkspaceId(e.target.value || undefined)}
+                  className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-amber focus:outline-none"
+                >
+                  {workspaces.map((w) => (
+                    <option key={w.id} value={w.id}>{w.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          {error && <div className="rounded-md bg-red/10 px-3 py-2 text-xs text-red">{error}</div>}
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs text-text-sec transition-colors hover:bg-surface-hi"
+            >
+              Cancel
+            </button>
+            <PrimaryButton type="submit" disabled={createPlan.isLoading || !title.trim()}>
+              {createPlan.isLoading ? 'Creating…' : 'Create plan'}
+            </PrimaryButton>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 const PlansList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -95,6 +208,7 @@ const PlansList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<SortKey>('updated');
   const [query, setQuery] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
   const workspaceFilter = searchParams.get('workspace') || 'all';
   const setWorkspaceFilter = (id: string) => {
     const next = new URLSearchParams(searchParams);
@@ -163,8 +277,9 @@ const PlansList: React.FC = () => {
             {plans ? `${plans.length} total · ${counts.active} active` : 'Loading…'}
           </p>
         </div>
-        <PrimaryButton onClick={() => navigate('/app/plans/create')}>+ New plan</PrimaryButton>
+        <PrimaryButton onClick={() => setShowCreate(true)}>+ New plan</PrimaryButton>
       </header>
+      {showCreate && <CreatePlanDialog onClose={() => setShowCreate(false)} />}
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
