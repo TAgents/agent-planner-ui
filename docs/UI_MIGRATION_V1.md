@@ -28,7 +28,18 @@ Each item: what broke, why, and the intended fix.
   sends a truly unknown type. `achieves` was **held** (not removed) — no UI
   change needed for goal achievers/progress. Assignment vs claims is unchanged
   in behavior (assignment was already advisory) — no UI break.
-- Ring-3: any UI rendering `coherence_status` / desire-intention vocabulary.
+- **Ring-3 (vocabulary, SHIPPED on backend):** the API responses changed:
+  - Goal responses no longer include `goal_type: 'desire'|'intention'` — use
+    the `committed: boolean` field instead. Affects `GoalV2` type + any UI
+    reading `goal.goalType`/`goal_type` (GoalDetailV1, GoalsV2, portfolio).
+    Portfolio stats `desires`/`intentions` → `committed`/`aspirational`.
+  - `coherence_status` values are now plain language: `coherent→ok`,
+    `stale_beliefs→outdated`, `contradiction_detected→contradicted`,
+    `unchecked` unchanged. A `coherence_message` (human string) is also
+    returned. Any UI rendering raw `coherence_status` values or BDI labels
+    must map to the new vocabulary. The node-list `?coherence_status=` filter
+    accepts the new values (and still the old ones).
+  - Claim responses: `belief_snapshot` → `context_snapshot`.
 
 ## Optional future work (not breakage)
 
