@@ -13,7 +13,6 @@ import { cn } from './cn';
 
 export type AppShellNavId =
   | 'mission'
-  | 'strategy'
   | 'workspaces'
   | 'blueprints'
   | 'goals'
@@ -49,7 +48,7 @@ export type AppShellProps = {
   primary?: AppShellNavItem[];
   secondary?: AppShellNavItem[];
   /** Footer slot, typically theme toggle + user controls. */
-  footer?: React.ReactNode;
+  footer: React.ReactNode;
   logoText?: string;
   logoTo?: string;
   children: React.ReactNode;
@@ -117,7 +116,7 @@ export function AppShell({
           </span>
         </Link>
 
-        <nav className="flex flex-col gap-0.5">
+        <nav aria-label="Main navigation" className="flex flex-col gap-0.5">
           {primary.map((it) => (
             <NavRow key={it.id} item={it} active={it.id === active} />
           ))}
@@ -130,7 +129,7 @@ export function AppShell({
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <nav className="flex flex-col gap-0.5">
+        <nav aria-label="More" className="flex flex-col gap-0.5">
           {secondary.map((it) => (
             <NavRow key={it.id} item={it} active={it.id === active} />
           ))}

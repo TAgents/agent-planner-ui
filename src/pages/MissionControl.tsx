@@ -68,7 +68,7 @@ const TYPE_GLYPH: Record<string, string> = {
   principle: '◇',
 };
 
-function healthLabel(h: GoalRow['health'], pendingDecisions: number, contradictions: number): {
+function healthLabel(h: GoalRow['health'], contradictions: number): {
   label: string;
   color: PillColor;
 } {
@@ -528,7 +528,7 @@ const GoalConstellationCard: React.FC<{
   // call here. We use the aggregate as a hint in the subtitle until the
   // tree-row prefetch lands.
   const goalContradictions = goal.health === 'stale' ? coverageContradictions : 0;
-  const health = healthLabel(goal.health, pendingDecisions, goalContradictions);
+  const health = healthLabel(goal.health, goalContradictions);
   const sparkColor =
     health.color === 'red'
       ? 'rgb(var(--red))'
