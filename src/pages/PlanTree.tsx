@@ -545,10 +545,11 @@ const DetailPanel: React.FC<{
                 </>
               )}
               {(detailedNode as any).coherence_status &&
-                (detailedNode as any).coherence_status !== 'unchecked' && (
+                (detailedNode as any).coherence_status !== 'unchecked' &&
+                (detailedNode as any).coherence_status !== 'ok' && (
                   <>
                     <dt className="font-mono uppercase tracking-[0.12em] text-text-muted">Coherence</dt>
-                    <dd>{(detailedNode as any).coherence_status}</dd>
+                    <dd>{(detailedNode as any).coherence_message || (detailedNode as any).coherence_status}</dd>
                   </>
                 )}
               {typeof (detailedNode as any).quality_score === 'number' && (

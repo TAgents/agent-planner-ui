@@ -368,11 +368,13 @@ export const searchService = {
     });
   },
 
+  // /plans/:id/nodes/search was removed in the API v1 consolidation; the
+  // plan-scoped search now lives at /search/plan/:planId.
   searchPlan: async (planId: string, query: string) => {
     return request<ApiResponse<any>>({
       method: 'GET',
-      url: `/plans/${planId}/nodes/search`,
-      params: { q: query },
+      url: `/search/plan/${planId}`,
+      params: { query },
     });
   },
 

@@ -44,7 +44,7 @@ type GoalRow = {
   id: string;
   title: string;
   type?: string;
-  goal_type?: string;
+  committed?: boolean;
   status: string;
   health: 'on_track' | 'at_risk' | 'stale';
   bottleneck_summary?: Array<unknown>;

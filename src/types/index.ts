@@ -131,7 +131,9 @@ export interface Plan {
 export type NodeType = 'root' | 'phase' | 'task' | 'milestone';
 export type NodeStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'plan_ready';
 export type TaskMode = 'free' | 'research' | 'plan' | 'implement';
-export type CoherenceStatus = 'coherent' | 'stale_beliefs' | 'contradiction_detected' | 'unchecked';
+// Plain-language coherence vocabulary (the API maps its internal BDI states
+// to these; old values coherent/stale_beliefs/contradiction_detected are gone).
+export type CoherenceStatus = 'ok' | 'outdated' | 'contradicted' | 'unchecked';
 
 export interface PlanNode {
   id: string;
@@ -154,8 +156,9 @@ export interface PlanNode {
   assigned_agent_at?: string;
   assigned_agent_by?: string;
   task_mode?: TaskMode;
-  // BDI fields
+  // Coherence (knowledge-freshness) signal
   coherence_status?: CoherenceStatus;
+  coherence_message?: string | null;
   quality_score?: number | null;
   quality_assessed_at?: string | null;
   quality_rationale?: string | null;

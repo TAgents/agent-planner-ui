@@ -83,12 +83,9 @@ export function useGoalsTree() {
   );
 }
 
-export function useGoalEvaluations(goalId: string | undefined) {
-  return useQuery([GOALS_KEY, 'evaluations', goalId], () =>
-    fetchApi(`/${goalId}/evaluations`).then(d => d.evaluations as GoalEvaluation[]),
-    { enabled: !!goalId }
-  );
-}
+// Goal evaluations are now embedded in the goal object (goal.evaluations);
+// the standalone GET/POST /goals/:id/evaluations endpoints were removed in
+// the API v1 consolidation. Read goal.evaluations directly.
 
 export function useCreateGoal() {
   const qc = useQueryClient();
@@ -124,14 +121,6 @@ export function useAddGoalLink() {
   );
 }
 
-export function useAddEvaluation() {
-  const qc = useQueryClient();
-  return useMutation(
-    ({ goalId, ...data }: { goalId: string; evaluatedBy: string; score?: number; reasoning?: string }) =>
-      fetchApi(`/${goalId}/evaluations`, { method: 'POST', body: JSON.stringify(data) }),
-    { onSuccess: () => qc.invalidateQueries(GOALS_KEY) }
-  );
-}
 
 // ─── Goal Dependency Hooks ────────────────────────────────────
 
