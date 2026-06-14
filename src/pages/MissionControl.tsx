@@ -75,8 +75,7 @@ function healthLabel(h: GoalRow['health'], pendingDecisions: number, contradicti
   if (contradictions > 0) return { label: 'Contradiction', color: 'red' };
   if (h === 'stale') return { label: 'Stale', color: 'amber' };
   if (h === 'at_risk') return { label: 'At risk', color: 'amber' };
-  if (pendingDecisions > 0) return { label: 'Coherent', color: 'emerald' };
-  return { label: 'Coherent', color: 'emerald' };
+  return { label: 'On track', color: 'emerald' };
 }
 
 /**
