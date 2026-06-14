@@ -731,7 +731,7 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
         right={
           coherence.data ? (
             <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-text-muted">
-              {`${Math.round(coherenceScore * 100)}% coherent`}
+              {`${Math.round(coherenceScore * 100)}% in sync`}
             </span>
           ) : null
         }
