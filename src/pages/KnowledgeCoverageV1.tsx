@@ -216,7 +216,7 @@ const KnowledgeCoverageV1: React.FC = () => {
   }, [data]);
 
   // Filter plan rows by free-text search across plan title + task titles
-  // so the in-page search matches the spec's "Search beliefs..." behavior.
+  // so the in-page search matches the "Search knowledge…" behavior.
   const filteredPlans = useMemo(() => {
     const plans = data?.plans || [];
     if (!search.trim()) return plans;
