@@ -34,7 +34,7 @@ const DEFAULT_MANIFESTO = (
 
     <div className="my-auto py-12">
       <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-        ◆ Plans, beliefs, and decisions — for AI agents
+        ◆ Goals, plans, and shared memory — for AI agents
       </span>
       <h2 className="mt-5 font-display text-[36px] font-bold leading-[1.1] tracking-[-0.035em] text-text sm:text-[40px]">
         Your agents
@@ -45,7 +45,7 @@ const DEFAULT_MANIFESTO = (
       </h2>
       <p className="mt-5 max-w-[42ch] text-[13.5px] leading-[1.6] text-text-sec">
         A planning surface where humans and agents track goals, branch plans,
-        and accumulate beliefs together — so nobody loses the thread when the
+        and accumulate shared knowledge — so nobody loses the thread when the
         context window runs out.
       </p>
     </div>

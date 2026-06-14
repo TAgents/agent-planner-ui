@@ -17,7 +17,7 @@ export type KnowledgeHeaderProps = {
   search: string;
   /** Search-box onChange handler. */
   onSearchChange: (value: string) => void;
-  /** Search box placeholder. Defaults to "Search beliefs…" to match the design copy. */
+  /** Search box placeholder. */
   searchPlaceholder?: string;
 };
 
@@ -31,7 +31,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   stats,
   search,
   onSearchChange,
-  searchPlaceholder = 'Search beliefs…',
+  searchPlaceholder = 'Search knowledge…',
 }) => {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3">

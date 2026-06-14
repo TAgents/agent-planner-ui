@@ -1,7 +1,7 @@
 /**
  * Goals Service — extracted from api.ts
  *
- * Goal dashboard, BDI goal extensions, and node agent view APIs.
+ * Goal dashboard, goal extensions, and node agent view APIs.
  */
 import { api } from './api-client';
 
@@ -20,11 +20,13 @@ export const nodeViewService = {
     api.get(`/nodes/${nodeId}/agent-view`, { params: { depth } }).then(r => r.data),
 };
 
-// ── BDI Goals API extensions ───────────────────────────────
+// ── Goals API extensions ───────────────────────────────
 
 export const goalBdiService = {
+  // Marks the goal committed (was "promote to intention"); the canonical path
+  // is /promote — /promote-to-intention remains a deprecated alias.
   promoteToIntention: (goalId: string) =>
-    api.post(`/goals/${goalId}/promote-to-intention`).then(r => r.data),
+    api.post(`/goals/${goalId}/promote`).then(r => r.data),
   getPortfolio: (goalId: string) =>
     api.get(`/goals/${goalId}/portfolio`).then(r => r.data),
   getCoverage: (goalId: string) =>

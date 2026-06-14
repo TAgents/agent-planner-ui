@@ -44,7 +44,7 @@ type GoalRow = {
   id: string;
   title: string;
   type?: string;
-  goal_type?: string;
+  committed?: boolean;
   status: string;
   health: 'on_track' | 'at_risk' | 'stale';
   bottleneck_summary?: Array<unknown>;
@@ -68,24 +68,22 @@ const TYPE_GLYPH: Record<string, string> = {
   principle: '◇',
 };
 
-function healthLabel(h: GoalRow['health'], pendingDecisions: number, contradictions: number): {
+function healthLabel(h: GoalRow['health'], contradictions: number): {
   label: string;
   color: PillColor;
 } {
   if (contradictions > 0) return { label: 'Contradiction', color: 'red' };
-  if (h === 'stale') return { label: 'Stale beliefs', color: 'amber' };
+  if (h === 'stale') return { label: 'Stale', color: 'amber' };
   if (h === 'at_risk') return { label: 'At risk', color: 'amber' };
-  if (pendingDecisions > 0) return { label: 'Coherent', color: 'emerald' };
-  return { label: 'Coherent', color: 'emerald' };
+  return { label: 'On track', color: 'emerald' };
 }
 
 /**
- * Mission Control — agent-first dashboard. Mirrors the design handoff
- * (01-screen-specs.md "Mission Control" section): time-of-day greeting,
- * BDI Coherence dial paired with Today's Pulse + Awaiting-your-call
- * decisions, and a Goal Constellation grid scored by tension. Data
- * sources: /coherence/summary, /dashboard/summary + /pending,
- * /goals/dashboard, /dashboard/velocity.
+ * Mission — the single home overview. Time-of-day greeting with a compact
+ * health score, Today's Pulse, the "Awaiting your call" decision queue, and
+ * a goal grid sorted by where attention is needed. Absorbs the former
+ * Insights / Strategy / Portfolio surfaces. Data: /coherence/summary,
+ * /dashboard/summary + /pending, /goals/dashboard, /dashboard/velocity.
  */
 const MissionControl: React.FC = () => {
   const summary = useDashboardSummary();
@@ -126,17 +124,8 @@ const MissionControl: React.FC = () => {
   const goalsInMotion = goals.filter((g) => g.status === 'active').length;
   const onTrackCount = goals.filter((g) => g.health === 'on_track').length;
 
-  // BDI sub-scores synthesized from existing signals so the three rings
-  // tell different stories instead of all matching the overall score.
-  // Beliefs: knowledge alignment — penalised by contradictions.
-  // Desires: goal commitment — share of goals on track.
-  // Intentions: execution health — derived from blocked-ratio + pending decisions.
   const contradictions = coherence.data?.signals.contradictions ?? 0;
-  const blockedRatio = coherence.data?.signals.blocked_task_ratio ?? 0;
-  const pendingDecisions = coherence.data?.signals.pending_decisions ?? 0;
-  const beliefs = Math.max(0, 1 - Math.min(1, contradictions / 15));
-  const desires = goals.length > 0 ? onTrackCount / goals.length : 1;
-  const intentions = Math.max(0, 1 - blockedRatio - Math.min(0.4, pendingDecisions * 0.05));
+  const healthScore = coherence.data ? Math.round(coherence.data.score * 100) : null;
 
   // Sort goal cards by tension: contradictions first, then at-risk, then
   // by linked-plan progress ascending (so attention goes where it's needed).
@@ -159,10 +148,29 @@ const MissionControl: React.FC = () => {
             </span>
           </h1>
           <p className="mt-1 text-[13px] leading-[1.5] text-text-sec">
-            The first thing you see — what's in motion, what needs you, what's drifting.
+            {goals.length > 0 ? (
+              <>{onTrackCount} on track · what needs you, and where to focus next.</>
+            ) : (
+              <>What's in motion, what needs you, and what's drifting.</>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+          {healthScore !== null && (
+            <>
+              <span
+                className="flex items-center gap-1.5 text-text-sec"
+                title={contradictions > 0 ? `${contradictions} contradiction${contradictions === 1 ? '' : 's'} to review` : 'Knowledge is consistent'}
+              >
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${healthScore >= 80 ? 'bg-emerald' : healthScore >= 60 ? 'bg-amber' : 'bg-red'}`}
+                />
+                Health {healthScore}
+                {contradictions > 0 && <span className="text-amber"> · △{contradictions}</span>}
+              </span>
+              <span aria-hidden>·</span>
+            </>
+          )}
           <span>{summary.data?.active_plans_count ?? '—'} plans active</span>
           <span aria-hidden>·</span>
           <span className="flex items-center gap-1.5">
@@ -172,23 +180,6 @@ const MissionControl: React.FC = () => {
         </div>
       </header>
 
-      {/* Hero: Today's Pulse + decisions (full width).
-          BDI Coherence dial moved to /app/insights — kept here as a single-line link
-          so the operational answer to "what should I do next?" stays the only thing
-          competing for attention on first load. */}
-      {coherence.data && (
-        <Link
-          to="/app/insights"
-          className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted transition-colors hover:text-text"
-        >
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber" />
-          Coherence: {Math.round(coherence.data.score * 100)}
-          {contradictions > 0 && (
-            <span className="text-amber">· △ {contradictions} contradiction{contradictions === 1 ? '' : 's'}</span>
-          )}
-          <span>→ insights</span>
-        </Link>
-      )}
       <div className="mb-8">
         <Card pad={20}>
           <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
@@ -330,10 +321,10 @@ const CollapsibleConstellation: React.FC<{
       >
         <div>
           <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
-            ◇ Goal constellation
+            ◇ Where to focus
           </span>
           <h2 className="mt-1 font-display text-[18px] font-semibold tracking-[-0.02em] text-text">
-            {sortedGoals.length} active goal{sortedGoals.length === 1 ? '' : 's'}{open ? '' : ' — show'}
+            {sortedGoals.length} active goal{sortedGoals.length === 1 ? '' : 's'}, attention first{open ? '' : ' — show'}
           </h2>
         </div>
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
@@ -537,7 +528,7 @@ const GoalConstellationCard: React.FC<{
   // call here. We use the aggregate as a hint in the subtitle until the
   // tree-row prefetch lands.
   const goalContradictions = goal.health === 'stale' ? coverageContradictions : 0;
-  const health = healthLabel(goal.health, pendingDecisions, goalContradictions);
+  const health = healthLabel(goal.health, goalContradictions);
   const sparkColor =
     health.color === 'red'
       ? 'rgb(var(--red))'

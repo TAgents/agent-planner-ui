@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Decorative BDI radar for the landing hero — three concentric rings
- * (Intentions/Beliefs/Desires) with axis dots, faint marker lines, and
+ * Decorative radar for the landing hero — three concentric rings
+ * (Plans/Knowledge/Goals) with axis dots, faint marker lines, and
  * a "plan / LOOP" center. Pure SVG, theme-aware via CSS vars so it
  * reads in both light and dark mode without a JS toggle.
  */
@@ -11,8 +11,8 @@ const LandingBdiRadar: React.FC<{ className?: string }> = ({ className }) => {
   const cx = size / 2;
   const cy = size / 2;
   const radii = [size / 2 - 30, size / 2 - 70, size / 2 - 110];
-  const angles = [-90, 30, 150]; // Intentions (top), Beliefs (right), Desires (left)
-  const labels = ['Intentions', 'Beliefs', 'Desires'];
+  const angles = [-90, 30, 150]; // Plans (top), Knowledge (right), Goals (left)
+  const labels = ['Plans', 'Knowledge', 'Goals'];
 
   // Convert axis angle (degrees from 12 o'clock) → cartesian.
   const polar = (angleDeg: number, r: number) => {
@@ -25,9 +25,9 @@ const LandingBdiRadar: React.FC<{ className?: string }> = ({ className }) => {
       viewBox={`0 0 ${size} ${size}`}
       className={className}
       role="img"
-      aria-label="BDI architecture: three concentric rings showing intentions, beliefs, and desires orbiting a plan loop"
+      aria-label="Three concentric rings showing plans, knowledge, and goals orbiting a loop"
     >
-      {/* Concentric rings — Intentions outer, Desires inner */}
+      {/* Concentric rings — Plans outer, Goals inner */}
       <circle
         cx={cx}
         cy={cy}
@@ -102,7 +102,7 @@ const LandingBdiRadar: React.FC<{ className?: string }> = ({ className }) => {
         );
       })}
 
-      {/* Connecting threads from outer ring inward — implies the BDI loop */}
+      {/* Connecting threads from outer ring inward — implies the loop */}
       <path
         d={`M ${polar(angles[0], radii[0]).x} ${polar(angles[0], radii[0]).y}
             L ${cx} ${cy}

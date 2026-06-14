@@ -1,32 +1,32 @@
 import React from 'react';
 
-type BdiCard = {
-  letter: 'B' | 'D' | 'I';
-  axis: 'Beliefs' | 'Desires' | 'Intentions';
+type FeatureCard = {
+  letter: 'K' | 'G' | 'P';
+  axis: 'Knowledge' | 'Goals' | 'Plans';
   title: string;
   body: string;
   /** CSS var token referenced for sigil + watermark color. */
   toneVar: 'violet' | 'amber' | 'emerald';
 };
 
-const CARDS: BdiCard[] = [
+const CARDS: FeatureCard[] = [
   {
-    letter: 'B',
-    axis: 'Beliefs',
+    letter: 'K',
+    axis: 'Knowledge',
     title: 'Temporal knowledge graph',
-    body: 'Facts with valid_from/valid_to. Stale beliefs flagged. Contradictions surfaced.',
+    body: 'Facts with valid_from/valid_to. Outdated facts flagged. Contradictions surfaced.',
     toneVar: 'violet',
   },
   {
-    letter: 'D',
-    axis: 'Desires',
+    letter: 'G',
+    axis: 'Goals',
     title: 'Goals with structure',
-    body: 'Outcomes, metrics, constraints, principles. Quality-scored against BDI rubric.',
+    body: 'Outcomes, metrics, constraints, principles. Quality-scored against a clear rubric.',
     toneVar: 'amber',
   },
   {
-    letter: 'I',
-    axis: 'Intentions',
+    letter: 'P',
+    axis: 'Plans',
     title: 'Plans agents commit to',
     body: 'Hierarchical task trees, dependency graph, decision handoffs to humans.',
     toneVar: 'emerald',
@@ -34,8 +34,8 @@ const CARDS: BdiCard[] = [
 ];
 
 /**
- * Three BDI feature cards — one per axis. Each card has a sigil chip
- * (B/D/I) in the axis tone, a giant low-opacity watermark letter
+ * Three feature cards — knowledge, goals, plans. Each card has a sigil chip
+ * (K/G/P) in the axis tone, a giant low-opacity watermark letter
  * behind the body copy, the axis label as a kicker, the feature title,
  * and a one-sentence description. Layout matches the design handoff.
  */
@@ -44,14 +44,14 @@ const FeaturesSection: React.FC = () => {
     <section className="border-t border-border/60 bg-bg">
       <div className="mx-auto grid max-w-[1180px] gap-3 px-6 py-12 sm:px-9 md:grid-cols-3">
         {CARDS.map((c) => (
-          <BdiFeatureCard key={c.letter} card={c} />
+          <FeatureCardView key={c.letter} card={c} />
         ))}
       </div>
     </section>
   );
 };
 
-const BdiFeatureCard: React.FC<{ card: BdiCard }> = ({ card }) => {
+const FeatureCardView: React.FC<{ card: FeatureCard }> = ({ card }) => {
   const sigilStyle: React.CSSProperties = {
     background: `rgb(var(--${card.toneVar}) / 0.18)`,
     color: `rgb(var(--${card.toneVar}))`,

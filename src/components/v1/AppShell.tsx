@@ -1,10 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Boxes,
+  Target,
+  ListTree,
+  Brain,
+  LayoutTemplate,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from './cn';
 
 export type AppShellNavId =
   | 'mission'
-  | 'strategy'
   | 'workspaces'
   | 'blueprints'
   | 'goals'
@@ -14,41 +22,79 @@ export type AppShellNavId =
 export type AppShellNavItem = {
   id: AppShellNavId;
   label: string;
-  glyph: string;
+  /** One-line plain-language explanation, shown beneath the label / on hover. */
+  hint: string;
   to: string;
+  icon: LucideIcon;
 };
 
-const DEFAULT_NAV: AppShellNavItem[] = [
-  { id: 'mission', label: 'Mission', glyph: 'M', to: '/app' },
-  { id: 'workspaces', label: 'Workspaces', glyph: 'W', to: '/app/workspaces' },
-  { id: 'blueprints', label: 'Blueprints', glyph: 'B', to: '/app/blueprints' },
-  { id: 'strategy', label: 'Strategy', glyph: 'S', to: '/app/strategy' },
-  { id: 'goals', label: 'Goals', glyph: 'G', to: '/app/goals' },
-  { id: 'plans', label: 'Plans', glyph: 'P', to: '/app/plans' },
-  { id: 'know', label: 'Knowledge', glyph: 'K', to: '/app/knowledge' },
+// The four core elements (workspaces → goals → plans → knowledge) lead, with
+// Mission as the home overview. Templates + analysis are demoted to a second
+// group so the primary surface stays focused.
+const PRIMARY_NAV: AppShellNavItem[] = [
+  { id: 'mission', label: 'Mission', hint: "Today's overview", to: '/app', icon: LayoutDashboard },
+  { id: 'workspaces', label: 'Workspaces', hint: 'Folders of work', to: '/app/workspaces', icon: Boxes },
+  { id: 'goals', label: 'Goals', hint: "What you're aiming for", to: '/app/goals', icon: Target },
+  { id: 'plans', label: 'Plans', hint: 'How the work gets done', to: '/app/plans', icon: ListTree },
+  { id: 'know', label: 'Knowledge', hint: 'What agents have learned', to: '/app/knowledge', icon: Brain },
+];
+
+const SECONDARY_NAV: AppShellNavItem[] = [
+  { id: 'blueprints', label: 'Blueprints', hint: 'Reusable templates', to: '/app/blueprints', icon: LayoutTemplate },
 ];
 
 export type AppShellProps = {
   active: AppShellNavId;
-  /** Override the default nav set (e.g. for tests or alternate layouts). */
-  items?: AppShellNavItem[];
-  /** Footer slot, typically a user avatar / monogram. */
-  footer?: React.ReactNode;
-  /** Brand monogram in the top tile. */
+  primary?: AppShellNavItem[];
+  secondary?: AppShellNavItem[];
+  /** Footer slot, typically theme toggle + user controls. */
+  footer: React.ReactNode;
   logoText?: string;
-  /** Click handler for the brand tile (defaults to navigation home). */
   logoTo?: string;
   children: React.ReactNode;
 };
 
+function NavRow({ item, active }: { item: AppShellNavItem; active: boolean }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.to}
+      title={item.hint}
+      aria-label={`${item.label} — ${item.hint}`}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'group relative flex items-center gap-3 rounded-[10px] px-2.5 py-2 transition-colors duration-150',
+        active
+          ? 'bg-surface-hi text-text'
+          : 'text-text-sec hover:bg-surface-hi/60 hover:text-text',
+      )}
+    >
+      {active && (
+        <span className="absolute -left-[9px] top-2.5 bottom-2.5 w-[3px] rounded-full bg-amber" />
+      )}
+      <Icon
+        size={18}
+        strokeWidth={2}
+        className={cn(
+          'flex-shrink-0 transition-colors',
+          active ? 'text-amber' : 'text-text-muted group-hover:text-text-sec',
+        )}
+      />
+      <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium leading-none">
+        {item.label}
+      </span>
+    </Link>
+  );
+}
+
 /**
- * 56px-wide left rail with brand tile + 4 monogram nav tiles. Active tile
- * gets an amber 2px accent bar and `surface-hi` background. See
- * design_handoff_agentplanner/03-component-inventory.md.
+ * Left navigation sidebar (~220px). Brand + two grouped sections of
+ * icon-and-label nav rows, with an amber accent bar on the active row.
  */
 export function AppShell({
   active,
-  items = DEFAULT_NAV,
+  primary = PRIMARY_NAV,
+  secondary = SECONDARY_NAV,
   footer,
   logoText = 'ap',
   logoTo = '/app',
@@ -56,44 +102,41 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex h-full">
-      <aside className="flex w-14 flex-shrink-0 flex-col items-center gap-1 border-r border-border bg-surface py-[14px]">
+      <aside className="flex w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface px-3 py-4">
         <Link
           to={logoTo}
           aria-label="AgentPlanner home"
-          className="mb-[14px] flex h-8 w-8 items-center justify-center rounded-lg bg-amber text-bg font-display text-[17px] font-bold leading-none tracking-[-0.04em]"
+          className="mb-5 flex items-center gap-2.5 px-1"
         >
-          {logoText}
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber font-display text-[16px] font-bold leading-none tracking-[-0.04em] text-bg">
+            {logoText}
+          </span>
+          <span className="font-display text-[15px] font-semibold tracking-[-0.02em] text-text">
+            AgentPlanner
+          </span>
         </Link>
-        {items.map((it) => {
-          const isActive = it.id === active;
-          return (
-            <Link
-              key={it.id}
-              to={it.to}
-              title={it.label}
-              aria-label={it.label}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'relative flex h-9 w-9 items-center justify-center rounded-[9px]',
-                'font-mono text-[11px] font-semibold transition-colors duration-150',
-                isActive
-                  ? 'bg-surface-hi text-text'
-                  : 'text-text-muted hover:bg-surface-hi/50 hover:text-text-sec',
-              )}
-            >
-              {isActive && (
-                <span className="absolute -left-[10px] top-2 bottom-2 w-[2px] rounded-[2px] bg-amber" />
-              )}
-              {it.glyph}
-            </Link>
-          );
-        })}
+
+        <nav aria-label="Main navigation" className="flex flex-col gap-0.5">
+          {primary.map((it) => (
+            <NavRow key={it.id} item={it} active={it.id === active} />
+          ))}
+        </nav>
+
+        <div className="my-3 flex items-center gap-2 px-2.5">
+          <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+            More
+          </span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <nav aria-label="More" className="flex flex-col gap-0.5">
+          {secondary.map((it) => (
+            <NavRow key={it.id} item={it} active={it.id === active} />
+          ))}
+        </nav>
+
         <div className="flex-1" />
-        {footer ?? (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-hi font-mono text-[10px] text-text-sec">
-            ms
-          </div>
-        )}
+        {footer}
       </aside>
       <main className="relative min-w-0 flex-1">{children}</main>
     </div>
