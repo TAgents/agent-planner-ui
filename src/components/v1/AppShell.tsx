@@ -7,7 +7,6 @@ import {
   ListTree,
   Brain,
   LayoutTemplate,
-  Compass,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from './cn';
@@ -43,7 +42,6 @@ const PRIMARY_NAV: AppShellNavItem[] = [
 
 const SECONDARY_NAV: AppShellNavItem[] = [
   { id: 'blueprints', label: 'Blueprints', hint: 'Reusable templates', to: '/app/blueprints', icon: LayoutTemplate },
-  { id: 'strategy', label: 'Strategy', hint: 'Where to focus next', to: '/app/strategy', icon: Compass },
 ];
 
 export type AppShellProps = {

@@ -39,13 +39,11 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiesPolicy from './pages/CookiesPolicy';
 import NotFound from './pages/NotFound';
 import MissionControl from './pages/MissionControl';
-import Insights from './pages/Insights';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import SelectOrganization from './pages/auth/SelectOrganization';
 import Onboarding from './pages/onboarding/Onboarding';
 import ConnectPage from './pages/connect/ConnectPage';
 import ConnectIndex from './pages/connect/ConnectIndex';
-import StrategicOverview from './pages/StrategicOverview';
 import ExploreClone from './pages/ExploreClone';
 import Workspaces from './pages/Workspaces';
 import WorkspaceDetail from './pages/WorkspaceDetail';
@@ -56,7 +54,6 @@ import BlueprintDetail from './pages/BlueprintDetail';
 const KnowledgeTimeline = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
 const KnowledgeCoverage = React.lazy(() => import('./pages/KnowledgeCoverageV1'));
 const KnowledgeGraph = React.lazy(() => import('./pages/KnowledgeGraphV1'));
-const PortfolioGraph = React.lazy(() => import('./pages/PortfolioGraph'));
 
 // Create a React Query client
 const queryClient = new QueryClient({
@@ -112,8 +109,9 @@ const App: React.FC = () => {
                 <Route path="/app" element={<MainLayout />}>
                   <Route index element={<MissionControl />} />
                   <Route path="dashboard" element={<MissionControl />} />
-                  <Route path="insights" element={<Insights />} />
-                  <Route path="strategy" element={<StrategicOverview />} />
+                  {/* Insights / Strategy / Portfolio folded into the unified Mission home */}
+                  <Route path="insights" element={<Navigate to="/app" replace />} />
+                  <Route path="strategy" element={<Navigate to="/app" replace />} />
                   <Route path="workspaces" element={<ErrorBoundary><Workspaces /></ErrorBoundary>} />
                   <Route path="workspaces/:id" element={<ErrorBoundary><WorkspaceDetail /></ErrorBoundary>} />
                   <Route path="blueprints" element={<ErrorBoundary><Blueprints /></ErrorBoundary>} />
@@ -127,7 +125,7 @@ const App: React.FC = () => {
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimeline /></ErrorBoundary>} />
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverage /></ErrorBoundary>} />
                   <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraph /></ErrorBoundary>} />
-                  <Route path="portfolio" element={<ErrorBoundary><PortfolioGraph /></ErrorBoundary>} />
+                  <Route path="portfolio" element={<Navigate to="/app" replace />} />
                   <Route path="settings" element={<SettingsLayout />}>
                     <Route index element={<Navigate to="profile" replace />} />
                     <Route path="profile" element={<ProfileSettings />} />

@@ -5,20 +5,17 @@ import { AppShell, type AppShellNavId } from '../v1';
 import { useUI } from '../../contexts/UIContext';
 
 /**
- * Resolves the active rail item from the current pathname.
- * /app/strategy + /app/portfolio → strategy (where-to-spend-time view),
- * /app/plans → plans, /app/goals → goals, /app/knowledge → know,
- * everything else (including /app, /app/dashboard, /app/settings) → mission.
+ * Resolves the active sidebar item from the current pathname. Everything not
+ * under workspaces/blueprints/goals/plans/knowledge (including the home,
+ * dashboard, and the folded insights/strategy/portfolio routes) → mission.
  */
 function activeNavId(pathname: string): AppShellNavId {
   if (pathname.startsWith('/app/workspaces')) return 'workspaces';
   if (pathname.startsWith('/app/blueprints')) return 'blueprints';
-  if (pathname.startsWith('/app/strategy') || pathname.startsWith('/app/portfolio')) {
-    return 'strategy';
-  }
   if (pathname.startsWith('/app/goals')) return 'goals';
   if (pathname.startsWith('/app/plans')) return 'plans';
   if (pathname.startsWith('/app/knowledge')) return 'know';
+  // Insights / Strategy / Portfolio fold into Mission (the home).
   return 'mission';
 }
 
