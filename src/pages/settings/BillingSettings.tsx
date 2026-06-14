@@ -25,7 +25,7 @@ const BillingSettings: React.FC = () => {
               <span className="text-[12px] text-text-sec">$99 / month · billed monthly</span>
             </div>
             <div className="mt-1 text-[11px] text-text-sec">
-              3 seats · unlimited plans · BDI knowledge graph
+              3 seats · unlimited plans · knowledge graph
             </div>
           </div>
           <button

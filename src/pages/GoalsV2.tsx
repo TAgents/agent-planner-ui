@@ -746,7 +746,7 @@ export default function GoalsPage() {
           Goal
         </span>
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-muted">
-          BDI density (10d)
+          Activity (10d)
         </span>
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-muted">
           Quality / Plans

@@ -21,7 +21,7 @@ import { request } from '../services/api-client';
 import { goalDashboardService, goalBdiService } from '../services/goals.service';
 import type { Plan } from '../types';
 
-type Tab = 'overview' | 'tasks' | 'beliefs' | 'evaluations';
+type Tab = 'overview' | 'tasks' | 'knowledge' | 'evaluations';
 
 function relTime(iso?: string): string {
   if (!iso) return 'never';
@@ -36,7 +36,7 @@ function relTime(iso?: string): string {
 /**
  * Goal Detail — single goal opened up. Composes Goal Compass,
  * Quality score, Tension Hotspots, and the Critical Path subway
- * above a 4-tab body (Overview · Tasks & dependencies · Beliefs ·
+ * above a 4-tab body (Overview · Tasks & dependencies · Knowledge ·
  * Evaluations). Mirrors the design handoff "Goal Detail" surface.
  */
 const GoalDetailV1: React.FC = () => {
@@ -103,7 +103,7 @@ const GoalDetailV1: React.FC = () => {
   const TABS: { id: Tab; label: string; badge?: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'tasks', label: 'Tasks & dependencies' },
-    { id: 'beliefs', label: 'Beliefs', badge: 'NEW' },
+    { id: 'knowledge', label: 'Knowledge' },
     { id: 'evaluations', label: `Evaluations · ${(goal.evaluations || []).length}` },
   ];
 
@@ -196,12 +196,12 @@ const GoalDetailV1: React.FC = () => {
               }
               axes={[
                 {
-                  label: 'Beliefs',
+                  label: 'Plans',
                   count: linkedPlans.length,
                   sub: 'Plans serving this goal',
                 },
                 {
-                  label: 'Desires',
+                  label: 'Criteria',
                   count: Array.isArray(goal.successCriteria)
                     ? goal.successCriteria.length
                     : goal.successCriteria
@@ -210,12 +210,12 @@ const GoalDetailV1: React.FC = () => {
                   sub: 'Success criteria',
                 },
                 {
-                  label: 'Intentions',
+                  label: 'Reviews',
                   count: Array.isArray(goal.evaluations) ? goal.evaluations.length : 0,
                   sub: 'Evaluations on record',
                 },
                 {
-                  label: 'Constraints',
+                  label: 'Links',
                   count: Array.isArray(goal.links) ? goal.links.length : 0,
                   sub: 'Linked entities',
                 },
@@ -223,14 +223,14 @@ const GoalDetailV1: React.FC = () => {
             />
           </div>
           <div className="mt-2 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
-            <CompassStat label="Beliefs" value={linkedPlans.length} tone="violet" />
+            <CompassStat label="Plans" value={linkedPlans.length} tone="violet" />
             <CompassStat
-              label="Desires"
+              label="Criteria"
               value={Array.isArray(goal.successCriteria) ? goal.successCriteria.length : goal.successCriteria ? 1 : 0}
               tone="amber"
             />
             <CompassStat
-              label="Intentions"
+              label="Reviews"
               value={Array.isArray(goal.evaluations) ? goal.evaluations.length : 0}
               tone="emerald"
             />
@@ -311,7 +311,7 @@ const GoalDetailV1: React.FC = () => {
 
       {tab === 'tasks' && <TasksDependenciesPanel pathQ={pathQ} />}
 
-      {tab === 'beliefs' && <BeliefsPanel goalId={goal.id} />}
+      {tab === 'knowledge' && <KnowledgePanel goalId={goal.id} />}
 
       {tab === 'evaluations' && (
         <Card pad={20}>
@@ -522,16 +522,16 @@ const DependencyColumn: React.FC<{
 };
 
 /**
- * Beliefs panel — surfaces what the knowledge graph "believes" about
+ * Knowledge panel — surfaces what the knowledge graph knows about
  * each achiever task. Built off /goals/:id/knowledge-gaps which
  * already returns top facts per task plus gap classifications.
  */
-const BeliefsPanel: React.FC<{ goalId: string }> = ({ goalId }) => {
+const KnowledgePanel: React.FC<{ goalId: string }> = ({ goalId }) => {
   const gaps = useGoalKnowledgeGaps(goalId);
   if (gaps.isLoading) {
     return (
       <Card pad={20}>
-        <p className="text-[12.5px] text-text-muted">Loading beliefs from knowledge graph…</p>
+        <p className="text-[12.5px] text-text-muted">Loading knowledge…</p>
       </Card>
     );
   }
@@ -541,7 +541,7 @@ const BeliefsPanel: React.FC<{ goalId: string }> = ({ goalId }) => {
         <p className="text-[12.5px] text-text-sec">
           Knowledge graph not available — add a Graphiti episode with{' '}
           <code className="rounded bg-surface-hi px-1 py-0.5 font-mono text-[11px]">add_learning</code>{' '}
-          via MCP to start populating beliefs.
+          via MCP to start populating knowledge.
         </p>
       </Card>
     );
@@ -565,7 +565,7 @@ const BeliefsPanel: React.FC<{ goalId: string }> = ({ goalId }) => {
   return (
     <Card pad={20}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <SectionHead kicker="◇ Beliefs" title="What the graph knows about achievers" />
+        <SectionHead kicker="◇ Knowledge" title="What the graph knows about achievers" />
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
           {gaps.data.coverage.percentage}% covered · {gaps.data.coverage.covered}/
           {gaps.data.coverage.total}

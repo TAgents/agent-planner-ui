@@ -280,7 +280,7 @@ const PublicPlanV1: React.FC = () => {
             )}
 
             <Card pad={20}>
-              <Kicker className="mb-2">◇ Beliefs digest</Kicker>
+              <Kicker className="mb-2">◇ Knowledge digest</Kicker>
               {digestQ.isLoading ? (
                 <p className="text-[12.5px] leading-[1.55] text-text-muted">Loading…</p>
               ) : digestQ.data?.available === false ? (

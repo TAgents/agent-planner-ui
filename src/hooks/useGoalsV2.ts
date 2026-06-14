@@ -31,7 +31,7 @@ export interface GoalV2 {
   links?: GoalLink[];
   evaluations?: GoalEvaluation[];
   progress?: GoalProgressStats;
-  /** Real BDI activity density: count of node_logs per day for last 10 days, on tasks that achieve this goal. */
+  /** Activity density: count of node_logs per day for the last 10 days, on tasks that achieve this goal. */
   density?: number[];
   children?: GoalV2[];
 }

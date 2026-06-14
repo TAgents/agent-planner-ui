@@ -2,11 +2,11 @@ import React from 'react';
 import { cn } from './cn';
 
 export type GoalCompassAxis = {
-  /** Cardinal label — "Beliefs" / "Desires" / "Intentions" / "Constraints". */
+  /** Axis label, e.g. "Plans" / "Criteria" / "Reviews" / "Links". */
   label: string;
   /** Numeric count surfaced on the axis. */
   count: number;
-  /** Color override; defaults to violet for the 4-axis BDI palette. */
+  /** Color override; defaults to violet. */
   color?: string;
   /** Tooltip / sublabel. */
   sub?: string;
@@ -23,7 +23,7 @@ export type GoalCompassProps = {
 
 /**
  * Goal Compass — 4-quadrant SVG with the goal at center and four
- * cardinal axes (Beliefs / Desires / Intentions / Constraints).
+ * four labeled axes.
  *
  * Per-axis radial line length scales with count (log-bounded so a
  * single mega-axis doesn't squash the others), with a small dot at
