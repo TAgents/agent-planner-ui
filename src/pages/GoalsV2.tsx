@@ -119,7 +119,7 @@ function attentionRank(a: Attention): number {
 
 function bdiSparkSeries(goal: GoalV2): number[] {
   // Server-side: 10-day node_logs density across achieving tasks. Real
-  // BDI signal — a node_log fires whenever an agent makes progress,
+  // Activity signal — a node_log fires whenever an agent makes progress,
   // claims, comments, or transitions status on an achieving task.
   if (Array.isArray(goal.density) && goal.density.some((v) => v > 0)) {
     return goal.density;
@@ -400,7 +400,7 @@ function GoalRidge({
               </div>
             </div>
 
-            {/* BDI density spark */}
+            {/* activity density spark */}
             <div className="flex flex-col gap-[2px]">
               {sparkSeries.length > 0 ? (
                 <>

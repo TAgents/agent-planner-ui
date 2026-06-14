@@ -58,9 +58,6 @@ export type { AuthSplitLayoutProps, SSOButtonProps } from './AuthSplitLayout';
 export { Spark } from './Spark';
 export type { SparkProps } from './Spark';
 
-export { CoherenceDial } from './CoherenceDial';
-export type { CoherenceDialProps } from './CoherenceDial';
-
 export { GoalCompass } from './GoalCompass';
 export type { GoalCompassProps, GoalCompassAxis } from './GoalCompass';
 

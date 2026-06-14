@@ -1,7 +1,7 @@
 /**
  * Knowledge Service — extracted from api.ts
  *
- * Graphiti knowledge graph, BDI coherence, and knowledge loop APIs.
+ * Graphiti knowledge graph, coherence, and knowledge loop APIs.
  */
 import { api, request } from './api-client';
 
@@ -144,7 +144,7 @@ export const graphitiService = {
   },
 };
 
-// ── BDI Coherence API ──────────────────────────────────────
+// ── Coherence API ──────────────────────────────────────
 
 export const coherenceService = {
   getPlanCoherence: (planId: string) =>
@@ -157,7 +157,7 @@ export const coherenceService = {
     api.get(`/plans/${planId}/nodes/${nodeId}/episode-links`, { params: linkType ? { link_type: linkType } : {} }).then(r => r.data),
 };
 
-// ── BDI Knowledge Loop API ─────────────────────────────────
+// ── Knowledge Loop API ─────────────────────────────────
 
 export const knowledgeLoopService = {
   start: (planId: string, goalId?: string, maxIterations?: number) =>

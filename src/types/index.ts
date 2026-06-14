@@ -120,7 +120,7 @@ export interface Plan {
   forkedFromBlueprintId?: string | null;
   forked_at?: string | null;
   forkedAt?: string | null;
-  // BDI quality assessment
+  // Goal quality assessment
   quality_score?: number | null;
   quality_assessed_at?: string | null;
   quality_rationale?: string | null;

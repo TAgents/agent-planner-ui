@@ -995,5 +995,5 @@ export type { Decision, DecisionOption, AgentRequest } from './decisions.service
 export { graphitiService, coherenceService, knowledgeLoopService };
 export type { GraphitiStatus, GraphitiEpisode, GraphitiFact, GraphitiEntity, GraphitiContradiction } from './knowledge.service';
 
-// Goals, Node Agent View, BDI Goals — extracted to goals.service.ts
+// Goals, Node Agent View, Goal extensions — extracted to goals.service.ts
 export { goalDashboardService, nodeViewService, goalBdiService };
