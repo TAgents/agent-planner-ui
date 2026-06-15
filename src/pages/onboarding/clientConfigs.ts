@@ -62,11 +62,11 @@ export const CLIENT_CONFIGS: Record<ClientId, ClientConfig> = {
       label: 'Quick install (recommended)',
       comment: 'Run this once in any terminal — writes to ~/.claude.json.',
       language: 'shell',
+      // Single line: backslash-continuations break on paste in some shells, and
+      // API_URL must be present or the MCP defaults to http://localhost:3000
+      // (which makes a hosted user see "no goals" / "goal not found").
       lines: [
-        { text: 'claude mcp add agent-planner \\', indent: 0 },
-        { text: '-e USER_API_TOKEN=${TOKEN} \\', indent: 1, color: 'amber' },
-        { text: '-e MCP_CLIENT_LABEL="Claude Code" \\', indent: 1 },
-        { text: '-- npx -y agent-planner-mcp', indent: 1 },
+        'claude mcp add agent-planner -e USER_API_TOKEN=${TOKEN} -e API_URL=https://agentplanner.io/api -e MCP_CLIENT_LABEL="Claude Code" -- npx -y agent-planner-mcp',
       ],
     },
     lines: [
@@ -76,6 +76,7 @@ export const CLIENT_CONFIGS: Record<ClientId, ClientConfig> = {
       { text: '"command": "npx",', indent: 3 },
       { text: '"args": ["-y", "agent-planner-mcp"],', indent: 3 },
       { text: '"env": {', indent: 3 },
+      { text: '"API_URL": "https://agentplanner.io/api",', indent: 4 },
       { text: '"USER_API_TOKEN": "${TOKEN}",', indent: 4, color: 'amber' },
       { text: '"MCP_CLIENT_LABEL": "Claude Code"', indent: 4 },
       { text: '}', indent: 3 },
@@ -94,7 +95,7 @@ export const CLIENT_CONFIGS: Record<ClientId, ClientConfig> = {
     language: 'shell',
     lines: [
       'npx -y agent-planner-mcp',
-      { text: '# env USER_API_TOKEN=${TOKEN} MCP_CLIENT_LABEL="Cursor"', color: 'amber' },
+      { text: '# env API_URL=https://agentplanner.io/api USER_API_TOKEN=${TOKEN} MCP_CLIENT_LABEL="Cursor"', color: 'amber' },
     ],
     connectPath: '/connect/cursor',
   },
