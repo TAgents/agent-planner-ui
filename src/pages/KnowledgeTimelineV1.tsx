@@ -77,6 +77,13 @@ const KnowledgeTimelineV1: React.FC = () => {
 
   const allEpisodes = (episodes.data?.episodes || []) as GraphitiEpisode[];
 
+  // When the loaded count equals the request cap there are likely more
+  // episodes than we've fetched, so render "N+" rather than a flat "N" that
+  // reads as a hard total (this was the "count stuck at 50" report — the
+  // headline showed the page limit, not the true count). Below the cap, the
+  // loaded count IS the true total.
+  const atEpisodeCap = allEpisodes.length >= maxEpisodes;
+
   // Per-filter counts for the filter-bar badges.
   const counts = useMemo(() => {
     const c = { all: 0, agents: 0, you: 0, cross_plan: 0, contradictions: 0 };
@@ -200,7 +207,7 @@ const KnowledgeTimelineV1: React.FC = () => {
     <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
-          { value: counts.all, label: 'episodes' },
+          { value: atEpisodeCap ? `${counts.all}+` : counts.all, label: 'episodes' },
           { value: todayCount, label: 'added today', tone: 'amber' },
         ]}
         search={search}
