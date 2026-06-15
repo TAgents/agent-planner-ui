@@ -12,6 +12,8 @@ ENV REACT_APP_API_URL=$REACT_APP_API_URL
 ENV REACT_APP_NAME="Agent Planner"
 
 ENV CI=false
+# Don't ship source maps to production — they expose the full app source.
+ENV GENERATE_SOURCEMAP=false
 RUN npm run build
 
 # Serve stage
