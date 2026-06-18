@@ -112,11 +112,22 @@ const Settings: React.FC = () => {
         <div className="flex-1">
           <h1 className="font-display text-[18px] font-semibold tracking-tight text-text">API tokens</h1>
           <p className="text-[12px] text-text-sec">
-            Programmatic access for agents, CI, and integrations
-            {activeOrg ? ` · ${activeOrg.name}` : ''}.
+            For MCP clients that connect with a header token — Claude Code, Cursor, and local/stdio
+            setups{activeOrg ? ` · ${activeOrg.name}` : ''}.
           </p>
         </div>
       </header>
+
+      {/* Steer Claude/ChatGPT users to the token-free connector path. */}
+      <div className="rounded-lg border border-border bg-surface px-3 py-2.5 text-[12px] leading-[1.5] text-text-sec">
+        Using <span className="font-medium text-text">Claude</span> or{' '}
+        <span className="font-medium text-text">ChatGPT</span>? You don’t need a token — connect them
+        as an app from{' '}
+        <a href="/app/settings/connections" className="text-text underline underline-offset-2">
+          Connected apps
+        </a>
+        . Tokens here are for token-based MCP clients and local setups.
+      </div>
 
       <div className="rounded-xl border border-border bg-surface">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
