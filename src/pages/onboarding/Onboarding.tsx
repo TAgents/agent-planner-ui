@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Card,
   ClientTile,
   GhostButton,
   Kicker,
   PrimaryButton,
-  SectionHead,
   SnippetBlock,
   StepCard,
   type StepState,
@@ -15,9 +15,10 @@ import {
 import { tokenService } from '../../services/api';
 import type { ApiToken } from '../../types';
 import { useTestConnection, useMcpbRelease } from '../../hooks/useOnboarding';
+import ConnectorGuide from '../../components/connect/ConnectorGuide';
 import {
   CLIENT_CONFIGS,
-  CLIENT_ORDER,
+  TOKEN_CLIENT_ORDER,
   type ClientId,
   inlineToken,
 } from './clientConfigs';
@@ -89,21 +90,49 @@ const Onboarding: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <div className="mx-auto max-w-[760px] px-6 pb-16 pt-12 sm:px-9">
-        <header className="mb-10">
+      <div className="mx-auto max-w-[820px] px-6 pb-16 pt-12 sm:px-9">
+        <header className="mb-8">
           <Kicker className="mb-2">◆ Setup</Kicker>
           <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
-            Connect an agent
+            Connect your agent
           </h1>
-          <p className="mt-2 max-w-[60ch] text-[13px] leading-[1.55] text-text-sec">
-            AgentPlanner is most useful with an AI agent that can read your goals and write back
-            what it learns. Pick the client you use, paste a token, and confirm the connection.
+          <p className="mt-2 max-w-[62ch] text-[13px] leading-[1.55] text-text-sec">
+            AgentPlanner does its work through an AI agent — let Claude or ChatGPT read your goals
+            and write back what it learns. It takes about a minute, and you stay in control.
           </p>
         </header>
 
+        {/* Primary path — connector, with live Waiting → Connected. */}
+        <section className="mb-8">
+          <ConnectorGuide watch />
+        </section>
+
+        {/* Privacy / trust promise (review: show this inline). */}
+        <Card pad={16} className="mb-8">
+          <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">
+            Why this is safe
+          </div>
+          <ul className="mt-2 grid grid-cols-1 gap-1.5 text-[12px] leading-[1.45] text-text-sec sm:grid-cols-2">
+            <li>✓ You sign in yourself — your password is never shared with the app.</li>
+            <li>✓ Revocable anytime in one click from Settings → Connected apps.</li>
+            <li>✓ Scoped to your AgentPlanner workspace.</li>
+            <li>✓ Access auto-expires; disconnecting stops it within an hour.</li>
+          </ul>
+        </Card>
+
+        {/* Advanced path — token / local clients, collapsed by default. */}
+        <details className="mb-2 rounded-xl border border-border bg-surface px-4 py-3">
+          <summary className="cursor-pointer font-display text-[13px] font-semibold text-text">
+            Advanced — connect with a token (Claude Code, Cursor, local)
+          </summary>
+          <p className="mb-4 mt-2 max-w-[62ch] text-[12px] leading-[1.5] text-text-sec">
+            For MCP clients that connect with a header token or run locally. Pick the client, copy
+            the token, and confirm the connection.
+          </p>
+
         <StepCard n={1} title="Pick your agent client" state={step1State}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {CLIENT_ORDER.map((id) => {
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {TOKEN_CLIENT_ORDER.map((id) => {
               const c = CLIENT_CONFIGS[id];
               return (
                 <ClientTile
@@ -191,6 +220,14 @@ const Onboarding: React.FC = () => {
             </>
           )}
         </StepCard>
+        </details>
+
+        <div className="mt-8 flex flex-wrap items-center justify-end gap-3">
+          <GhostButton onClick={onSkip}>Skip for now</GhostButton>
+          <PrimaryButton large onClick={onSuccess}>
+            Go to dashboard →
+          </PrimaryButton>
+        </div>
       </div>
     </div>
   );

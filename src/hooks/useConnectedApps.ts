@@ -6,10 +6,14 @@ import { connectionsService, type ConnectedApp } from '../services/connections.s
 
 export const CONNECTED_APPS_KEY = ['connections', 'apps'];
 
-/** Active apps connected via the connector. Polls so a fresh connection shows up. */
-export function useConnectedApps() {
+/**
+ * Active apps connected via the connector. Polls so a fresh connection shows up.
+ * Pass a smaller `intervalMs` for snappier feedback while a user is actively
+ * connecting (e.g. the onboarding watcher).
+ */
+export function useConnectedApps(intervalMs = 15_000) {
   return useQuery<ConnectedApp[]>(CONNECTED_APPS_KEY, connectionsService.getConnectedApps, {
-    refetchInterval: 15_000,
+    refetchInterval: intervalMs,
   });
 }
 

@@ -19,6 +19,7 @@ import { goalDashboardService } from '../services/goals.service';
 import { request } from '../services/api-client';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { usePlans } from '../hooks/usePlans';
+import AgentStatusNudge from '../components/dashboard/AgentStatusNudge';
 import type { Plan, Workspace } from '../types';
 
 function relTime(iso?: string): string {
@@ -179,6 +180,8 @@ const MissionControl: React.FC = () => {
           </span>
         </div>
       </header>
+
+      <AgentStatusNudge />
 
       <div className="mb-8">
         <Card pad={20}>
