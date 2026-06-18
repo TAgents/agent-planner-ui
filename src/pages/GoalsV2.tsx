@@ -336,10 +336,7 @@ function GoalRidge({
           )}
         >
           <div className={cn('w-[3px] flex-shrink-0', SPINE_BG[spine])} />
-          <div
-            className="grid min-w-0 flex-1 items-center gap-4 px-4 py-3"
-            style={{ gridTemplateColumns: 'minmax(0, 1fr) 110px 120px 110px 70px' }}
-          >
+          <div className="flex min-w-0 flex-1 flex-col gap-3 px-4 py-3 md:grid md:grid-cols-[minmax(0,1fr)_110px_120px_110px_70px] md:items-center md:gap-4">
             {/* Goal cluster */}
             <div className="flex min-w-0 items-start gap-3">
               <div
@@ -401,7 +398,7 @@ function GoalRidge({
             </div>
 
             {/* activity density spark */}
-            <div className="flex flex-col gap-[2px]">
+            <div className="hidden flex-col gap-[2px] md:flex">
               {sparkSeries.length > 0 ? (
                 <>
                   <Spark values={sparkSeries} color={sparkColorVar} width={100} height={20} />
@@ -495,7 +492,7 @@ function GoalRidge({
             </div>
 
             {/* Status */}
-            <div className="flex items-center justify-end gap-1.5">
+            <div className="flex items-center gap-1.5 md:justify-end">
               <span
                 className={cn(
                   'inline-block h-[7px] w-[7px] flex-shrink-0 rounded-full',
@@ -636,7 +633,8 @@ export default function GoalsPage() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex flex-wrap items-center gap-2">
           <span className="mr-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
             Status
           </span>
@@ -666,19 +664,19 @@ export default function GoalsPage() {
               </button>
             );
           })}
-          <div className="flex-1" />
-          <div className="flex items-center gap-2">
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:ml-auto">
             <input
               type="search"
               placeholder="Search goals…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[200px] rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
+              className="min-w-0 rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
             />
             <select
               value={workspaceFilter}
               onChange={(e) => setWorkspaceFilter(e.target.value)}
-              className={`rounded-md border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] focus:outline-none ${
+              className={`min-w-0 rounded-md border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] focus:outline-none ${
                 workspaceFilter !== 'all' ? 'border-amber text-text' : 'border-border text-text-sec'
               }`}
               title="Filter by workspace"
@@ -692,7 +690,7 @@ export default function GoalsPage() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="rounded-md border border-border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] text-text-sec focus:outline-none"
+              className="min-w-0 rounded-md border border-border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] text-text-sec focus:outline-none"
             >
               <option value="attention">Sort: Attention</option>
               <option value="updated">Sort: Updated</option>
@@ -738,10 +736,7 @@ export default function GoalsPage() {
       </div>
 
       {/* Column header strip */}
-      <div
-        className="mb-2 grid items-center gap-4 border-b border-border bg-bg px-4 py-2"
-        style={{ gridTemplateColumns: 'minmax(0, 1fr) 110px 120px 110px 70px' }}
-      >
+      <div className="mb-2 hidden items-center gap-4 border-b border-border bg-bg px-4 py-2 md:grid md:grid-cols-[minmax(0,1fr)_110px_120px_110px_70px]">
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-muted">
           Goal
         </span>

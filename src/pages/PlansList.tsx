@@ -201,7 +201,6 @@ function CreatePlanDialog({ onClose }: { onClose: () => void }) {
 }
 
 const PlansList: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading } = usePlans(1, 100);
   const { data: wsData } = useWorkspaces();
@@ -281,7 +280,7 @@ const PlansList: React.FC = () => {
       </header>
       {showCreate && <CreatePlanDialog onClose={() => setShowCreate(false)} />}
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -298,18 +297,18 @@ const PlansList: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:flex lg:items-center">
           <input
             type="search"
             placeholder="Search plans…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:outline-none"
+            className="min-w-0 rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:outline-none"
           />
           <select
             value={workspaceFilter}
             onChange={(e) => setWorkspaceFilter(e.target.value)}
-            className={`rounded-md border bg-surface px-3 py-[6px] text-xs focus:outline-none ${
+            className={`min-w-0 rounded-md border bg-surface px-3 py-[6px] text-xs focus:outline-none ${
               workspaceFilter !== 'all' ? 'border-amber text-text' : 'border-border text-text-sec'
             }`}
             title="Filter by workspace"
@@ -323,7 +322,7 @@ const PlansList: React.FC = () => {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text focus:outline-none"
+            className="min-w-0 rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text focus:outline-none"
           >
             <option value="updated">Updated</option>
             <option value="created">Created</option>

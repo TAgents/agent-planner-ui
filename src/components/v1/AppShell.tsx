@@ -87,9 +87,34 @@ function NavRow({ item, active }: { item: AppShellNavItem; active: boolean }) {
   );
 }
 
+function MobileNavItem({ item, active }: { item: AppShellNavItem; active: boolean }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.to}
+      title={item.hint}
+      aria-label={`${item.label} — ${item.hint}`}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[10px] px-1.5 py-2 transition-colors',
+        active ? 'bg-surface-hi text-text' : 'text-text-muted hover:bg-surface-hi/60 hover:text-text-sec',
+      )}
+    >
+      <Icon
+        size={18}
+        strokeWidth={2}
+        className={cn('flex-shrink-0', active ? 'text-amber' : 'text-text-muted')}
+      />
+      <span className="max-w-full truncate font-mono text-[9px] uppercase tracking-[0.04em]">
+        {item.label}
+      </span>
+    </Link>
+  );
+}
+
 /**
- * Left navigation sidebar (~220px). Brand + two grouped sections of
- * icon-and-label nav rows, with an amber accent bar on the active row.
+ * Desktop: left navigation sidebar (~220px). Mobile: compact top brand bar
+ * plus a bottom icon nav so protected app pages keep the full screen width.
  */
 export function AppShell({
   active,
@@ -100,9 +125,26 @@ export function AppShell({
   logoTo = '/app',
   children,
 }: AppShellProps) {
+  const mobileItems = [...primary, ...secondary];
+
   return (
-    <div className="flex h-full">
-      <aside className="flex w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface px-3 py-4">
+    <div className="flex h-full flex-col md:flex-row">
+      <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border bg-surface px-4 md:hidden">
+        <Link
+          to={logoTo}
+          aria-label="AgentPlanner home"
+          className="flex min-w-0 items-center gap-2.5"
+        >
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber font-display text-[16px] font-bold leading-none tracking-[-0.04em] text-bg">
+            {logoText}
+          </span>
+          <span className="truncate font-display text-[15px] font-semibold tracking-[-0.02em] text-text">
+            AgentPlanner
+          </span>
+        </Link>
+      </header>
+
+      <aside className="hidden w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface px-3 py-4 md:flex">
         <Link
           to={logoTo}
           aria-label="AgentPlanner home"
@@ -138,7 +180,19 @@ export function AppShell({
         <div className="flex-1" />
         {footer}
       </aside>
-      <main className="relative min-w-0 flex-1">{children}</main>
+
+      <main className="relative min-w-0 flex-1 overflow-hidden pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+        {children}
+      </main>
+
+      <nav
+        aria-label="Main navigation"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-1 border-t border-border bg-surface/95 px-2 pb-[calc(6px+env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden"
+      >
+        {mobileItems.map((it) => (
+          <MobileNavItem key={it.id} item={it} active={it.id === active} />
+        ))}
+      </nav>
     </div>
   );
 }

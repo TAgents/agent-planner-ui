@@ -108,35 +108,35 @@ const SettingsLayout: React.FC = () => {
     <div className="min-h-full bg-bg text-text">
       <div className="mx-auto flex max-w-[1180px] flex-col gap-6 px-6 py-6">
         {/* Page header */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="font-display text-[12px] uppercase tracking-[0.18em] text-text-sec">
               ◇ Settings
             </span>
           </div>
-          <div className="flex items-center gap-3 text-[12px] text-text-sec">
+          <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-text-sec">
             <Link
               to="/app/settings/organization"
-              className="hover:text-text"
+              className="truncate hover:text-text"
               title="Active organization"
             >
               {orgName}
             </Link>
             <span className="text-border">·</span>
-            <Link to="/app/settings/profile" className="flex items-center gap-2 hover:text-text">
+            <Link to="/app/settings/profile" className="flex min-w-0 items-center gap-2 hover:text-text">
               <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface-hi font-mono text-[9px] uppercase text-text-sec">
                 {userMonogram(user.name)}
               </span>
-              <span>
+              <span className="truncate">
                 {user.name} · <span className="capitalize">{user.role}</span>
               </span>
             </Link>
           </div>
         </header>
 
-        <div className="grid grid-cols-[260px_1fr] gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[260px_1fr]">
           {/* Section rail */}
-          <nav aria-label="Settings sections" className="flex flex-col gap-1">
+          <nav aria-label="Settings sections" className="grid grid-cols-1 gap-1 sm:grid-cols-2 md:flex md:flex-col">
             {sections.map((s) => {
               const isActive =
                 normalizedPath === s.path || normalizedPath.startsWith(s.path + '/');
