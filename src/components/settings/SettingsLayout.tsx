@@ -4,6 +4,7 @@ import {
   User,
   Building2,
   Plug,
+  AppWindow,
   Key,
   Bell,
   CreditCard,
@@ -68,6 +69,12 @@ const SettingsLayout: React.FC = () => {
     { path: '/app/settings/profile', label: 'Profile', sub: 'Personal info', icon: User },
     { path: '/app/settings/organization', label: 'Organization', sub: orgName, icon: Building2 },
     {
+      path: '/app/settings/connections',
+      label: 'Connected apps',
+      sub: 'Apps that can act as you',
+      icon: AppWindow,
+    },
+    {
       path: '/app/settings/agents',
       label: 'Agents & integrations',
       sub: 'MCP · Slack · webhooks',
@@ -93,7 +100,6 @@ const SettingsLayout: React.FC = () => {
   const aliases: Record<string, string> = {
     '/app/settings/organizations': '/app/settings/organization',
     '/app/settings/integrations': '/app/settings/agents',
-    '/app/settings/connections': '/app/settings/agents',
     '/app/settings': '/app/settings/profile',
   };
   const normalizedPath = aliases[location.pathname] || location.pathname;
