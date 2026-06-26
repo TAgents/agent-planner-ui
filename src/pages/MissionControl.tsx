@@ -35,7 +35,9 @@ function relTime(iso?: string): string {
 
 function timeOfDayGreeting(): string {
   const d = new Date();
-  const day = d.toLocaleDateString(undefined, { weekday: 'long' });
+  // Force en-US for the weekday so it matches the hardcoded English period —
+  // the locale default produced mixes like "maanantai morning" (Finnish + English).
+  const day = d.toLocaleDateString('en-US', { weekday: 'long' });
   const h = d.getHours();
   const part = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
   return `${day} ${part}`;

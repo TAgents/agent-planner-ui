@@ -18,7 +18,7 @@ import { usePlans } from '../hooks/usePlans';
 import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import { useCriticalPath } from '../hooks/useDependencies';
 import { request } from '../services/api-client';
-import { goalDashboardService, goalBdiService } from '../services/goals.service';
+import { goalDashboardService, goalBdiService, type GoalContradictions } from '../services/goals.service';
 import type { Plan } from '../types';
 
 type Tab = 'overview' | 'tasks' | 'knowledge' | 'evaluations';
@@ -668,7 +668,99 @@ const SubwayPanel: React.FC<{ linkedPlans: Array<{ id: string; title: string }> 
  * remains the source for linked-plan IDs since coherence intentionally
  * doesn't return per-plan metadata.
  */
+// Drill-down behind the "N knowledge contradictions" count — shows the actual
+// superseded (outdated) facts and the current facts that replaced them, so the
+// number is inspectable in the product instead of only via the API.
+const ContradictionsModal: React.FC<{ goalId: string; onClose: () => void }> = ({ goalId, onClose }) => {
+  const q = useQuery<GoalContradictions>(
+    ['goal', goalId, 'contradictions'],
+    () => goalDashboardService.getContradictions(goalId),
+    { enabled: !!goalId },
+  );
+  const superseded = q.data?.superseded || [];
+  const current = q.data?.current || [];
+  const fmt = (iso?: string | null) =>
+    iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <Card pad={0} className="relative z-10 w-full max-w-2xl overflow-hidden">
+        <div className="flex items-start justify-between border-b border-border px-5 py-3.5">
+          <div>
+            <Kicker className="mb-1">◇ Knowledge</Kicker>
+            <h3 className="font-display text-[16px] font-semibold text-text">Knowledge contradictions</h3>
+            <p className="mt-0.5 text-[11.5px] text-text-sec">
+              Facts about this goal’s work that newer knowledge has superseded.
+            </p>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="text-[13px] text-text-muted hover:text-text">✕</button>
+        </div>
+
+        <div className="max-h-[68vh] overflow-y-auto px-5 py-4">
+          {q.isLoading && <p className="text-[12.5px] text-text-sec">Loading contradictions…</p>}
+          {q.isError && <p className="text-[12.5px] text-red">Couldn’t load contradiction details.</p>}
+          {!q.isLoading && !q.isError && superseded.length === 0 && current.length === 0 && (
+            <p className="text-[12.5px] text-text-sec">
+              No contradiction details available — knowledge may be consistent now, or the knowledge graph is unavailable.
+            </p>
+          )}
+
+          {superseded.length > 0 && (
+            <section className="mb-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Pill color="red">Superseded</Pill>
+                <span className="text-[11px] text-text-muted">Outdated — replaced by newer knowledge</span>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {superseded.map((f) => (
+                  <li key={f.uuid} className="rounded-lg border border-red/30 bg-red/5 px-3 py-2">
+                    <p className="text-[13px] leading-[1.5] text-text">{f.fact}</p>
+                    <div className="mt-1 font-mono text-[10px] text-text-muted">
+                      {f.created_at ? `recorded ${fmt(f.created_at)}` : ''}
+                      {f.expired_at || f.invalid_at ? ` · superseded ${fmt(f.expired_at || f.invalid_at)}` : ''}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {current.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center gap-2">
+                <Pill color="emerald">Current</Pill>
+                <span className="text-[11px] text-text-muted">In effect now</span>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {current.map((f) => (
+                  <li key={f.uuid} className="rounded-lg border border-border bg-bg/40 px-3 py-2">
+                    <p className="text-[13px] leading-[1.5] text-text">{f.fact}</p>
+                    <div className="mt-1 font-mono text-[10px] text-text-muted">
+                      {f.created_at ? `recorded ${fmt(f.created_at)}` : ''}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <div className="mt-5 flex justify-end">
+            <Link
+              to="/app/knowledge/timeline"
+              className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted hover:text-text"
+            >
+              Open Knowledge Timeline →
+            </Link>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
+  const [showContradictions, setShowContradictions] = useState(false);
   const coherence = useQuery<{
     coherence_score: number;
     signals: {
@@ -724,6 +816,7 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
     plansWithConflict.length === 0;
 
   return (
+    <>
     <Card pad={20}>
       <SectionHead
         kicker="◇ Tensions"
@@ -759,12 +852,13 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
           {contradictionsCount > 0 && (
             <li className="flex items-center justify-between py-2">
               <span>{`${contradictionsCount} knowledge contradiction${contradictionsCount === 1 ? '' : 's'}`}</span>
-              <Link
-                to="/app/knowledge/timeline"
+              <button
+                type="button"
+                onClick={() => setShowContradictions(true)}
                 className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber hover:opacity-80"
               >
-                Open →
-              </Link>
+                Inspect →
+              </button>
             </li>
           )}
           {plansWithStale.slice(0, 3).map((p) => (
@@ -802,6 +896,10 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
         </ul>
       )}
     </Card>
+    {showContradictions && (
+      <ContradictionsModal goalId={goalId} onClose={() => setShowContradictions(false)} />
+    )}
+    </>
   );
 };
 
