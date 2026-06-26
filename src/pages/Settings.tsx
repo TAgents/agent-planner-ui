@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useTokens } from '../hooks/useTokens';
-import { TokenPermission } from '../types';
 import { Key, Copy, Check, X, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { McpSetupBlock } from '../components/common/McpSetupBlock';
 
@@ -12,12 +11,6 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
-
-const permClass: Record<string, string> = {
-  admin: 'bg-red/15 text-red',
-  write: 'bg-amber/15 text-amber',
-  read: 'bg-emerald/15 text-emerald',
-};
 
 const Settings: React.FC = () => {
   const { tokens, loading, error, newToken, createToken, revokeToken, clearNewToken, fetchTokens } = useTokens();
@@ -34,7 +27,6 @@ const Settings: React.FC = () => {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [tokenToRevoke, setTokenToRevoke] = useState<string | null>(null);
   const [tokenName, setTokenName] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState<TokenPermission[]>(['read']);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [tokenCopied, setTokenCopied] = useState(false);
 
@@ -45,10 +37,9 @@ const Settings: React.FC = () => {
 
   const handleCreateToken = async () => {
     try {
-      await createToken(tokenName, selectedPermissions);
+      await createToken(tokenName);
       setOpenCreateDialog(false);
       setTokenName('');
-      setSelectedPermissions(['read']);
       fetchTokens();
       showNotification('Token created', 'success');
     } catch (err: any) {
@@ -174,18 +165,6 @@ const Settings: React.FC = () => {
                     {tokenLastUsed(token) && ` · last used ${formatRelative(tokenLastUsed(token)!)}`}
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {token.permissions.map((p) => (
-                    <span
-                      key={p}
-                      className={`rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide ${
-                        permClass[p] || 'bg-surface-hi text-text-sec'
-                      }`}
-                    >
-                      {p}
-                    </span>
-                  ))}
-                </div>
                 <button
                   onClick={() => {
                     setTokenToRevoke(token.id);
@@ -229,22 +208,9 @@ const Settings: React.FC = () => {
                 className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 dark:text-white placeholder-gray-400"
                 autoFocus
               />
-              <fieldset>
-                <legend className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">Permissions</legend>
-                <div className="flex gap-3">
-                  {(['read', 'write', 'admin'] as TokenPermission[]).map((p) => (
-                    <label key={p} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="h-3 w-3 text-blue-600 rounded border-gray-300 dark:border-gray-600"
-                        checked={selectedPermissions.includes(p)}
-                        onChange={() => setSelectedPermissions(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
-                      />
-                      <span className="capitalize">{p}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Full access — the token can read and act on your workspace, same as a connected app.
+              </p>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end gap-2">
               <button onClick={() => setOpenCreateDialog(false)} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">

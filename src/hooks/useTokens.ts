@@ -39,7 +39,7 @@ export const useTokens = () => {
   }, []);
 
   // Create a new token
-  const createToken = useCallback(async (name: string, permissions: TokenPermission[] = ['read']) => {
+  const createToken = useCallback(async (name: string, permissions?: TokenPermission[]) => {
     setLoading(true);
     setError(null);
     setNewToken(null);

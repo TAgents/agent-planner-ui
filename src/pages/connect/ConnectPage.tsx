@@ -60,7 +60,8 @@ const ConnectPage: React.FC = () => {
           setToken(existing.token);
           return;
         }
-        const created = (await tokenService.createToken(`Connect — ${clientId}`, ['read'])) as
+        // Tokens are full-access (the agent drives the platform), so no scope arg.
+        const created = (await tokenService.createToken(`Connect — ${clientId}`)) as
           | ApiToken
           | { data: ApiToken };
         const next = 'data' in created ? created.data : created;

@@ -62,7 +62,8 @@ const Onboarding: React.FC = () => {
         if (existingWithValue?.token && !cancelled) {
           setToken(existingWithValue.token);
         } else {
-          const created = (await tokenService.createToken('Onboarding', ['read'])) as
+          // Tokens are full-access (the agent drives the platform), so no scope arg.
+          const created = (await tokenService.createToken('Onboarding')) as
             | ApiToken
             | { data: ApiToken };
           const next = 'data' in created ? created.data : created;
