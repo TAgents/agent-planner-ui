@@ -222,12 +222,14 @@ const GoalDetailV1: React.FC = () => {
                 ◆ Proposed
               </span>
             </span>
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-amber">
-              {(() => {
-                const c = (qualityQ.data?.suggestions?.length ?? 0) > 0;
-                return c ? `${qualityQ.data?.suggestions.length} signal${qualityQ.data!.suggestions.length === 1 ? '' : 's'}` : '';
-              })()}
-            </span>
+            {(qualityQ.data?.suggestions?.length ?? 0) > 0 && (
+              <span
+                className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-amber"
+                title="Suggestions from the goal quality score to improve this goal's definition"
+              >
+                {`${qualityQ.data!.suggestions.length} quality signal${qualityQ.data!.suggestions.length === 1 ? '' : 's'}`}
+              </span>
+            )}
           </div>
           <div className="flex flex-col items-center">
             <GoalCompass
@@ -237,7 +239,7 @@ const GoalDetailV1: React.FC = () => {
                     {attainmentPct != null ? attainmentPct : executionPct}%
                   </span>
                   <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-text-muted">
-                    {attainmentPct != null ? 'attained' : 'tasks'}
+                    {attainmentPct != null ? 'attained' : 'tasks done'}
                   </span>
                 </div>
               }
@@ -256,11 +258,6 @@ const GoalDetailV1: React.FC = () => {
                   label: 'Reviews',
                   count: Array.isArray(goal.evaluations) ? goal.evaluations.length : 0,
                   sub: 'Evaluations on record',
-                },
-                {
-                  label: 'Links',
-                  count: Array.isArray(goal.links) ? goal.links.length : 0,
-                  sub: 'Linked entities',
                 },
               ]}
             />
