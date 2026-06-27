@@ -875,12 +875,16 @@ const SubwayPanel: React.FC<{ linkedPlans: Array<{ id: string; title: string }> 
     );
   }
 
-  const result = cp.criticalPath as { path?: Array<{ node_id: string; title: string; status: string }> } | undefined;
-  const stations = (result?.path || []).map((p) => ({
-    id: p.node_id,
-    title: p.title,
-    status: p.status,
-    href: `/app/plans/${firstPlan.id}`,
+  // The API returns `path` as bare node UUIDs and `nodes` as the ORDERED node
+  // details ({id, title, status}). The panel previously read titles/status off
+  // `path` (undefined) — so every station rendered as an identical nameless ○
+  // linking to the same plan URL. Read `nodes` and deep-link each to its task.
+  const result = cp.criticalPath as { nodes?: Array<{ id: string; title: string; status: string }> } | undefined;
+  const stations = (result?.nodes || []).map((n) => ({
+    id: n.id,
+    title: n.title,
+    status: n.status,
+    href: `/app/plans/${firstPlan.id}?node=${n.id}`,
   }));
 
   return (
