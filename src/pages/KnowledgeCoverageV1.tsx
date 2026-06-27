@@ -13,12 +13,15 @@ import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
 type StaleTask = { task_id: string; task_title: string; last_link_at: string };
 type ConflictTask = { task_id: string; task_title: string };
+type GapTask = { task_id: string; task_title: string; task_mode?: string | null };
 type PlanCoverage = {
   plan_id: string;
   plan_title: string;
   total_tasks: number;
   tasks_with_facts: number;
   ratio: number;
+  gap_tasks: GapTask[];
+  gap_count: number;
   stale_tasks: StaleTask[];
   conflict_tasks: ConflictTask[];
 };
@@ -97,6 +100,11 @@ function PlanCoverageList({ data }: { data?: CoverageResponse }) {
             : b.color === 'amber'
               ? 'bg-amber'
               : 'bg-slate';
+        const gapCount = p.gap_count ?? (p.gap_tasks?.length || 0);
+        const gapPill =
+          gapCount > 0 ? (
+            <Pill color="amber">{`${gapCount} ${gapCount === 1 ? 'gap' : 'gaps'}`}</Pill>
+          ) : null;
         const stalePill =
           p.stale_tasks.length > 0 ? (
             <Pill color="red">{`${p.stale_tasks.length} stale`}</Pill>
@@ -105,8 +113,11 @@ function PlanCoverageList({ data }: { data?: CoverageResponse }) {
           p.conflict_tasks.length > 0 ? (
             <Pill color="red">{`${p.conflict_tasks.length} conflict`}</Pill>
           ) : null;
-        // Show up to 3 stale + 3 conflict task tethers per row. Anything
+        // Show a few gap + stale + conflict task tethers per row. Anything
         // beyond that collapses into "+N more" so dense plans stay scannable.
+        // Gaps lead — they're the actionable "research missing here" list.
+        const gapTethers = (p.gap_tasks || []).slice(0, 4);
+        const gapOverflow = Math.max(0, gapCount - gapTethers.length);
         const staleTethers = p.stale_tasks.slice(0, 3);
         const staleOverflow = Math.max(0, p.stale_tasks.length - staleTethers.length);
         const conflictTethers = p.conflict_tasks.slice(0, 3);
@@ -127,6 +138,7 @@ function PlanCoverageList({ data }: { data?: CoverageResponse }) {
                     <span className="font-mono text-[10px]">
                       {`${p.tasks_with_facts}/${p.total_tasks}`}
                     </span>
+                    {gapPill}
                     {stalePill}
                     {conflictPill}
                   </div>
@@ -145,9 +157,24 @@ function PlanCoverageList({ data }: { data?: CoverageResponse }) {
                 />
               </div>
 
-              {/* Per-task tethers — stale + conflict task chips clickable to the plan tree */}
-              {(staleTethers.length > 0 || conflictTethers.length > 0) && (
+              {/* Per-task tethers — gap (research missing) + stale + conflict
+                  task chips, each clickable through to the task in the plan tree */}
+              {(gapTethers.length > 0 || staleTethers.length > 0 || conflictTethers.length > 0) && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  {gapTethers.map((t) => (
+                    <Link
+                      key={`g-${t.task_id}`}
+                      to={`/app/plans/${p.plan_id}?node=${t.task_id}`}
+                      title="No knowledge linked yet — research missing here"
+                      className="inline-flex items-center gap-1 rounded border border-amber/40 bg-amber/10 px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.06em] text-amber transition-colors hover:bg-amber/15"
+                    >
+                      <span className="text-amber/80">{t.task_mode === 'research' ? 'research' : 'gap'}</span>
+                      <span className="max-w-[24ch] truncate normal-case text-text">{t.task_title}</span>
+                    </Link>
+                  ))}
+                  {gapOverflow > 0 && (
+                    <span className="font-mono text-[9.5px] text-text-muted">+{gapOverflow}</span>
+                  )}
                   {staleTethers.map((t) => (
                     <Link
                       key={`s-${t.task_id}`}
@@ -223,6 +250,7 @@ const KnowledgeCoverageV1: React.FC = () => {
     const q = search.toLowerCase();
     return plans.filter((p) => {
       if (p.plan_title.toLowerCase().includes(q)) return true;
+      if ((p.gap_tasks || []).some((t) => t.task_title.toLowerCase().includes(q))) return true;
       if (p.stale_tasks.some((t) => t.task_title.toLowerCase().includes(q))) return true;
       if (p.conflict_tasks.some((t) => t.task_title.toLowerCase().includes(q))) return true;
       return false;
