@@ -18,6 +18,13 @@ export interface Workspace {
   goalCount?: number;
   planCount?: number;
   role?: string;
+  // Rollup from GET /workspaces (list) — aggregated over member non-archived
+  // plans' task+milestone nodes (same definition as plan/goal progress).
+  progressPct?: number;
+  totalNodes?: number;
+  completedNodes?: number;
+  blockedNodes?: number;
+  lastActivityAt?: string | null;
 }
 
 // Blueprint Types — dehydrated reusable shape that forks into a Workspace

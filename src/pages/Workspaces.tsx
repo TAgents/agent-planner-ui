@@ -369,8 +369,9 @@ const WorkspaceTable: React.FC<{ rows: Workspace[]; orgsById: Map<string, { isPe
       const isLast = i === rows.length - 1;
       const goalCount = w.goalCount ?? 0;
       const planCount = w.planCount ?? 0;
-      // Progress is goal/plan-derived; we don't have a real % yet, so 0.
-      const progress = 0;
+      // Real rollup: completed task+milestone nodes across the workspace's
+      // non-archived plans (server-computed, GET /workspaces).
+      const progress = w.progressPct ?? 0;
       return (
         <Link
           key={w.id}
