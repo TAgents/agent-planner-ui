@@ -6,6 +6,7 @@ import {
   ObjectChip,
   Pill,
   Spark,
+  TopBar,
   type PillColor,
 } from '../components/v1';
 import { useQuery } from 'react-query';
@@ -141,57 +142,60 @@ const MissionControl: React.FC = () => {
   });
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 py-10 sm:px-9">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <Kicker className="mb-2">◆ Mission Control</Kicker>
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+    <div className="flex h-full flex-col">
+      <TopBar
+        kicker="◆ Mission Control"
+        title={
+          <>
             <span>{timeOfDayGreeting()}, </span>
             <span className="text-amber">
               {goalsInMotion} {goalsInMotion === 1 ? 'goal' : 'goals'} in motion
             </span>
-          </h1>
-          <p className="mt-1 text-[13px] leading-[1.5] text-text-sec">
-            {goals.length > 0 ? (
-              <>
-                {onTrackCount} on track
-                {needAttentionCount > 0 && (
-                  <span className="text-amber"> · {needAttentionCount} need a look</span>
-                )}{' '}
-                · what needs you, and where to focus next.
-              </>
-            ) : (
-              <>What's in motion, what needs you, and what's drifting.</>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
-          {healthScore !== null && (
+          </>
+        }
+        subtitle={
+          goals.length > 0 ? (
             <>
-              <span
-                className="flex items-center gap-1.5 text-text-sec"
-                title={contradictions > 0 ? `${contradictions} contradiction${contradictions === 1 ? '' : 's'} to review` : 'Knowledge is consistent'}
-              >
-                <span
-                  className={`inline-block h-1.5 w-1.5 rounded-full ${healthScore >= 80 ? 'bg-emerald' : healthScore >= 60 ? 'bg-amber' : 'bg-red'}`}
-                />
-                Health {healthScore}
-                {contradictions > 0 && (
-                  <span className="text-amber"> · △{contradictions} tension{contradictions === 1 ? '' : 's'}</span>
-                )}
-              </span>
-              <span aria-hidden>·</span>
+              {onTrackCount} on track
+              {needAttentionCount > 0 && (
+                <span className="text-amber"> · {needAttentionCount} need a look</span>
+              )}{' '}
+              · what needs you, and where to focus next.
             </>
-          )}
-          <span>{summary.data?.active_plans_count ?? '—'} plans active</span>
-          <span aria-hidden>·</span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" />
-            live
-          </span>
-        </div>
-      </header>
-
+          ) : (
+            <>What's in motion, what needs you, and what's drifting.</>
+          )
+        }
+        actions={
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+            {healthScore !== null && (
+              <>
+                <span
+                  className="flex items-center gap-1.5 text-text-sec"
+                  title={contradictions > 0 ? `${contradictions} contradiction${contradictions === 1 ? '' : 's'} to review` : 'Knowledge is consistent'}
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${healthScore >= 80 ? 'bg-emerald' : healthScore >= 60 ? 'bg-amber' : 'bg-red'}`}
+                  />
+                  Health {healthScore}
+                  {contradictions > 0 && (
+                    <span className="text-amber"> · △{contradictions} tension{contradictions === 1 ? '' : 's'}</span>
+                  )}
+                </span>
+                <span aria-hidden>·</span>
+              </>
+            )}
+            <span>{summary.data?.active_plans_count ?? '—'} plans active</span>
+            <span aria-hidden>·</span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" />
+              live
+            </span>
+          </div>
+        }
+      />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-9">
       <AgentStatusNudge />
 
       <div className="mb-8">
@@ -306,6 +310,8 @@ const MissionControl: React.FC = () => {
       <CollapsibleSection label="Workspaces & recent forks">
         <WorkspacesStrip />
       </CollapsibleSection>
+        </div>
+      </div>
     </div>
   );
 };
