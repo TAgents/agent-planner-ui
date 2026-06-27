@@ -9,7 +9,7 @@ import {
   useGraphitiStatus,
 } from '../hooks/useGraphitiKnowledge';
 import type { GraphitiEpisode } from '../services/knowledge.service';
-import { displayEpisodeName, entityChips } from './KnowledgeTimelineV1.helpers';
+import { displayEpisodeName, entityChips, normalizeEpisodeType, scopeChips } from './KnowledgeTimelineV1.helpers';
 import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
 import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
@@ -340,8 +340,8 @@ const EpisodeCard: React.FC<{ episode: GraphitiEpisode }> = ({ episode: ep }) =>
   const isCrossPlan =
     (ep.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1;
   const dotColor = isContradiction ? 'bg-red' : isCrossPlan ? 'bg-violet' : 'bg-amber';
-  const sourceLabel = ep.source_description || 'agent';
-  const firstLink = (ep.links || [])[0];
+  const type = normalizeEpisodeType(ep);
+  const scopes = scopeChips(ep);
 
   return (
     <li className="relative flex gap-3">
@@ -364,18 +364,20 @@ const EpisodeCard: React.FC<{ episode: GraphitiEpisode }> = ({ episode: ep }) =>
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11.5px]">
-          <Pill color={isContradiction ? 'red' : 'violet'}>{sourceLabel}</Pill>
-          {firstLink && (
-            <>
-              <span className="text-text-muted">·</span>
-              <Link
-                to={`/app/plans/${firstLink.plan_id}`}
-                className="text-text-sec hover:text-text"
-              >
-                {firstLink.plan_title}
-              </Link>
-            </>
-          )}
+          <Pill color={type.tone}>{type.label}</Pill>
+          {scopes.map((s) => (
+            <Link
+              key={`${s.plan_id}:${s.node_id || ''}`}
+              to={s.node_id ? `/app/plans/${s.plan_id}?node=${s.node_id}` : `/app/plans/${s.plan_id}`}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-hi/40 px-1.5 py-[1.5px] text-text-sec transition-colors hover:text-text"
+              title={s.node_title ? `${s.node_title} — ${s.plan_title}` : s.plan_title}
+            >
+              <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-text-muted">
+                {s.node_id ? 'task' : 'plan'}
+              </span>
+              <span className="max-w-[20ch] truncate">{s.node_title || s.plan_title}</span>
+            </Link>
+          ))}
           {isCrossPlan && (
             <span className="rounded-md border border-violet/40 bg-violet/10 px-1.5 py-[1.5px] font-mono text-[9px] uppercase tracking-[0.12em] text-violet">
               Cross-plan
