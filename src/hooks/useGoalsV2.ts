@@ -1,5 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { axiosInstance } from '../services/api';
+import type { GoalCriterion } from '../utils/goalCriteria';
+
+export type GoalType = 'outcome' | 'constraint' | 'metric' | 'principle';
+export type GoalStatus = 'draft' | 'active' | 'achieved' | 'paused' | 'abandoned' | 'archived';
+
+/** success_criteria as stored — structured objects (preferred), legacy strings, or the wrapped form. */
+export type SuccessCriteria =
+  | Array<GoalCriterion | string>
+  | { criteria: Array<GoalCriterion | string> }
+  | null;
 
 export interface GoalProgressStats {
   total: number;
@@ -19,9 +29,11 @@ export interface GoalV2 {
   /** v1.1 — Workspace this goal belongs to (folder under the org). */
   workspaceId?: string | null;
   workspace_id?: string | null;
-  type: 'outcome' | 'constraint' | 'metric' | 'principle';
-  status: 'active' | 'achieved' | 'paused' | 'abandoned';
-  successCriteria: any;
+  type: GoalType;
+  status: GoalStatus;
+  /** True once promoted from desire → intention (committed). */
+  committed?: boolean;
+  successCriteria: SuccessCriteria;
   priority: number;
   parentGoalId: string | null;
   createdAt: string;
@@ -229,5 +241,72 @@ export function useRemoveAchiever() {
     ({ goalId, depId }: { goalId: string; depId: string }) =>
       fetchApi(`/${goalId}/achievers/${depId}`, { method: 'DELETE' }),
     { onSuccess: () => qc.invalidateQueries(GOALS_KEY) }
+  );
+}
+
+// ─── Composed goal state (GET /v1/goals/:id/state) ────────────
+// One call returns goal + quality dimensions + execution/attainment progress +
+// linked plans (with hidden count) + tasks + bottlenecks + knowledge gaps. This
+// is the canonical read for the detail page — prefer it over fanning out across
+// useGoalV2 + getQuality + useGoalProgress.
+
+export interface QualityDimension {
+  score: number;
+  detail: string;
+}
+
+export interface GoalStateProgress {
+  goal_id: string;
+  /** Legacy alias = execution_pct. */
+  progress: number;
+  direct_progress?: number;
+  /** % of achiever tasks completed. */
+  execution_pct: number;
+  /** % of MEASURABLE criteria met — null when the goal has no measurable criteria. */
+  attainment_pct: number | null;
+  attainment: { measurable_count: number; met_count: number };
+  stats: GoalProgressStats & { source?: 'achievers' | 'linked_plans' };
+}
+
+export interface GoalStateResult {
+  as_of: string;
+  goal: {
+    id: string;
+    title: string;
+    description: string | null;
+    type: GoalType;
+    committed: boolean;
+    status: GoalStatus;
+    priority: number;
+    success_criteria: SuccessCriteria;
+    promoted_at: string | null;
+  };
+  linked_plans: Array<{ id: string; link_id: string }>;
+  /** Linked plans the viewer cannot access (filtered out of linked_plans). */
+  hidden_linked_plan_count: number;
+  linked_tasks: Array<{ id: string; title: string; status: string }>;
+  quality: {
+    score: number;
+    dimensions: {
+      clarity: QualityDimension;
+      measurability: QualityDimension;
+      actionability: QualityDimension;
+      knowledge_grounding: QualityDimension;
+      commitment: QualityDimension;
+    };
+    suggestions: string[];
+    last_assessed_at: string;
+  };
+  progress: GoalStateProgress;
+  bottlenecks: Array<{ node_id: string; title: string; status: string; direct_downstream_count: number }>;
+  knowledge_gaps: KnowledgeGapTask[];
+  meta: { partial: boolean; failures: Array<{ source: string; message?: string }> };
+}
+
+export function useGoalState(goalId: string | undefined) {
+  return useQuery(
+    [GOALS_KEY, 'state', goalId],
+    () => axiosInstance.get(`/v1/goals/${goalId}/state`).then((r) => r.data as GoalStateResult),
+    { enabled: !!goalId }
   );
 }
