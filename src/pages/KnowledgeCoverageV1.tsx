@@ -8,7 +8,6 @@ import {
   type PillColor,
 } from '../components/v1';
 import { request } from '../services/api-client';
-import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
 import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
 type StaleTask = { task_id: string; task_title: string; last_link_at: string };
@@ -258,7 +257,7 @@ const KnowledgeCoverageV1: React.FC = () => {
   }, [data, search]);
 
   return (
-    <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
+    <div className="flex h-full flex-col">
       <KnowledgeHeader
         stats={[
           { value: `${Math.round(orgRatio * 100)}%`, label: 'coverage' },
@@ -268,7 +267,8 @@ const KnowledgeCoverageV1: React.FC = () => {
         search={search}
         onSearchChange={setSearch}
       />
-      <KnowledgeTabs />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1080px] px-6 py-8 sm:px-9">
 
       {/* Hero: gauge + 4-stat breakdown */}
       <Card pad={24} className="mb-7">
@@ -318,6 +318,8 @@ const KnowledgeCoverageV1: React.FC = () => {
       ) : null}
 
       <PlanCoverageList data={data ? { ...data, plans: filteredPlans } : undefined} />
+        </div>
+      </div>
     </div>
   );
 };

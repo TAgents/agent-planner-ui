@@ -22,7 +22,6 @@ import {
   useGraphitiEpisodes,
 } from '../hooks/useGraphitiKnowledge';
 import type { GraphitiEntity, GraphitiFact, GraphitiEpisode } from '../services/knowledge.service';
-import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
 import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
 type GraphState = {
@@ -277,7 +276,7 @@ const KnowledgeGraphV1: React.FC = () => {
   }, [graphNodes, state.facts, episodePlans]);
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-9">
+    <div className="flex h-full flex-col">
       <KnowledgeHeader
         stats={[
           { value: graphNodes.size || '—', label: 'entities' },
@@ -287,7 +286,8 @@ const KnowledgeGraphV1: React.FC = () => {
         onSearchChange={setDraftQuery}
         searchPlaceholder="Search entities…"
       />
-      <KnowledgeTabs />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1200px] px-6 py-8 sm:px-9">
 
       <form onSubmit={submit} className="mb-6 flex flex-wrap items-center gap-3">
         <input
@@ -438,6 +438,8 @@ const KnowledgeGraphV1: React.FC = () => {
             </div>
           )}
         </Card>
+      </div>
+        </div>
       </div>
     </div>
   );

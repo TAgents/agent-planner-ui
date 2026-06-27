@@ -10,7 +10,6 @@ import {
 } from '../hooks/useGraphitiKnowledge';
 import type { GraphitiEpisode } from '../services/knowledge.service';
 import { displayEpisodeName, entityChips, normalizeEpisodeType, scopeChips } from './KnowledgeTimelineV1.helpers';
-import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
 import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
 function formatDay(iso: string): { dayKey: string; label: string } {
@@ -204,7 +203,7 @@ const KnowledgeTimelineV1: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
+    <div className="flex h-full flex-col">
       <KnowledgeHeader
         stats={[
           { value: atEpisodeCap ? `${counts.all}+` : counts.all, label: 'episodes' },
@@ -213,7 +212,8 @@ const KnowledgeTimelineV1: React.FC = () => {
         search={search}
         onSearchChange={setSearch}
       />
-      <KnowledgeTabs />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1080px] px-6 py-8 sm:px-9">
 
       {/* Filter row */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
@@ -325,6 +325,8 @@ const KnowledgeTimelineV1: React.FC = () => {
           </button>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 };

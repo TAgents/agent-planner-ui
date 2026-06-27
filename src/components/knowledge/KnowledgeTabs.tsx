@@ -18,7 +18,7 @@ const KnowledgeTabs: React.FC = () => {
   return (
     <nav
       aria-label="Knowledge views"
-      className="mb-6 flex items-center gap-1 border-b border-border pb-2"
+      className="-mx-1 flex items-center gap-1"
     >
       {tabs.map((t) => (
         <NavLink
