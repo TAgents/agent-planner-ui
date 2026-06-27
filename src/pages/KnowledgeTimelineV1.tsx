@@ -93,8 +93,11 @@ const KnowledgeTimelineV1: React.FC = () => {
       if (src.includes('agent') || src.match(/researcher|planner|implementer/)) c.agents += 1;
       else c.you += 1;
       if ((e.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1) c.cross_plan += 1;
-      const desc = (e.source_description || '').toLowerCase();
-      if (desc.includes('contradict') || desc.includes('superseded')) c.contradictions += 1;
+      // A contradiction = an episode the coherence engine linked with
+      // link_type='contradicts' (the same persisted signal the goal coherence
+      // reads). The old source_description text-match never matched, so this
+      // counter was stuck at 0 even when goals showed contradictions.
+      if ((e.links || []).some((l) => l.link_type === 'contradicts')) c.contradictions += 1;
     }
     return c;
   }, [allEpisodes]);
@@ -141,10 +144,7 @@ const KnowledgeTimelineV1: React.FC = () => {
         (e) => (e.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1,
       );
     } else if (filter === 'contradictions') {
-      list = list.filter((e) => {
-        const desc = (e.source_description || '').toLowerCase();
-        return desc.includes('contradict') || desc.includes('superseded');
-      });
+      list = list.filter((e) => (e.links || []).some((l) => l.link_type === 'contradicts'));
     }
 
     // Search across name + content + entity names + plan/task titles.
@@ -335,8 +335,7 @@ const KnowledgeTimelineV1: React.FC = () => {
  * optional contradiction red-callout + fact tags as code chips.
  */
 const EpisodeCard: React.FC<{ episode: GraphitiEpisode }> = ({ episode: ep }) => {
-  const desc = (ep.source_description || '').toLowerCase();
-  const isContradiction = desc.includes('contradict') || desc.includes('superseded');
+  const isContradiction = (ep.links || []).some((l) => l.link_type === 'contradicts');
   const isCrossPlan =
     (ep.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1;
   const dotColor = isContradiction ? 'bg-red' : isCrossPlan ? 'bg-violet' : 'bg-amber';

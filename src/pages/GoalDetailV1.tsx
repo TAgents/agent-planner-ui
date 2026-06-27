@@ -1055,6 +1055,10 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
   );
   const plansWithStale = goalScopedPlans.filter((p) => p.stale_tasks.length > 0);
   const plansWithConflict = goalScopedPlans.filter((p) => p.conflict_tasks.length > 0);
+  // Gate the empty state on the signal queries having LOADED. Before they
+  // resolve every count defaults to 0, which optimistically rendered "No active
+  // tensions" and then flipped to "8 contradictions" once data arrived.
+  const signalsLoading = coherence.isLoading || cov.isLoading || briefing.isLoading;
   const empty =
     decisionsCount === 0 &&
     blockedCount === 0 &&
@@ -1076,7 +1080,9 @@ const TensionHotspots: React.FC<{ goalId: string }> = ({ goalId }) => {
           ) : null
         }
       />
-      {empty ? (
+      {signalsLoading ? (
+        <p className="text-[12.5px] leading-[1.55] text-text-muted">Checking for tensions…</p>
+      ) : empty ? (
         <p className="text-[12.5px] leading-[1.55] text-text-sec">
           No active tensions. Nothing's contradicting itself, blocking, or going stale.
         </p>
