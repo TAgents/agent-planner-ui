@@ -68,7 +68,8 @@ The production image uses Nginx to serve the static build.
 ```bash
 npm start        # Development server (hot reload)
 npm run build    # Production build
-npm test         # Run tests
+npm test         # Run tests (interactive watch mode by default)
+npm test -- --watchAll=false   # One-shot run (CI)
 ```
 
 ## Stack
@@ -86,9 +87,9 @@ src/
 ├── pages/          # Route-level page components
 ├── components/     # Reusable UI components
 │   └── v1/         # v1 redesign — shared chrome primitives (see Design System)
-├── contexts/       # React context providers (auth, org, plan)
+├── contexts/       # React context providers (UI state, WebSocket, presence)
 ├── hooks/          # Custom React hooks
-├── services/       # API client and WebSocket service
+├── services/       # api.ts (axios + interceptors) + per-domain service files (plans, nodes, goals, knowledge, decisions, integrations, workspaces, blueprints, …)
 ├── types/          # TypeScript type definitions
 └── utils/          # Helper utilities
 ```
@@ -133,25 +134,33 @@ prefer the semantic tokens; legacy pages migrate page-by-page.
 
 | Primitive | Purpose |
 |---|---|
-| `<AppShell>` | 56px left rail with brand tile + 4 monogram nav items |
+| `<TopBar>` | Canonical in-page page-header for every full-page view: breadcrumb + kicker + title + subtitle on the left, right-aligned `actions` cluster, optional full-width `controls` (filter/search) row below |
+| `<AppShell>` | App chrome: ~220px left rail with Lucide-icon nav (Mission, Workspaces, Goals, Plans, Knowledge; Blueprints in a secondary group) + footer slot; collapses to a mobile top bar + bottom icon nav |
 | `<Card>` | Surface + 1px border + 10px radius, parameterized padding |
 | `<Pill>` | Rounded chip in `amber`/`emerald`/`red`/`violet`/`slate` (uses `*-soft` background) |
 | `<Kicker>` | Mono uppercase `tracking-[0.18em]` kicker label |
 | `<SectionHead>` | `kicker + title + right-slot` pattern above sections |
+| Button family | `<PrimaryButton>` / `<GhostButton>` / `<IconButton>` / `<LinkButton>` — the v1 button set |
+| `<FilterChip>` | Toggleable chip for filter bars (typically in `<TopBar controls>`) |
+| `<FilterSelect>` | Styled select/dropdown for filter bars |
 | `<StatusDot>` | Filled circle, optional pulsing ring for "live" agent states |
 | `<StatusSpine>` | Row card with 3px colored left bar (Plans index pattern) |
 | `<ProposedChip>` | Dashed amber pill marking design-only / not-yet-real fields |
 | `<TokenBlock>` | API token row with ⚿ glyph + Copy button (onboarding, /connect/*) |
 
-```tsx
-import { AppShell, Card, Pill, SectionHead, Kicker } from 'components/v1';
+See [`src/components/v1/index.ts`](./src/components/v1/index.ts) for the full inventory.
 
-<AppShell active="plans">
-  <Card pad={20}>
-    <SectionHead kicker="◆ Next up" title="Active plans" right={<Pill color="amber">3</Pill>} />
-    {/* ... */}
-  </Card>
-</AppShell>
+```tsx
+import { TopBar, Card, PrimaryButton } from 'components/v1';
+
+<TopBar
+  kicker="◆ Plans"
+  title="Active plans"
+  actions={<PrimaryButton>New plan</PrimaryButton>}
+/>
+<Card pad={20}>
+  {/* ... */}
+</Card>
 ```
 
 ### Fonts
