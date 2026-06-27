@@ -13,7 +13,8 @@ import {
   SectionHead,
   type PillColor,
 } from '../components/v1';
-import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal } from '../hooks/useGoalsV2';
+import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, type GoalStateResult } from '../hooks/useGoalsV2';
+import { criteriaAttainment } from '../utils/goalCriteria';
 import { usePlans } from '../hooks/usePlans';
 import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import { useCriticalPath } from '../hooks/useDependencies';
@@ -43,6 +44,9 @@ const GoalDetailV1: React.FC = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const goalQ = useGoalV2(goalId);
   const pathQ = useGoalPath(goalId);
+  // Composed read — execution/attainment progress, quality dimensions, hidden
+  // linked-plan count, bottlenecks, linked tasks in one call. Preferred source.
+  const stateQ = useGoalState(goalId);
   const qualityQ = useQuery(
     ['goal', goalId, 'quality'],
     () => goalBdiService.getQuality(goalId!),
@@ -54,6 +58,7 @@ const GoalDetailV1: React.FC = () => {
 
   const goal = goalQ.data;
   const path = pathQ.data;
+  const gs: GoalStateResult | undefined = stateQ.data;
 
   // Linked plans come from goal.links (linkedType='plan'). Plan titles +
   // progress are joined client-side from the workspace plans list. The
@@ -114,6 +119,18 @@ const GoalDetailV1: React.FC = () => {
   const inFlightTasks = stats?.in_progress || 0;
   const waitingTasks = Math.max(0, totalTasks - doneTasks - inFlightTasks - blockedTasks);
   const goalProgress = stats?.completion_percentage || 0;
+
+  // Execution (tasks done) is distinct from attainment (success criteria met).
+  // Prefer the composed goal_state; fall back to path stats / client-computed
+  // attainment so the page still renders before/without that call.
+  const executionPct = gs?.progress?.execution_pct ?? goalProgress;
+  const clientAttain = criteriaAttainment(goal.successCriteria);
+  const attainment = gs?.progress?.attainment ?? {
+    measurable_count: clientAttain.measurable_count,
+    met_count: clientAttain.met_count,
+  };
+  const attainmentPct = gs?.progress?.attainment_pct ?? clientAttain.attainment_pct;
+  const isAchieved = goal.status === 'achieved';
 
   // Health classification — mirrors the dashboard's heuristics so the
   // pill below the title matches what Mission Control shows.
@@ -187,10 +204,10 @@ const GoalDetailV1: React.FC = () => {
               centerLabel={
                 <div className="flex flex-col items-center">
                   <span className="font-display text-[24px] font-bold leading-none tracking-[-0.02em] text-text">
-                    {goalProgress}%
+                    {attainmentPct != null ? attainmentPct : executionPct}%
                   </span>
                   <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-text-muted">
-                    goal
+                    {attainmentPct != null ? 'attained' : 'tasks'}
                   </span>
                 </div>
               }
@@ -238,9 +255,19 @@ const GoalDetailV1: React.FC = () => {
         </Card>
 
         <div className="flex flex-col gap-4">
+          <ProgressMeters
+            executionPct={executionPct}
+            attainmentPct={attainmentPct}
+            measurableCount={attainment.measurable_count}
+            metCount={attainment.met_count}
+            done={doneTasks}
+            total={totalTasks}
+            achieved={isAchieved}
+          />
           <QualityScoreCard
-            score={qualityQ.data?.score}
-            suggestions={qualityQ.data?.suggestions || []}
+            score={gs?.quality?.score ?? qualityQ.data?.score}
+            suggestions={gs?.quality?.suggestions ?? qualityQ.data?.suggestions ?? []}
+            dimensions={gs?.quality?.dimensions}
             stats={{ done: doneTasks, inFlight: inFlightTasks, blocked: blockedTasks, waiting: waitingTasks, total: totalTasks }}
           />
           <TensionHotspots goalId={goal.id} />
@@ -367,6 +394,67 @@ const CompassStat: React.FC<{ label: string; value: number; tone: 'violet' | 'am
 };
 
 /**
+ * Progress meters — execution (tasks completed) vs attainment (success criteria
+ * met). These are deliberately DISTINCT: a goal can be 100% task-done yet 0%
+ * attained. attainment_pct is null when the goal has no measurable criteria.
+ */
+const ProgressMeters: React.FC<{
+  executionPct: number;
+  attainmentPct: number | null;
+  measurableCount: number;
+  metCount: number;
+  done: number;
+  total: number;
+  achieved: boolean;
+}> = ({ executionPct, attainmentPct, measurableCount, metCount, done, total, achieved }) => {
+  return (
+    <Card pad={20}>
+      <div className="mb-3 flex items-center justify-between gap-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
+        <span>◇ Progress</span>
+        {achieved && <Pill color="emerald">✓ Achieved</Pill>}
+      </div>
+
+      {/* Attainment — the outcome meter (criteria met). Headline when measurable. */}
+      <div className="mb-4">
+        <div className="mb-1 flex items-baseline justify-between gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-sec">Attainment</span>
+          <span className="font-mono text-[11px] tabular-nums text-text">
+            {attainmentPct != null ? `${attainmentPct}%` : '—'}
+          </span>
+        </div>
+        <div className="h-[6px] w-full overflow-hidden rounded-full bg-surface-hi">
+          {attainmentPct != null && (
+            <div
+              className={`h-full ${attainmentPct >= 100 ? 'bg-emerald' : 'bg-violet'}`}
+              style={{ width: `${attainmentPct}%` }}
+            />
+          )}
+        </div>
+        <span className="mt-1 block font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">
+          {measurableCount > 0
+            ? `${metCount}/${measurableCount} measurable criteria met`
+            : 'No measurable criteria — add metric + target'}
+        </span>
+      </div>
+
+      {/* Execution — the work meter (tasks done). */}
+      <div>
+        <div className="mb-1 flex items-baseline justify-between gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-sec">Execution</span>
+          <span className="font-mono text-[11px] tabular-nums text-text">{executionPct}%</span>
+        </div>
+        <div className="h-[6px] w-full overflow-hidden rounded-full bg-surface-hi">
+          <div className="h-full bg-amber" style={{ width: `${executionPct}%` }} />
+        </div>
+        <span className="mt-1 block font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">
+          {total > 0 ? `${done}/${total} achiever tasks complete` : 'No achiever tasks yet'}
+        </span>
+      </div>
+    </Card>
+  );
+};
+
+/**
  * Quality Score card — mirrors /goals/:id/quality. Shows overall score
  * out of 100, the workspace progress (% achievers complete) plus a
  * status breakdown (done/in flight/blocked/waiting), and a "Why N?"
@@ -375,8 +463,9 @@ const CompassStat: React.FC<{ label: string; value: number; tone: 'violet' | 'am
 const QualityScoreCard: React.FC<{
   score?: number;
   suggestions: string[];
+  dimensions?: GoalStateResult['quality']['dimensions'];
   stats: { done: number; inFlight: number; blocked: number; waiting: number; total: number };
-}> = ({ score, suggestions, stats }) => {
+}> = ({ score, suggestions, dimensions, stats }) => {
   const score100 = typeof score === 'number' ? Math.round(score * 100) : null;
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
   return (
