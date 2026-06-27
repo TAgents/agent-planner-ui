@@ -126,6 +126,24 @@ export function useDeleteGoal() {
   );
 }
 
+/**
+ * Record a success criterion's current value (record_criterion_progress). For a
+ * yes/no milestone pass current=true + direction='boolean' to mark it met — the
+ * human steering affordance so attainment can move without an agent. Auto-
+ * achieves the goal when every measurable criterion is met.
+ */
+export function useRecordCriterion() {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ goalId, index, current, direction }: { goalId: string; index: number; current: unknown; direction?: 'increase' | 'decrease' | 'boolean' }) =>
+      fetchApi(`/${goalId}/criteria/progress`, {
+        method: 'POST',
+        body: JSON.stringify({ index, current, direction }),
+      }),
+    { onSuccess: () => qc.invalidateQueries(GOALS_KEY) }
+  );
+}
+
 export function useAddGoalLink() {
   const qc = useQueryClient();
   return useMutation(

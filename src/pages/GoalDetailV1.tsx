@@ -13,7 +13,7 @@ import {
   SectionHead,
   type PillColor,
 } from '../components/v1';
-import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, type GoalStateResult } from '../hooks/useGoalsV2';
+import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, useRecordCriterion, type GoalStateResult } from '../hooks/useGoalsV2';
 import { criteriaAttainment, normalizeCriteria, isMeasurableCriterion, isCriterionMet, type GoalCriterion } from '../utils/goalCriteria';
 import { goalHealthBadge } from '../utils/goalHealth';
 import { usePlans } from '../hooks/usePlans';
@@ -336,7 +336,7 @@ const GoalDetailV1: React.FC = () => {
 
       {tab === 'overview' && (
         <div className="flex flex-col gap-4">
-        <SuccessCriteriaCard criteria={criteria} />
+        <SuccessCriteriaCard criteria={criteria} goalId={goal.id} />
         <Card pad={20}>
           <SectionHead kicker="◆ Briefing" title="Status & next steps" />
           <p className="text-[13px] leading-[1.55] text-text-sec">
@@ -474,7 +474,7 @@ const BottlenecksCard: React.FC<{ bottlenecks: GoalStateResult['bottlenecks'] }>
  * qualitative ones render as plain statements. This is what makes "done"
  * inspectable instead of a bare count.
  */
-const SuccessCriteriaCard: React.FC<{ criteria: GoalCriterion[] }> = ({ criteria }) => {
+const SuccessCriteriaCard: React.FC<{ criteria: GoalCriterion[]; goalId: string }> = ({ criteria, goalId }) => {
   const measurable = criteria.filter(isMeasurableCriterion);
   const metCount = measurable.filter(isCriterionMet).length;
   return (
@@ -498,7 +498,7 @@ const SuccessCriteriaCard: React.FC<{ criteria: GoalCriterion[] }> = ({ criteria
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {criteria.map((c, i) => (
-            <CriterionRow key={c.id || i} c={c} />
+            <CriterionRow key={c.id || i} c={c} index={i} goalId={goalId} />
           ))}
         </ul>
       )}
@@ -506,11 +506,19 @@ const SuccessCriteriaCard: React.FC<{ criteria: GoalCriterion[] }> = ({ criteria
   );
 };
 
-const CriterionRow: React.FC<{ c: GoalCriterion }> = ({ c }) => {
+const CriterionRow: React.FC<{ c: GoalCriterion; index: number; goalId: string }> = ({ c, index, goalId }) => {
+  const record = useRecordCriterion();
   const measurable = isMeasurableCriterion(c);
   const met = measurable && isCriterionMet(c);
   const dot = !measurable ? 'bg-text-muted/40' : met ? 'bg-emerald' : 'bg-amber';
   const arrow = c.direction === 'increase' ? '↑' : c.direction === 'decrease' ? '↓' : '';
+  // Numeric (increase/decrease) criteria move via measured values, not a click —
+  // only yes/no milestones and qualitative statements get a human check-off.
+  const checkable = c.direction === 'boolean' || !measurable;
+
+  const toggleMet = () =>
+    record.mutate({ goalId, index, current: !met, direction: 'boolean' });
+
   return (
     <li className="flex items-start gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5">
       <span className={`mt-[5px] h-1.5 w-1.5 flex-shrink-0 rounded-full ${dot}`} />
@@ -528,10 +536,25 @@ const CriterionRow: React.FC<{ c: GoalCriterion }> = ({ c }) => {
           </div>
         ) : (
           <span className="mt-1 inline-block font-mono text-[9px] uppercase tracking-[0.12em] text-text-muted">
-            qualitative · not measurable
+            yes / no milestone
           </span>
         )}
       </div>
+      {checkable && (
+        <button
+          type="button"
+          onClick={toggleMet}
+          disabled={record.isLoading}
+          title={met ? 'Mark this milestone not met' : 'Confirm this milestone is met'}
+          className={`mt-[1px] flex-shrink-0 rounded-md border px-2 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors disabled:opacity-50 ${
+            met
+              ? 'border-emerald/40 bg-emerald/10 text-emerald hover:bg-emerald/15'
+              : 'border-border text-text-sec hover:border-emerald/50 hover:text-emerald'
+          }`}
+        >
+          {record.isLoading ? '…' : met ? '✓ met' : 'mark met'}
+        </button>
+      )}
     </li>
   );
 };
