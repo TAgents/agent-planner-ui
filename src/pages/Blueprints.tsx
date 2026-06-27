@@ -75,7 +75,7 @@ const Blueprints: React.FC = () => {
       <TopBar
         kicker="Blueprints"
         title="Reusable operating models"
-        subtitle="Save what works once. Fork it into a live workspace, or add it to one as a plan."
+        subtitle="Save what works once, then fork it into any workspace as a ready-to-run plan."
         actions={(
           <div className="flex items-center gap-2">
             <GhostButton onClick={() => alert('Public discovery coming soon.')}>Browse community</GhostButton>
@@ -138,7 +138,9 @@ const Filters: React.FC<{
 }> = ({ tab, setTab, counts, categories, category, setCategory }) => (
   <div className="flex flex-wrap items-center gap-3">
     <div className="flex items-center rounded-lg border border-border bg-surface p-[3px]">
-      {TABS.map((t) => {
+      {/* Hide the Workspace-scope tab until workspace-scope blueprints exist
+          (v1 is plan-scope only, so it was always an empty "Workspace 0"). */}
+      {TABS.filter((t) => t.id !== 'workspace' || counts.workspace > 0).map((t) => {
         const on = t.id === tab;
         return (
           <button
@@ -201,7 +203,9 @@ const BlueprintCard: React.FC<{ bp: Blueprint }> = ({ bp }) => {
   const scopeAccent = isWs ? 'border-amber/50 text-amber' : 'border-violet/50 text-violet';
   const scopeBar = isWs ? 'bg-amber' : 'bg-violet';
   const nodeCount = bp.payload?.nodes?.length ?? 0;
-  const ctaLabel = isWs ? 'Fork →' : 'Add to workspace →';
+  // Both scopes fork into a target workspace; use one verb consistent with the
+  // page intro instead of "Add" vs "Fork".
+  const ctaLabel = 'Fork into workspace →';
 
   return (
     <Link
