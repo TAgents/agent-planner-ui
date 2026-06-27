@@ -71,20 +71,29 @@ const GoalDetailV1: React.FC = () => {
     for (const p of (plansResp.plans || []) as Plan[]) m.set(p.id, p);
     return m;
   }, [plansResp.plans]);
+  // Canonical linked plans = the non-archived, deduped, access-filtered set
+  // from goal_state (gs.linked_plans) — the SAME basis the Quality→Actionability
+  // count uses. The raw goal.links list double-counts and includes archived
+  // plans (that was the "32 vs 11" split on one page). Before goal_state
+  // resolves, fall back to deduped non-archived raw links.
   const linkedPlans = React.useMemo(() => {
-    const links = goal?.links || [];
-    return links
-      .filter((l) => l.linkedType === 'plan')
-      .map((l) => {
-        const p = planById.get(l.linkedId);
-        return {
-          id: l.linkedId,
-          title: p?.title || 'Linked plan',
-          status: p?.status,
-          progress: typeof p?.progress === 'number' ? p.progress : undefined,
-        };
-      });
-  }, [goal?.links, planById]);
+    const enrich = (id: string) => {
+      const p = planById.get(id);
+      return {
+        id,
+        title: p?.title || 'Linked plan',
+        status: p?.status,
+        progress: typeof p?.progress === 'number' ? p.progress : undefined,
+      };
+    };
+    if (gs?.linked_plans) {
+      return gs.linked_plans.map((lp) => enrich(lp.id));
+    }
+    const ids = Array.from(
+      new Set((goal?.links || []).filter((l) => l.linkedType === 'plan').map((l) => l.linkedId)),
+    );
+    return ids.map(enrich).filter((p) => p.status !== 'archived');
+  }, [gs?.linked_plans, goal?.links, planById]);
 
   if (goalQ.isLoading) {
     return (
