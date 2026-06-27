@@ -173,6 +173,11 @@ const GoalDetailV1: React.FC = () => {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Pill color="violet">▲ {goal.type}</Pill>
               <Pill color={health.color}>● {health.label}</Pill>
+              {/* Commitment (promoted_at) — surfaced consistently here rather
+                  than as a static "Proposed" tag on the compass. */}
+              <Pill color={goal.committed ? 'emerald' : 'slate'}>
+                {goal.committed ? 'Committed' : 'Proposed'}
+              </Pill>
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
                 created {relTime(goal.createdAt)}
               </span>
@@ -218,9 +223,6 @@ const GoalDetailV1: React.FC = () => {
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
               ◇ Goal compass
-              <span className="rounded-md border border-dashed border-text-muted/40 px-1.5 py-[1.5px] tracking-[0.14em]">
-                ◆ Proposed
-              </span>
             </span>
             {(qualityQ.data?.suggestions?.length ?? 0) > 0 && (
               <span
