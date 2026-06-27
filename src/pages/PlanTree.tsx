@@ -8,6 +8,7 @@ import {
   Kicker,
   Pill,
   PrimaryButton,
+  TopBar,
   type PillColor,
 } from '../components/v1';
 import { usePlan, usePlans } from '../hooks/usePlans';
@@ -141,23 +142,15 @@ const PlanTree: React.FC = () => {
   );
 
   return (
-    <div className="mx-auto max-w-[1280px] px-6 py-10 sm:px-9">
-      <header className="mb-8">
-        <PlanBreadcrumb plan={plan} />
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <Kicker className="mb-1">◆ Plan</Kicker>
-            <h1 className="font-display text-[26px] font-bold tracking-[-0.03em] text-text">
-              {plan?.title || 'Loading…'}
-            </h1>
-            {plan?.description && (
-              <p className="mt-2 max-w-[60ch] text-[13px] leading-[1.55] text-text-sec">
-                {plan.description}
-              </p>
-            )}
-          </div>
-          {plan && (
-            <div className="flex flex-shrink-0 items-center gap-2">
+    <div className="flex h-full flex-col">
+      <TopBar
+        breadcrumb={<PlanBreadcrumb plan={plan} />}
+        kicker="◆ Plan"
+        title={plan?.title || 'Loading…'}
+        subtitle={plan?.description || undefined}
+        actions={
+          plan ? (
+            <>
               <Pill color={plan.status === 'active' ? 'amber' : plan.status === 'completed' ? 'emerald' : 'slate'}>
                 {plan.status}
               </Pill>
@@ -170,16 +163,14 @@ const PlanTree: React.FC = () => {
                 <span>◆ Knowledge</span>
                 <span aria-hidden>→</span>
               </Link>
-              <GhostButton onClick={() => setShowMove(true)}>
-                Move →
-              </GhostButton>
-              <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>
-                Save as Blueprint →
-              </GhostButton>
-            </div>
-          )}
-        </div>
-      </header>
+              <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
+              <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>Save as Blueprint →</GhostButton>
+            </>
+          ) : undefined
+        }
+      />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1280px] px-6 py-8 sm:px-9">
       {showSaveAsBlueprint && plan && (
         <SaveAsBlueprintModal
           planId={plan.id}
@@ -299,6 +290,8 @@ const PlanTree: React.FC = () => {
               <p className="text-sm text-text-sec">Pick a node to inspect.</p>
             </Card>
           )}
+        </div>
+      </div>
         </div>
       </div>
     </div>

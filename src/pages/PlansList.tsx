@@ -2,11 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Card,
-  Kicker,
   ObjectChip,
   Pill,
   PrimaryButton,
   StatusSpine,
+  TopBar,
   type PillColor,
 } from '../components/v1';
 import { usePlans } from '../hooks/usePlans';
@@ -265,19 +265,15 @@ const PlansList: React.FC = () => {
   }, [plans]);
 
   return (
-    <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Kicker className="mb-2">◆ Plans</Kicker>
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
-            Plans
-          </h1>
-          <p className="mt-1 text-[13px] text-text-sec">
-            {plans ? `${plans.length} total · ${counts.active} active` : 'Loading…'}
-          </p>
-        </div>
-        <PrimaryButton onClick={() => setShowCreate(true)}>+ New plan</PrimaryButton>
-      </header>
+    <div className="flex h-full flex-col">
+      <TopBar
+        kicker="◆ Plans"
+        title="Plans"
+        subtitle={plans ? `${plans.length} total · ${counts.active} active` : 'Loading…'}
+        actions={<PrimaryButton onClick={() => setShowCreate(true)}>+ New plan</PrimaryButton>}
+      />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1080px] px-6 py-8 sm:px-9">
       {showCreate && <CreatePlanDialog onClose={() => setShowCreate(false)} />}
 
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -452,6 +448,8 @@ const PlansList: React.FC = () => {
             </Link>
           );
         })}
+      </div>
+        </div>
       </div>
     </div>
   );
