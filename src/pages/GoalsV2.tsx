@@ -375,17 +375,25 @@ function GoalRidge({
                   <span className="truncate font-display text-[13.5px] font-semibold tracking-[-0.01em] text-text">
                     {goal.title}
                   </span>
-                  {attention && (
-                    <Pill color={attention.color}>
-                      {attention.kind === 'you' && (
-                        <span
-                          className="inline-block h-[5px] w-[5px] rounded-full bg-current"
-                          aria-hidden
-                        />
-                      )}
-                      {attention.label}
-                    </Pill>
-                  )}
+                  {/* Title-side badge = HEALTH / attention only (At risk · No plan ·
+                      Stale · Needs you). Lifecycle (Active/Draft/Paused/…) lives in
+                      its own column on the right, so we don't show it twice with two
+                      vocabularies. */}
+                  {attention &&
+                    (attention.kind === 'you' ||
+                      attention.kind === 'atrisk' ||
+                      attention.kind === 'noplan' ||
+                      attention.kind === 'stale') && (
+                      <Pill color={attention.color}>
+                        {attention.kind === 'you' && (
+                          <span
+                            className="inline-block h-[5px] w-[5px] rounded-full bg-current"
+                            aria-hidden
+                          />
+                        )}
+                        {attention.label}
+                      </Pill>
+                    )}
                   {(() => {
                     const wsId = (goal as any).workspaceId || (goal as any).workspace_id;
                     if (!wsId || !workspacesById) return null;
