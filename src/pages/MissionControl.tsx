@@ -53,6 +53,9 @@ type GoalRow = {
   bottleneck_summary?: Array<unknown>;
   knowledge_gap_count?: number;
   last_activity?: string | null;
+  /** Outcome attainment (criteria met) — distinct from execution. null = no measurable criteria. */
+  attainment_pct?: number | null;
+  attainment?: { measurable_count: number; met_count: number };
   linked_plan_progress?: {
     total_nodes: number;
     completed_nodes: number;
@@ -529,6 +532,11 @@ const GoalConstellationCard: React.FC<{
   const pct = goal.linked_plan_progress?.percent_completed ?? 0;
   const blockedPct = goal.linked_plan_progress?.percent_blocked ?? 0;
   const pendingDecisions = goal.pending_decision_count ?? 0;
+  const attainmentPct = goal.attainment_pct ?? null;
+  const measurable = goal.attainment?.measurable_count ?? 0;
+  const met = goal.attainment?.met_count ?? 0;
+  // Tasks moving but the outcome metric is flat — mirrors the backend health rule.
+  const outcomesLagging = attainmentPct != null && pct >= 50 && pct - attainmentPct >= 30;
   // Per-goal contradiction count would require a /goals/:id/coherence
   // call here. We use the aggregate as a hint in the subtitle until the
   // tree-row prefetch lands.
@@ -557,6 +565,7 @@ const GoalConstellationCard: React.FC<{
             </span>
             <Pill color={health.color}>{health.label}</Pill>
             {pendingDecisions > 0 && <Pill color="amber">{pendingDecisions} pending</Pill>}
+            {outcomesLagging && <Pill color="amber">outcomes lagging</Pill>}
           </div>
           <p className="mt-1.5 line-clamp-2 font-display text-[14px] font-semibold tracking-[-0.01em] text-text">
             {goal.title}
@@ -572,7 +581,9 @@ const GoalConstellationCard: React.FC<{
         )}
       </div>
 
+      {/* Execution — task completion (+ blocked). */}
       <div className="mt-3 flex items-center gap-3">
+        <span className="w-[44px] flex-shrink-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-text-muted">exec</span>
         <div
           className="flex h-[3px] flex-1 overflow-hidden rounded-full bg-surface-hi"
           role="img"
@@ -581,8 +592,24 @@ const GoalConstellationCard: React.FC<{
           {pct > 0 && <div className="bg-emerald" style={{ width: `${pct - blockedPct}%` }} />}
           {blockedPct > 0 && <div className="bg-red" style={{ width: `${blockedPct}%` }} />}
         </div>
-        <span className="font-mono text-[11px] tabular-nums text-text">{pct}%</span>
+        <span className="w-[34px] flex-shrink-0 text-right font-mono text-[11px] tabular-nums text-text">{pct}%</span>
       </div>
+
+      {/* Attainment — measurable criteria met (the outcome). Only when measurable. */}
+      {measurable > 0 && (
+        <div className="mt-1.5 flex items-center gap-3" title={`${met}/${measurable} measurable criteria met`}>
+          <span className="w-[44px] flex-shrink-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-text-muted">attain</span>
+          <div className="flex h-[3px] flex-1 overflow-hidden rounded-full bg-surface-hi" role="img" aria-label={`${attainmentPct ?? 0}% attained`}>
+            {attainmentPct != null && attainmentPct > 0 && (
+              <div
+                className={attainmentPct >= 100 ? 'bg-emerald' : 'bg-violet'}
+                style={{ width: `${attainmentPct}%` }}
+              />
+            )}
+          </div>
+          <span className="w-[34px] flex-shrink-0 text-right font-mono text-[11px] tabular-nums text-text-sec">{attainmentPct ?? 0}%</span>
+        </div>
+      )}
 
       <div className="mt-2 flex items-center justify-between font-mono text-[9.5px] uppercase tracking-[0.12em] text-text-muted">
         <span>
