@@ -11,6 +11,7 @@ import {
   Pill,
   PrimaryButton,
   Spark,
+  StatusSpine,
   TopBar,
   cn,
   type PillColor,
@@ -351,13 +352,7 @@ function GoalRidge({
       )}
 
       <Link to={`/app/goals/${goal.id}`} className="block">
-        <div
-          className={cn(
-            'relative flex overflow-hidden rounded-[10px] border border-border bg-surface',
-            'transition-colors hover:bg-surface-hi',
-          )}
-        >
-          <div className={cn('w-[3px] flex-shrink-0', SPINE_BG[spine])} />
+        <StatusSpine accent={spine} className="transition-colors hover:bg-surface-hi">
           <div className="flex min-w-0 flex-1 flex-col gap-3 px-4 py-3 md:grid md:grid-cols-[minmax(0,1fr)_110px_120px_110px_70px] md:items-center md:gap-4">
             {/* Goal cluster */}
             <div className="flex min-w-0 items-start gap-3">
@@ -537,7 +532,7 @@ function GoalRidge({
               </span>
             </div>
           </div>
-        </div>
+        </StatusSpine>
       </Link>
     </div>
   );
