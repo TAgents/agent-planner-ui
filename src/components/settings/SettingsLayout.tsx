@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useTokens } from '../../hooks/useTokens';
+import VersionBadge from './VersionBadge';
 
 interface Section {
   path: string;
@@ -174,6 +175,7 @@ const SettingsLayout: React.FC = () => {
                 </NavLink>
               );
             })}
+            <VersionBadge />
           </nav>
 
           {/* Section content */}
