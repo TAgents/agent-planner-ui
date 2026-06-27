@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { ObjectChip } from '../components/v1';
+import GoalAttainmentBadge from '../components/goals/GoalAttainmentBadge';
 import {
   Card,
   Kicker,
@@ -18,7 +19,7 @@ import {
 } from '../hooks/useGoalsV2';
 
 type GoalType = 'outcome' | 'constraint' | 'metric' | 'principle';
-type GoalStatus = 'active' | 'achieved' | 'paused' | 'abandoned';
+type GoalStatus = 'draft' | 'active' | 'achieved' | 'paused' | 'abandoned' | 'archived';
 
 const TYPE_CONFIG: Record<GoalType, { label: string; glyph: string; color: PillColor }> = {
   outcome:    { label: 'Outcome',    glyph: '◉', color: 'amber' },
@@ -28,18 +29,22 @@ const TYPE_CONFIG: Record<GoalType, { label: string; glyph: string; color: PillC
 };
 
 const STATUS_SPINE: Record<GoalStatus, PillColor> = {
+  draft:     'violet',
   active:    'amber',
   achieved:  'emerald',
   paused:    'slate',
   abandoned: 'slate',
+  archived:  'slate',
 };
 
 const STATUS_FILTERS: { id: 'all' | GoalStatus; label: string }[] = [
   { id: 'all',       label: 'All' },
+  { id: 'draft',     label: 'Draft' },
   { id: 'active',    label: 'Active' },
   { id: 'achieved',  label: 'Achieved' },
   { id: 'paused',    label: 'Paused' },
   { id: 'abandoned', label: 'Abandoned' },
+  { id: 'archived',  label: 'Archived' },
 ];
 
 const TYPE_FILTERS: { id: 'all' | GoalType; label: string; glyph?: string; color?: PillColor }[] = [
@@ -72,7 +77,7 @@ function shortDate(iso: string | undefined): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-type AttentionKind = 'you' | 'atrisk' | 'noplan' | 'stale' | 'paused' | 'done';
+type AttentionKind = 'you' | 'atrisk' | 'noplan' | 'stale' | 'paused' | 'done' | 'draft' | 'archived';
 type Attention = {
   kind: AttentionKind;
   label: string;
@@ -81,6 +86,12 @@ type Attention = {
 
 function deriveAttention(goal: GoalV2, completionPct?: number): Attention {
   const linkCount = goal.links?.length || 0;
+  if (goal.status === 'draft') {
+    return { kind: 'draft', label: 'Draft', color: 'violet' };
+  }
+  if (goal.status === 'archived') {
+    return { kind: 'archived', label: 'Archived', color: 'slate' };
+  }
   if (goal.status === 'achieved') {
     return { kind: 'done', label: `Done · ${shortDate(goal.updatedAt)}`, color: 'emerald' };
   }
@@ -114,6 +125,7 @@ function attentionRank(a: Attention): number {
   if (a.kind === 'stale') return 3;
   if (a.kind === 'paused') return 6;
   if (a.kind === 'done') return 7;
+  if (a.kind === 'archived') return 8;
   return 4;
 }
 
@@ -473,11 +485,12 @@ function GoalRidge({
                       />
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[9.5px]">
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[9.5px]">
                     <span className="font-display font-bold text-text">{pct}%</span>
                     <span className="font-mono text-[9px] text-text-muted">
                       · {stats.completed}/{total}
                     </span>
+                    <GoalAttainmentBadge successCriteria={goal.successCriteria} className="ml-0.5" />
                   </div>
                 </>
               ) : linkCount === 0 ? (
