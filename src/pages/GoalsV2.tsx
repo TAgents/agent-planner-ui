@@ -561,17 +561,23 @@ export default function GoalsPage() {
 
   const flatGoals = useMemo(() => flattenGoals(tree || []), [tree]);
 
+  // Faceted counts reflect the OTHER active facet (standard faceted search), so
+  // with STATUS=Active selected the TYPE row counts only active goals — not all
+  // 50 incl. abandoned. Each facet ignores its own filter (so its options stay
+  // switchable).
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: flatGoals.length };
-    for (const g of flatGoals) counts[g.status] = (counts[g.status] || 0) + 1;
+    const base = typeFilter === 'all' ? flatGoals : flatGoals.filter((g) => g.type === typeFilter);
+    const counts: Record<string, number> = { all: base.length };
+    for (const g of base) counts[g.status] = (counts[g.status] || 0) + 1;
     return counts;
-  }, [flatGoals]);
+  }, [flatGoals, typeFilter]);
 
   const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: flatGoals.length };
-    for (const g of flatGoals) counts[g.type] = (counts[g.type] || 0) + 1;
+    const base = statusFilter === 'all' ? flatGoals : flatGoals.filter((g) => g.status === statusFilter);
+    const counts: Record<string, number> = { all: base.length };
+    for (const g of base) counts[g.type] = (counts[g.type] || 0) + 1;
     return counts;
-  }, [flatGoals]);
+  }, [flatGoals, statusFilter]);
 
   // Canonical per-goal rollup (health + execution progress) by id from the
   // shared dashboard query — the SAME source Mission reads, so the list, Mission
