@@ -6,6 +6,7 @@ import GoalAttainmentBadge from '../components/goals/GoalAttainmentBadge';
 import {
   Card,
   FilterChip,
+  FilterSelect,
   GhostButton,
   Pill,
   PrimaryButton,
@@ -698,12 +699,10 @@ export default function GoalsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="min-w-0 rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
             />
-            <select
+            <FilterSelect
               value={workspaceFilter}
-              onChange={(e) => setWorkspaceFilter(e.target.value)}
-              className={`min-w-0 rounded-md border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] focus:outline-none ${
-                workspaceFilter !== 'all' ? 'border-amber text-text' : 'border-border text-text-sec'
-              }`}
+              onChange={setWorkspaceFilter}
+              active={workspaceFilter !== 'all'}
               title="Filter by workspace"
             >
               <option value="all">Workspace: Any</option>
@@ -711,16 +710,12 @@ export default function GoalsPage() {
                 <option key={w.id} value={w.id}>{w.title}</option>
               ))}
               <option value="none">— Unassigned —</option>
-            </select>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="min-w-0 rounded-md border border-border bg-surface px-2.5 py-[6px] font-mono text-[10px] uppercase tracking-[0.06em] text-text-sec focus:outline-none"
-            >
+            </FilterSelect>
+            <FilterSelect value={sort} onChange={(v) => setSort(v as SortKey)}>
               <option value="attention">Sort: Attention</option>
               <option value="updated">Sort: Updated</option>
               <option value="title">Sort: Title</option>
-            </select>
+            </FilterSelect>
           </div>
         </div>
 

@@ -38,6 +38,9 @@ export { PrimaryButton, GhostButton, IconButton, LinkButton } from './Button';
 export { FilterChip } from './FilterChip';
 export type { FilterChipProps } from './FilterChip';
 
+export { FilterSelect } from './FilterSelect';
+export type { FilterSelectProps } from './FilterSelect';
+
 export { StepCard } from './StepCard';
 export type { StepCardProps, StepState } from './StepCard';
 

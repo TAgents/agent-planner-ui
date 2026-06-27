@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Card,
   FilterChip,
+  FilterSelect,
   GhostButton,
   ObjectChip,
   Pill,
@@ -295,12 +296,10 @@ const PlansList: React.FC = () => {
             onChange={(e) => setQuery(e.target.value)}
             className="min-w-0 rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text placeholder:text-text-muted focus:outline-none"
           />
-          <select
+          <FilterSelect
             value={workspaceFilter}
-            onChange={(e) => setWorkspaceFilter(e.target.value)}
-            className={`min-w-0 rounded-md border bg-surface px-3 py-[6px] text-xs focus:outline-none ${
-              workspaceFilter !== 'all' ? 'border-amber text-text' : 'border-border text-text-sec'
-            }`}
+            onChange={setWorkspaceFilter}
+            active={workspaceFilter !== 'all'}
             title="Filter by workspace"
           >
             <option value="all">Workspace: Any</option>
@@ -308,16 +307,12 @@ const PlansList: React.FC = () => {
               <option key={w.id} value={w.id}>{w.title}</option>
             ))}
             <option value="none">— Unassigned —</option>
-          </select>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="min-w-0 rounded-md border border-border bg-surface px-3 py-[6px] text-xs text-text focus:outline-none"
-          >
+          </FilterSelect>
+          <FilterSelect value={sort} onChange={(v) => setSort(v as SortKey)}>
             <option value="updated">Updated</option>
             <option value="created">Created</option>
             <option value="title">Title</option>
-          </select>
+          </FilterSelect>
         </div>
       </div>
 
