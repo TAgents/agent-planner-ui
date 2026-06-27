@@ -35,6 +35,9 @@ export type { TokenBlockProps } from './TokenBlock';
 
 export { PrimaryButton, GhostButton, IconButton, LinkButton } from './Button';
 
+export { FilterChip } from './FilterChip';
+export type { FilterChipProps } from './FilterChip';
+
 export { StepCard } from './StepCard';
 export type { StepCardProps, StepState } from './StepCard';
 

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { planService } from '../services/plans.service';
 import { useGoalV2 } from '../hooks/useGoalsV2';
-import { Card, Pill } from '../components/v1';
+import { Card, FilterChip, Pill } from '../components/v1';
 import {
   useGraphitiEpisodes,
   useGraphitiStatus,
@@ -221,26 +221,17 @@ const KnowledgeTimelineV1: React.FC = () => {
           <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted mr-1">
             Filter
           </span>
-          {FILTERS.map((f) => {
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={`rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
-                  active
-                    ? 'bg-text text-bg'
-                    : f.tone === 'red' && f.count > 0
-                      ? 'text-red hover:bg-surface-hi/40'
-                      : 'text-text-sec hover:bg-surface-hi/40'
-                }`}
-              >
-                {f.label}{' '}
-                <span className={`ml-0.5 ${active ? 'text-bg/70' : 'text-text-muted'}`}>{f.count}</span>
-              </button>
-            );
-          })}
+          {FILTERS.map((f) => (
+            <FilterChip
+              key={f.id}
+              active={filter === f.id}
+              tone={f.tone === 'red' && f.count > 0 ? 'red' : 'default'}
+              count={f.count}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label}
+            </FilterChip>
+          ))}
         </div>
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
           {`Last ${Math.min(maxEpisodes, counts.all)} episodes`}

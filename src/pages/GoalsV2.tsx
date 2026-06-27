@@ -5,6 +5,7 @@ import { ObjectChip } from '../components/v1';
 import GoalAttainmentBadge from '../components/goals/GoalAttainmentBadge';
 import {
   Card,
+  FilterChip,
   GhostButton,
   Pill,
   PrimaryButton,
@@ -678,32 +679,16 @@ export default function GoalsPage() {
           <span className="mr-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
             Status
           </span>
-          {STATUS_FILTERS.map((f) => {
-            const isActive = statusFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setStatusFilter(f.id)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
-                  isActive
-                    ? 'bg-text text-bg'
-                    : 'text-text-sec hover:bg-surface-hi',
-                )}
-              >
-                {f.label}
-                <span
-                  className={cn(
-                    'font-mono text-[9px]',
-                    isActive ? 'opacity-70' : 'opacity-55',
-                  )}
-                >
-                  {statusCounts[f.id] || 0}
-                </span>
-              </button>
-            );
-          })}
+          {STATUS_FILTERS.map((f) => (
+            <FilterChip
+              key={f.id}
+              active={statusFilter === f.id}
+              count={statusCounts[f.id] || 0}
+              onClick={() => setStatusFilter(f.id)}
+            >
+              {f.label}
+            </FilterChip>
+          ))}
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:ml-auto">
             <input
@@ -743,35 +728,26 @@ export default function GoalsPage() {
           <span className="mr-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted">
             Type
           </span>
-          {TYPE_FILTERS.map((f) => {
-            const isActive = typeFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setTypeFilter(f.id)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-colors',
-                  isActive
-                    ? 'border-border-hi bg-surface-hi text-text'
-                    : 'border-border bg-surface text-text-sec hover:bg-surface-hi',
-                )}
-              >
-                {f.glyph && (
+          {TYPE_FILTERS.map((f) => (
+            <FilterChip
+              key={f.id}
+              active={typeFilter === f.id}
+              count={typeCounts[f.id] || 0}
+              onClick={() => setTypeFilter(f.id)}
+              glyph={
+                f.glyph ? (
                   <span
                     className="text-[10px]"
                     style={{ color: f.color ? `rgb(var(--${f.color}) / 1)` : undefined }}
                   >
                     {f.glyph}
                   </span>
-                )}
-                {f.label}
-                <span className="font-mono text-[9px] opacity-55">
-                  {typeCounts[f.id] || 0}
-                </span>
-              </button>
-            );
-          })}
+                ) : undefined
+              }
+            >
+              {f.label}
+            </FilterChip>
+          ))}
         </div>
       </div>
 

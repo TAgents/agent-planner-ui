@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Card,
+  FilterChip,
   GhostButton,
   ObjectChip,
   Pill,
@@ -276,18 +277,14 @@ const PlansList: React.FC = () => {
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
-            <button
+            <FilterChip
               key={f.id}
-              type="button"
+              active={statusFilter === f.id}
+              count={counts[f.id]}
               onClick={() => setStatusFilter(f.id)}
-              className={`rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
-                statusFilter === f.id
-                  ? 'border-amber bg-amber-soft text-amber'
-                  : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
-              }`}
             >
-              {f.label} · {counts[f.id]}
-            </button>
+              {f.label}
+            </FilterChip>
           ))}
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:flex lg:items-center">
