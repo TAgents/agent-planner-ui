@@ -21,7 +21,7 @@ import { nodeService } from '../services/nodes.service';
 import { useNodeDependencies } from '../hooks/useDependencies';
 import { coherenceService } from '../services/knowledge.service';
 import type { PlanNode, NodeStatus, NodeType, Dependency } from '../types';
-import { computeStats, flattenTree, effectivePhaseStatus, type PlanStats as Stats, type TreeRow } from './PlanTree.helpers';
+import { computeStats, statsFromRollup, flattenTree, effectivePhaseStatus, type PlanStats as Stats, type TreeRow } from './PlanTree.helpers';
 
 type DetailTab = 'details' | 'comments' | 'logs' | 'agent';
 
@@ -114,22 +114,32 @@ const PlanTree: React.FC = () => {
   const safePlanId = planId || '';
   const { plan } = usePlan(safePlanId);
   const { nodes, isLoading } = useNodes(safePlanId);
-  // Phases/root have no server-side status roll-up, so show them as completed
-  // once all their task/milestone descendants are done (otherwise they read as
-  // not_started forever, contradicting a 100% plan).
-  const phaseOverride = useMemo(
-    () => effectivePhaseStatus((nodes as PlanNode[] | undefined) || []),
-    [nodes],
-  );
+  // Container (phase/root) roll-up status comes from the server rollup
+  // (rollup.container_status); a phase reads "completed" once all its
+  // task/milestone descendants are done. Fall back to the client mirror only
+  // until the rollup loads.
+  const rollup = plan?.rollup;
+  const phaseOverride = useMemo(() => {
+    if (rollup?.container_status) {
+      return new Map(Object.entries(rollup.container_status));
+    }
+    return effectivePhaseStatus((nodes as PlanNode[] | undefined) || []);
+  }, [rollup, nodes]);
   const flat = useMemo(() => {
     const rows = flattenTree((nodes as PlanNode[] | undefined) || []);
     return rows.map((r) =>
       phaseOverride.has(r.id) ? { ...r, status: phaseOverride.get(r.id) as PlanNode['status'] } : r,
     );
   }, [nodes, phaseOverride]);
-  const stats = useMemo(() => computeStats((nodes as PlanNode[] | undefined) || []), [nodes]);
+  // Headline progress reads the canonical server rollup; computeStats is the
+  // pre-load fallback only (same formula). This is what kills the 68-vs-100
+  // split with the Plans index.
+  const stats = useMemo(
+    () => (rollup ? statsFromRollup(rollup) : computeStats((nodes as PlanNode[] | undefined) || [])),
+    [rollup, nodes],
+  );
   const inFlight = stats.doing + stats.blocked + stats.planReady;
-  const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+  const pct = rollup ? rollup.progress_pct : (stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0);
 
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>('details');

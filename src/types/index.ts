@@ -89,6 +89,33 @@ export interface Blueprint {
 export type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
 export type PlanVisibility = 'public' | 'private';
 
+/**
+ * Canonical plan rollup mirrored from the server (planRollup.service.js).
+ * Progress is over WORK nodes only (task + milestone); root + phases are
+ * structure. This is the single source of truth for plan progress.
+ */
+export interface PlanRollup {
+  progress_pct: number;
+  total_work: number;
+  completed_work: number;
+  status_counts: {
+    not_started: number;
+    in_progress: number;
+    completed: number;
+    blocked: number;
+    plan_ready: number;
+  };
+  blocked_pct: number;
+  /** nodeId -> 'completed' for container (phase/root) nodes whose work is all done. Detail reads only. */
+  container_status?: Record<string, string>;
+  /** Longest blocking chain through incomplete work. Detail reads only. */
+  critical_path?: {
+    length: number;
+    total_weight: number;
+    nodes: Array<{ id: string; title: string; status: string }>;
+  } | null;
+}
+
 export interface Plan {
   id: string;
   title: string;
@@ -99,10 +126,10 @@ export interface Plan {
   created_at: string;
   updated_at: string;
   metadata?: Record<string, any>;
-  progress?: number; // Calculated client-side
+  progress?: number; // = rollup.progress_pct (server-computed; do not recompute)
   /**
    * Per-status node breakdown used by the Plans Index segmented bar.
-   * Server-computed from listNodesByPlan, so consumers don't need to
+   * Projected server-side from {@link PlanRollup}, so consumers don't need to
    * re-fetch nodes just to render a progress preview.
    */
   stats?: {
@@ -113,6 +140,12 @@ export interface Plan {
     todo: number;
     percentage: number;
   };
+  /**
+   * Canonical server-side derived metrics (planRollup.service.js). The UI must
+   * render these, never recompute progress from the node list. Present on every
+   * plan endpoint; `container_status` + `critical_path` only on detail reads.
+   */
+  rollup?: PlanRollup;
   /** Goals that link to this plan (bulk-fetched server-side). */
   goal_tethers?: Array<{ goal_id: string; goal_title: string }>;
   /** Most recent plan_node_log timestamp — used to detect agent activity. */

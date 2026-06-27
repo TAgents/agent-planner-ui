@@ -118,9 +118,8 @@ export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) 
   let plansWithProgress = [];
   if (paginatedData?.data) {
     plansWithProgress = paginatedData.data.map((plan: Plan) => {
-      // If plan already has progress, use it, otherwise set to 0 for now
-      // In a real implementation, we'd calculate this based on nodes completion
-      // We would need to fetch nodes for each plan and calculate progress
+      // progress is canonical server-side (plan.rollup.progress_pct, projected
+      // onto plan.progress). Never recompute here — just default a missing value.
       return {
         ...plan,
         progress: typeof plan.progress === 'number' ? plan.progress : 0

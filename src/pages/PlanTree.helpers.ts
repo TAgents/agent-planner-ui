@@ -1,4 +1,4 @@
-import type { PlanNode } from '../types';
+import type { PlanNode, PlanRollup } from '../types';
 
 export type PlanStats = {
   total: number;
@@ -12,11 +12,30 @@ export type PlanStats = {
 export type TreeRow = PlanNode & { depth: number; childCount: number };
 
 /**
- * Progress counts over LEAF WORK nodes (task + milestone) only. Phases and the
- * root are structure, not work — counting them made a plan with every task done
- * read as <100% (e.g. 15 tasks done but 6 phases still not_started → 15/21 =
- * 71%) and disagreed with the goal rollup, which counts task+milestone only.
- * Now both agree.
+ * Project the canonical server rollup into the local Stats shape. This is the
+ * PREFERRED source — read it whenever `plan.rollup` is loaded. `computeStats`
+ * below is the client-side mirror of the same formula, used only as a fallback
+ * before the rollup arrives. The two MUST stay equivalent (see
+ * agent-planner/docs/DERIVATIONS_AUDIT.md).
+ */
+export function statsFromRollup(rollup: PlanRollup): PlanStats {
+  const c = rollup.status_counts;
+  return {
+    total: rollup.total_work,
+    done: c.completed,
+    doing: c.in_progress,
+    blocked: c.blocked,
+    planReady: c.plan_ready,
+    todo: c.not_started,
+  };
+}
+
+/**
+ * Client-side mirror of planRollup over LEAF WORK nodes (task + milestone) only.
+ * Phases and the root are structure, not work — counting them made a plan with
+ * every task done read as <100% (e.g. 15 tasks done but 6 phases still
+ * not_started → 15/21 = 71%) and disagreed with the server rollup, which counts
+ * task+milestone only. FALLBACK ONLY: prefer `plan.rollup` via statsFromRollup.
  */
 export function computeStats(nodes: PlanNode[]): PlanStats {
   const stats: PlanStats = { total: 0, done: 0, doing: 0, blocked: 0, planReady: 0, todo: 0 };
