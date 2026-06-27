@@ -33,7 +33,7 @@ export type { ProposedChipProps } from './ProposedChip';
 export { TokenBlock } from './TokenBlock';
 export type { TokenBlockProps } from './TokenBlock';
 
-export { PrimaryButton, GhostButton } from './Button';
+export { PrimaryButton, GhostButton, IconButton, LinkButton } from './Button';
 
 export { StepCard } from './StepCard';
 export type { StepCardProps, StepState } from './StepCard';
