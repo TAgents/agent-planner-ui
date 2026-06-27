@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useTokens } from '../../hooks/useTokens';
+import { TopBar } from '../v1';
 import VersionBadge from './VersionBadge';
 
 interface Section {
@@ -106,15 +107,11 @@ const SettingsLayout: React.FC = () => {
   const normalizedPath = aliases[location.pathname] || location.pathname;
 
   return (
-    <div className="min-h-full bg-bg text-text">
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-6 px-6 py-6">
-        {/* Page header */}
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-[12px] uppercase tracking-[0.18em] text-text-sec">
-              ◇ Settings
-            </span>
-          </div>
+    <div className="flex h-full flex-col">
+      <TopBar
+        kicker="◇ Settings"
+        title="Settings"
+        actions={
           <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-text-sec">
             <Link
               to="/app/settings/organization"
@@ -133,9 +130,11 @@ const SettingsLayout: React.FC = () => {
               </span>
             </Link>
           </div>
-        </header>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-[260px_1fr]">
+        }
+      />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-9">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-[260px_1fr]">
           {/* Section rail */}
           <nav aria-label="Settings sections" className="grid grid-cols-1 gap-1 sm:grid-cols-2 md:flex md:flex-col">
             {sections.map((s) => {
@@ -182,6 +181,7 @@ const SettingsLayout: React.FC = () => {
           <main className="min-w-0">
             <Outlet />
           </main>
+          </div>
         </div>
       </div>
     </div>
