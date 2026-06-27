@@ -47,6 +47,16 @@ Three groups: public marketing routes, auth routes (`/login`, `/register`), and 
 - **WebSocket → `WebSocketContext`** with exponential backoff (max 10 attempts, capped at 30s) and 30s ping/pong keepalive. Event-based subscription pattern.
 - **Presence → `PresenceContext`** layered on top of the WebSocket.
 
+### Derived metrics — server computes, UI renders
+
+Progress, status counts, health, blocked %, etc. are computed once on the server
+and returned as fields (`plan.rollup`, `goal.health`, `workspace.progressPct`).
+**Components never recompute a metric from the raw node/goal list.** For the rare
+live-compute case (e.g. before `plan.rollup` loads), use a pure selector in
+`src/selectors/` that mirrors the server formula. A ratchet test
+(`src/__tests__/noClientMetricMath.test.ts`) fails the build on new ad-hoc math.
+Full rules: `docs/DERIVED_METRICS.md`.
+
 ### API services (`src/services/`)
 
 `api.ts` is the axios instance + interceptors + shared `request()`. Request interceptor injects JWT from `localStorage['auth_session']`. Response interceptor on 401 redirects to `/login`.
