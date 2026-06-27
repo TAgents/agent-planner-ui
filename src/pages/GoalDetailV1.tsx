@@ -77,22 +77,33 @@ const GoalDetailV1: React.FC = () => {
   // plans (that was the "32 vs 11" split on one page). Before goal_state
   // resolves, fall back to deduped non-archived raw links.
   const linkedPlans = React.useMemo(() => {
-    const enrich = (id: string) => {
-      const p = planById.get(id);
-      return {
-        id,
-        title: p?.title || 'Linked plan',
-        status: p?.status,
-        progress: typeof p?.progress === 'number' ? p.progress : undefined,
-      };
-    };
+    // Prefer goal_state's server-provided title/status (covers plans outside the
+    // viewer's first /plans page); fall back to planById, then a generic label.
     if (gs?.linked_plans) {
-      return gs.linked_plans.map((lp) => enrich(lp.id));
+      return gs.linked_plans.map((lp) => {
+        const p = planById.get(lp.id);
+        return {
+          id: lp.id,
+          title: lp.title || p?.title || 'Linked plan',
+          status: lp.status || p?.status,
+          progress: typeof p?.progress === 'number' ? p.progress : undefined,
+        };
+      });
     }
     const ids = Array.from(
       new Set((goal?.links || []).filter((l) => l.linkedType === 'plan').map((l) => l.linkedId)),
     );
-    return ids.map(enrich).filter((p) => p.status !== 'archived');
+    return ids
+      .map((id) => {
+        const p = planById.get(id);
+        return {
+          id,
+          title: p?.title || 'Linked plan',
+          status: p?.status,
+          progress: typeof p?.progress === 'number' ? p.progress : undefined,
+        };
+      })
+      .filter((p) => p.status !== 'archived');
   }, [gs?.linked_plans, goal?.links, planById]);
 
   if (goalQ.isLoading) {

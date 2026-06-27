@@ -283,7 +283,7 @@ export interface GoalStateResult {
     success_criteria: SuccessCriteria;
     promoted_at: string | null;
   };
-  linked_plans: Array<{ id: string; link_id: string }>;
+  linked_plans: Array<{ id: string; link_id: string; title?: string | null; status?: string | null }>;
   /** Linked plans the viewer cannot access (filtered out of linked_plans). */
   hidden_linked_plan_count: number;
   linked_tasks: Array<{ id: string; title: string; status: string }>;
