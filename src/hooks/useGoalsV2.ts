@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { axiosInstance } from '../services/api';
+import { goalDashboardService } from '../services/goals.service';
 import type { GoalCriterion } from '../utils/goalCriteria';
+import type { GoalHealth } from '../utils/goalHealth';
 
 export type GoalType = 'outcome' | 'constraint' | 'metric' | 'principle';
 export type GoalStatus = 'draft' | 'active' | 'achieved' | 'paused' | 'abandoned' | 'archived';
@@ -300,6 +302,9 @@ export interface GoalStateResult {
   progress: GoalStateProgress;
   bottlenecks: Array<{ node_id: string; title: string; status: string; direct_downstream_count: number }>;
   knowledge_gaps: KnowledgeGapTask[];
+  /** Canonical goal health from the shared server rollup (same source as
+   *  Mission/dashboard). null for non-active goals — show lifecycle status. */
+  health: GoalHealth | null;
   meta: { partial: boolean; failures: Array<{ source: string; message?: string }> };
 }
 
@@ -308,5 +313,25 @@ export function useGoalState(goalId: string | undefined) {
     [GOALS_KEY, 'state', goalId],
     () => axiosInstance.get(`/v1/goals/${goalId}/state`).then((r) => r.data as GoalStateResult),
     { enabled: !!goalId }
+  );
+}
+
+/** One row of the goals dashboard — the canonical per-goal health source. */
+export interface GoalDashboardRow {
+  id: string;
+  status: string;
+  health: GoalHealth;
+}
+
+/**
+ * Canonical goal-health dashboard. The SINGLE source list views (Mission +
+ * Goals list) read goal health from — no client-side re-derivation. Shared
+ * query key so both pages hit one cached fetch. Only ACTIVE goals appear.
+ */
+export function useGoalDashboard() {
+  return useQuery<{ goals: GoalDashboardRow[] }>(
+    [GOALS_KEY, 'dashboard'],
+    () => goalDashboardService.getDashboard(),
+    { staleTime: 60_000 }
   );
 }

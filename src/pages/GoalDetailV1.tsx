@@ -15,6 +15,7 @@ import {
 } from '../components/v1';
 import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, type GoalStateResult } from '../hooks/useGoalsV2';
 import { criteriaAttainment, normalizeCriteria, isMeasurableCriterion, isCriterionMet, type GoalCriterion } from '../utils/goalCriteria';
+import { goalHealthBadge } from '../utils/goalHealth';
 import { usePlans } from '../hooks/usePlans';
 import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import { useCriticalPath } from '../hooks/useDependencies';
@@ -133,17 +134,20 @@ const GoalDetailV1: React.FC = () => {
   const isAchieved = goal.status === 'achieved';
   const criteria = normalizeCriteria(goal.successCriteria);
 
-  // Health classification — mirrors the dashboard's heuristics so the
-  // pill below the title matches what Mission Control shows.
-  const health: { label: string; color: PillColor } = (() => {
-    if (totalTasks > 0 && totalTasks - doneTasks > 0 && (path as any)?.last_activity_at) {
-      const ageDays = (Date.now() - new Date((path as any).last_activity_at).getTime()) / 86_400_000;
-      if (ageDays > 3) return { label: 'Stale', color: 'red' };
-    }
-    if (blockedTasks / Math.max(totalTasks, 1) > 0.25) return { label: 'At risk', color: 'amber' };
-    if (goalProgress >= 90) return { label: 'On track', color: 'emerald' };
-    return { label: 'On track', color: 'emerald' };
-  })();
+  // Health comes from the canonical server rollup (gs.health) — the SAME
+  // computation Mission and the dashboard use, so the detail header can't
+  // disagree with the list. Non-active goals aren't in the rollup, so show
+  // their lifecycle status instead of a health verdict.
+  const STATUS_BADGE: Record<string, { label: string; color: PillColor }> = {
+    achieved: { label: 'Achieved', color: 'emerald' },
+    paused: { label: 'Paused', color: 'slate' },
+    draft: { label: 'Draft', color: 'violet' },
+    archived: { label: 'Archived', color: 'slate' },
+    abandoned: { label: 'Abandoned', color: 'slate' },
+  };
+  const health: { label: string; color: PillColor } = gs?.health
+    ? goalHealthBadge(gs.health)
+    : STATUS_BADGE[goal.status] ?? goalHealthBadge(undefined);
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-10 sm:px-9">

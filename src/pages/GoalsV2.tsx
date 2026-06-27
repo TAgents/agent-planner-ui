@@ -15,8 +15,10 @@ import {
 import {
   useGoalsTree,
   useCreateGoal,
+  useGoalDashboard,
   GoalV2,
 } from '../hooks/useGoalsV2';
+import { goalHealthBadge, type GoalHealth } from '../utils/goalHealth';
 
 type GoalType = 'outcome' | 'constraint' | 'metric' | 'principle';
 type GoalStatus = 'draft' | 'active' | 'achieved' | 'paused' | 'abandoned' | 'archived';
@@ -84,8 +86,9 @@ type Attention = {
   color: PillColor;
 } | null;
 
-function deriveAttention(goal: GoalV2, completionPct?: number): Attention {
+function deriveAttention(goal: GoalV2, canonicalHealth?: GoalHealth): Attention {
   const linkCount = goal.links?.length || 0;
+  // Lifecycle statuses are presentation, not health — shown the same everywhere.
   if (goal.status === 'draft') {
     return { kind: 'draft', label: 'Draft', color: 'violet' };
   }
@@ -102,17 +105,14 @@ function deriveAttention(goal: GoalV2, completionPct?: number): Attention {
   if (goal.status === 'active' && goal.type !== 'principle' && linkCount === 0) {
     return { kind: 'noplan', label: 'No plan', color: 'amber' };
   }
-  if (
-    goal.status === 'active' &&
-    linkCount > 0 &&
-    typeof completionPct === 'number' &&
-    completionPct < 25 &&
-    daysSince(goal.createdAt) > 14
-  ) {
-    return { kind: 'atrisk', label: 'At risk', color: 'red' };
-  }
-  if (goal.status === 'active' && daysSince(goal.updatedAt) > 5) {
-    return { kind: 'stale', label: 'Stale', color: 'amber' };
+  // Health for active goals comes from the canonical server rollup (the same
+  // value Mission and Goal detail show) — NOT a local age/progress heuristic.
+  // on_track shows no badge; the badge label/color come from goalHealthBadge so
+  // all three surfaces match exactly. Undefined (dashboard not loaded / goal
+  // absent) → no badge rather than a guessed one.
+  if (goal.status === 'active' && canonicalHealth && canonicalHealth !== 'on_track') {
+    const badge = goalHealthBadge(canonicalHealth);
+    return { kind: canonicalHealth === 'stale' ? 'stale' : 'atrisk', label: badge.label, color: badge.color };
   }
   return null;
 }
@@ -527,6 +527,7 @@ function GoalRidge({
 
 export default function GoalsPage() {
   const { data: tree, isLoading, error } = useGoalsTree();
+  const dashboard = useGoalDashboard();
   const { data: wsData } = useWorkspaces();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreate, setShowCreate] = useState(false);
@@ -561,21 +562,21 @@ export default function GoalsPage() {
     return counts;
   }, [flatGoals]);
 
+  // Canonical health per goal id from the shared dashboard query — the SAME
+  // source Mission reads, so the list and Mission can't disagree.
+  const healthById = useMemo(() => {
+    const m = new Map<string, GoalHealth>();
+    for (const row of dashboard.data?.goals || []) m.set(row.id, row.health);
+    return m;
+  }, [dashboard.data]);
+
   const decorated = useMemo(
     () =>
-      flatGoals.map((g) => {
-        // Use server-side completion_percentage (from /goals/tree) so the
-        // at-risk rule fires at sort time, not after a per-row fetch.
-        const pct =
-          g.progress && g.progress.total > 0
-            ? g.progress.completion_percentage
-            : undefined;
-        return {
-          ...g,
-          _attention: deriveAttention(g, pct),
-        };
-      }),
-    [flatGoals],
+      flatGoals.map((g) => ({
+        ...g,
+        _attention: deriveAttention(g, healthById.get(g.id)),
+      })),
+    [flatGoals, healthById],
   );
 
   const filtered = useMemo(() => {

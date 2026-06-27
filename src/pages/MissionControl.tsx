@@ -16,6 +16,7 @@ import {
   useVelocity,
 } from '../hooks/useDashboard';
 import { goalDashboardService } from '../services/goals.service';
+import { goalHealthBadge } from '../utils/goalHealth';
 import { request } from '../services/api-client';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { usePlans } from '../hooks/usePlans';
@@ -74,15 +75,8 @@ const TYPE_GLYPH: Record<string, string> = {
   principle: '◇',
 };
 
-function healthLabel(h: GoalRow['health'], contradictions: number): {
-  label: string;
-  color: PillColor;
-} {
-  if (contradictions > 0) return { label: 'Contradiction', color: 'red' };
-  if (h === 'stale') return { label: 'Stale', color: 'amber' };
-  if (h === 'at_risk') return { label: 'At risk', color: 'amber' };
-  return { label: 'On track', color: 'emerald' };
-}
+// Health label/color comes from the shared goalHealthBadge helper so Mission,
+// the Goals list, and Goal detail all render health identically.
 
 /**
  * Mission — the single home overview. Time-of-day greeting with a compact
@@ -541,7 +535,7 @@ const GoalConstellationCard: React.FC<{
   // call here. We use the aggregate as a hint in the subtitle until the
   // tree-row prefetch lands.
   const goalContradictions = goal.health === 'stale' ? coverageContradictions : 0;
-  const health = healthLabel(goal.health, goalContradictions);
+  const health = goalHealthBadge(goal.health, goalContradictions);
   const sparkColor =
     health.color === 'red'
       ? 'rgb(var(--red))'
