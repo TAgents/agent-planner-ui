@@ -17,6 +17,7 @@ import {
   useCreateGoal,
   useGoalDashboard,
   GoalV2,
+  type GoalDashboardRow,
 } from '../hooks/useGoalsV2';
 import { goalHealthBadge, type GoalHealth } from '../utils/goalHealth';
 
@@ -281,7 +282,7 @@ function GoalRidge({
   pulseDot,
   workspacesById,
 }: {
-  goal: GoalV2 & { depth: number; _attention: Attention };
+  goal: GoalV2 & { depth: number; _attention: Attention; _dash?: GoalDashboardRow };
   pulseDot: boolean;
   workspacesById?: Map<string, { id: string; title: string }>;
 }) {
@@ -289,10 +290,20 @@ function GoalRidge({
   const spine: PillColor = STATUS_SPINE[goal.status as GoalStatus] ?? 'slate';
   const linkCount = goal.links?.length || 0;
 
-  // Progress now comes from /goals/tree (bulk-loaded server-side). Falls
-  // back to empty stats so principle / unlinked goals render their
-  // 'standing rule' / 'no plan' placeholders.
-  const stats = goal.progress;
+  // Execution progress is the canonical rollup (from the shared /goals/dashboard
+  // query) so the list, Mission and Goal detail all show the SAME number with
+  // one rounding rule. Falls back to /goals/tree per-goal stats for goals not in
+  // the active rollup (drafts etc.) so they still render their placeholders.
+  const lpp = goal._dash?.linked_plan_progress;
+  const stats = lpp
+    ? {
+        total: lpp.total_nodes,
+        completed: lpp.completed_nodes,
+        in_progress: lpp.in_progress_nodes,
+        blocked: lpp.blocked_nodes,
+        completion_percentage: lpp.percent_completed,
+      }
+    : goal.progress;
   const total = stats?.total ?? 0;
   const pct = stats && stats.total > 0 ? stats.completion_percentage : null;
   const attention = goal._attention;
@@ -562,11 +573,12 @@ export default function GoalsPage() {
     return counts;
   }, [flatGoals]);
 
-  // Canonical health per goal id from the shared dashboard query — the SAME
-  // source Mission reads, so the list and Mission can't disagree.
-  const healthById = useMemo(() => {
-    const m = new Map<string, GoalHealth>();
-    for (const row of dashboard.data?.goals || []) m.set(row.id, row.health);
+  // Canonical per-goal rollup (health + execution progress) by id from the
+  // shared dashboard query — the SAME source Mission reads, so the list, Mission
+  // and Goal detail can't disagree on health OR the progress number.
+  const dashById = useMemo(() => {
+    const m = new Map<string, GoalDashboardRow>();
+    for (const row of dashboard.data?.goals || []) m.set(row.id, row);
     return m;
   }, [dashboard.data]);
 
@@ -574,9 +586,10 @@ export default function GoalsPage() {
     () =>
       flatGoals.map((g) => ({
         ...g,
-        _attention: deriveAttention(g, healthById.get(g.id)),
+        _attention: deriveAttention(g, dashById.get(g.id)?.health),
+        _dash: dashById.get(g.id),
       })),
-    [flatGoals, healthById],
+    [flatGoals, dashById],
   );
 
   const filtered = useMemo(() => {

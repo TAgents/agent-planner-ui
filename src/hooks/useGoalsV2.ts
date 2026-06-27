@@ -305,7 +305,24 @@ export interface GoalStateResult {
   /** Canonical goal health from the shared server rollup (same source as
    *  Mission/dashboard). null for non-active goals — show lifecycle status. */
   health: GoalHealth | null;
+  /** Canonical cross-view numbers (execution %, counts) from the shared rollup.
+   *  null for non-active goals. Headline execution progress reads from here so
+   *  the detail matches Mission and the list. */
+  rollup: GoalRollup | null;
   meta: { partial: boolean; failures: Array<{ source: string; message?: string }> };
+}
+
+export interface GoalRollup {
+  health: GoalHealth;
+  execution_pct: number;
+  total_nodes: number;
+  completed_nodes: number;
+  in_progress_nodes: number;
+  blocked_nodes: number;
+  percent_blocked: number;
+  linked_plan_count: number;
+  attainment_pct: number | null;
+  pending_decision_count: number;
 }
 
 export function useGoalState(goalId: string | undefined) {
@@ -316,11 +333,21 @@ export function useGoalState(goalId: string | undefined) {
   );
 }
 
-/** One row of the goals dashboard — the canonical per-goal health source. */
+/** One row of the goals dashboard — the canonical per-goal health + execution
+ *  source for list views. */
 export interface GoalDashboardRow {
   id: string;
   status: string;
   health: GoalHealth;
+  linked_plan_progress?: {
+    percent_completed: number;
+    total_nodes: number;
+    completed_nodes: number;
+    in_progress_nodes: number;
+    blocked_nodes: number;
+    percent_blocked: number;
+    linked_plan_count: number;
+  };
 }
 
 /**

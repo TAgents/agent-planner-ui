@@ -113,18 +113,21 @@ const GoalDetailV1: React.FC = () => {
     { id: 'evaluations', label: `Evaluations · ${(goal.evaluations || []).length}` },
   ];
 
-  const stats = (path as any)?.stats;
-  const totalTasks = stats?.total || 0;
-  const doneTasks = stats?.completed || 0;
-  const blockedTasks = stats?.blocked || 0;
-  const inFlightTasks = stats?.in_progress || 0;
+  // Headline execution progress = the canonical rollup (the SAME number Mission
+  // and the Goals list show, one rounding rule) when the goal is active. Falls
+  // back to the achiever-path stats for non-active goals or before goal_state
+  // resolves, so the page still renders.
+  const rollup = gs?.rollup;
+  const pathStats = (path as any)?.stats;
+  const totalTasks = rollup?.total_nodes ?? pathStats?.total ?? 0;
+  const doneTasks = rollup?.completed_nodes ?? pathStats?.completed ?? 0;
+  const blockedTasks = rollup?.blocked_nodes ?? pathStats?.blocked ?? 0;
+  const inFlightTasks = rollup?.in_progress_nodes ?? pathStats?.in_progress ?? 0;
   const waitingTasks = Math.max(0, totalTasks - doneTasks - inFlightTasks - blockedTasks);
-  const goalProgress = stats?.completion_percentage || 0;
+  const goalProgress = rollup?.execution_pct ?? pathStats?.completion_percentage ?? 0;
 
   // Execution (tasks done) is distinct from attainment (success criteria met).
-  // Prefer the composed goal_state; fall back to path stats / client-computed
-  // attainment so the page still renders before/without that call.
-  const executionPct = gs?.progress?.execution_pct ?? goalProgress;
+  const executionPct = rollup?.execution_pct ?? gs?.progress?.execution_pct ?? goalProgress;
   const clientAttain = criteriaAttainment(goal.successCriteria);
   const attainment = gs?.progress?.attainment ?? {
     measurable_count: clientAttain.measurable_count,
@@ -568,7 +571,7 @@ const ProgressMeters: React.FC<{
           <div className="h-full bg-amber" style={{ width: `${executionPct}%` }} />
         </div>
         <span className="mt-1 block font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">
-          {total > 0 ? `${done}/${total} achiever tasks complete` : 'No achiever tasks yet'}
+          {total > 0 ? `${done}/${total} tasks complete` : 'No linked tasks yet'}
         </span>
       </div>
     </Card>
