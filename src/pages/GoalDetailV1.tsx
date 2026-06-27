@@ -14,7 +14,7 @@ import {
   type PillColor,
 } from '../components/v1';
 import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, type GoalStateResult } from '../hooks/useGoalsV2';
-import { criteriaAttainment } from '../utils/goalCriteria';
+import { criteriaAttainment, normalizeCriteria, isMeasurableCriterion, isCriterionMet, type GoalCriterion } from '../utils/goalCriteria';
 import { usePlans } from '../hooks/usePlans';
 import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import { useCriticalPath } from '../hooks/useDependencies';
@@ -131,6 +131,7 @@ const GoalDetailV1: React.FC = () => {
   };
   const attainmentPct = gs?.progress?.attainment_pct ?? clientAttain.attainment_pct;
   const isAchieved = goal.status === 'achieved';
+  const criteria = normalizeCriteria(goal.successCriteria);
 
   // Health classification — mirrors the dashboard's heuristics so the
   // pill below the title matches what Mission Control shows.
@@ -219,11 +220,7 @@ const GoalDetailV1: React.FC = () => {
                 },
                 {
                   label: 'Criteria',
-                  count: Array.isArray(goal.successCriteria)
-                    ? goal.successCriteria.length
-                    : goal.successCriteria
-                      ? 1
-                      : 0,
+                  count: criteria.length,
                   sub: 'Success criteria',
                 },
                 {
@@ -241,11 +238,7 @@ const GoalDetailV1: React.FC = () => {
           </div>
           <div className="mt-2 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
             <CompassStat label="Plans" value={linkedPlans.length} tone="violet" />
-            <CompassStat
-              label="Criteria"
-              value={Array.isArray(goal.successCriteria) ? goal.successCriteria.length : goal.successCriteria ? 1 : 0}
-              tone="amber"
-            />
+            <CompassStat label="Criteria" value={criteria.length} tone="amber" />
             <CompassStat
               label="Reviews"
               value={Array.isArray(goal.evaluations) ? goal.evaluations.length : 0}
@@ -303,6 +296,8 @@ const GoalDetailV1: React.FC = () => {
       </nav>
 
       {tab === 'overview' && (
+        <div className="flex flex-col gap-4">
+        <SuccessCriteriaCard criteria={criteria} />
         <Card pad={20}>
           <SectionHead kicker="◆ Briefing" title="Status & next steps" />
           <p className="text-[13px] leading-[1.55] text-text-sec">
@@ -334,6 +329,7 @@ const GoalDetailV1: React.FC = () => {
             </div>
           )}
         </Card>
+        </div>
       )}
 
       {tab === 'tasks' && <TasksDependenciesPanel pathQ={pathQ} />}
@@ -390,6 +386,74 @@ const CompassStat: React.FC<{ label: string; value: number; tone: 'violet' | 'am
         {label}
       </span>
     </div>
+  );
+};
+
+/**
+ * Success-criteria list — renders the goal's structured criteria. Measurable
+ * ones (metric + target + direction) show current→target and a met/open badge;
+ * qualitative ones render as plain statements. This is what makes "done"
+ * inspectable instead of a bare count.
+ */
+const SuccessCriteriaCard: React.FC<{ criteria: GoalCriterion[] }> = ({ criteria }) => {
+  const measurable = criteria.filter(isMeasurableCriterion);
+  const metCount = measurable.filter(isCriterionMet).length;
+  return (
+    <Card pad={20}>
+      <SectionHead
+        kicker="◆ Success criteria"
+        title="What “done” means"
+        right={
+          measurable.length > 0 ? (
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              {metCount}/{measurable.length} met
+            </span>
+          ) : null
+        }
+      />
+      {criteria.length === 0 ? (
+        <p className="mt-2 text-[12.5px] leading-[1.55] text-text-sec">
+          No success criteria yet. Agents add measurable criteria (metric + target + direction) so
+          attainment can be tracked.
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {criteria.map((c, i) => (
+            <CriterionRow key={c.id || i} c={c} />
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+};
+
+const CriterionRow: React.FC<{ c: GoalCriterion }> = ({ c }) => {
+  const measurable = isMeasurableCriterion(c);
+  const met = measurable && isCriterionMet(c);
+  const dot = !measurable ? 'bg-text-muted/40' : met ? 'bg-emerald' : 'bg-amber';
+  const arrow = c.direction === 'increase' ? '↑' : c.direction === 'decrease' ? '↓' : '';
+  return (
+    <li className="flex items-start gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5">
+      <span className={`mt-[5px] h-1.5 w-1.5 flex-shrink-0 rounded-full ${dot}`} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[12.5px] leading-[1.5] text-text">{c.statement}</p>
+        {measurable ? (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-text-muted">{c.metric}</span>
+            <span className="font-mono text-[11px] tabular-nums text-text-sec">
+              {c.direction === 'boolean'
+                ? met ? 'done' : 'pending'
+                : `${c.current ?? '—'} ${arrow} ${c.target}${c.unit ? ` ${c.unit}` : ''}`}
+            </span>
+            <Pill color={met ? 'emerald' : 'amber'}>{met ? 'met' : 'open'}</Pill>
+          </div>
+        ) : (
+          <span className="mt-1 inline-block font-mono text-[9px] uppercase tracking-[0.12em] text-text-muted">
+            qualitative · not measurable
+          </span>
+        )}
+      </div>
+    </li>
   );
 };
 
