@@ -9,8 +9,9 @@ export type TopBarProps = {
   subtitle?: React.ReactNode;
   /** Mono-uppercase kicker above the title. Can be a string or a node (e.g., chip). */
   kicker?: React.ReactNode;
-  /** Breadcrumb items (string or `{label, to}`). Renders above the kicker. */
-  breadcrumb?: Array<BreadcrumbItem | string>;
+  /** Breadcrumb above the kicker — either items (string or `{label, to}`) or a
+   *  custom breadcrumb node (e.g. a page-specific <GoalBreadcrumb/>). */
+  breadcrumb?: Array<BreadcrumbItem | string> | React.ReactNode;
   /** Right-aligned action cluster (buttons, and/or a search box + dropdowns). */
   actions?: React.ReactNode;
   /** Optional full-width controls row below the title (filter chips, search,
@@ -31,9 +32,9 @@ export function TopBar({ title, subtitle, kicker, breadcrumb, actions, controls 
     <header className="border-b border-border bg-bg px-7 pt-5 pb-[18px]">
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
-          {breadcrumb && breadcrumb.length > 0 && (
+          {breadcrumb && (Array.isArray(breadcrumb) ? breadcrumb.length > 0 : true) && (
             <div className="mb-1.5">
-              <Breadcrumb items={breadcrumb} />
+              {Array.isArray(breadcrumb) ? <Breadcrumb items={breadcrumb} /> : breadcrumb}
             </div>
           )}
           {kicker && (

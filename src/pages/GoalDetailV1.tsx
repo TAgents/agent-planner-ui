@@ -11,6 +11,7 @@ import {
   Pill,
   PrimaryButton,
   SectionHead,
+  TopBar,
   type PillColor,
 } from '../components/v1';
 import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, useRecordCriterion, type GoalStateResult } from '../hooks/useGoalsV2';
@@ -173,15 +174,13 @@ const GoalDetailV1: React.FC = () => {
     : STATUS_BADGE[goal.status] ?? goalHealthBadge(undefined);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 py-10 sm:px-9">
-      <header className="mb-7">
-        <GoalBreadcrumb goal={goal} />
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
-              {goal.title}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className="flex h-full flex-col">
+      <TopBar
+        breadcrumb={<GoalBreadcrumb goal={goal} />}
+        title={goal.title}
+        subtitle={
+          <>
+            <div className="flex flex-wrap items-center gap-2">
               <Pill color="violet">▲ {goal.type}</Pill>
               <Pill color={health.color}>● {health.label}</Pill>
               {/* Commitment (promoted_at) — surfaced consistently here rather
@@ -195,12 +194,12 @@ const GoalDetailV1: React.FC = () => {
               <WorkspaceChip goal={goal} />
             </div>
             {goal.description && (
-              <p className="mt-3 max-w-[64ch] text-[13px] leading-[1.55] text-text-sec">
-                {goal.description}
-              </p>
+              <p className="mt-2 max-w-[64ch] leading-[1.55]">{goal.description}</p>
             )}
-          </div>
-          <div className="flex flex-shrink-0 items-center gap-2">
+          </>
+        }
+        actions={
+          <>
             <Link
               to={`/app/knowledge/timeline?goal=${goal.id}`}
               className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-text-sec transition-colors hover:border-amber hover:text-text"
@@ -208,9 +207,11 @@ const GoalDetailV1: React.FC = () => {
               ◆ Knowledge →
             </Link>
             <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-9">
       {isAchieved && (
         <div className="mb-6 flex items-center gap-3 rounded-lg border border-emerald/40 bg-emerald/[0.07] px-4 py-3">
           <span className="font-display text-[18px] leading-none text-emerald">✓</span>
@@ -407,6 +408,8 @@ const GoalDetailV1: React.FC = () => {
           )}
         </Card>
       )}
+        </div>
+      </div>
     </div>
   );
 };

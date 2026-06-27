@@ -5,10 +5,10 @@ import { ObjectChip } from '../components/v1';
 import GoalAttainmentBadge from '../components/goals/GoalAttainmentBadge';
 import {
   Card,
-  Kicker,
   Pill,
   PrimaryButton,
   Spark,
+  TopBar,
   cn,
   type PillColor,
 } from '../components/v1';
@@ -653,11 +653,11 @@ export default function GoalsPage() {
   ).length;
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8 sm:px-9">
-      <header className="mb-6">
-        <Kicker className="mb-2">◆ Goals</Kicker>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+    <div className="flex h-full flex-col">
+      <TopBar
+        kicker="◆ Goals"
+        title={
+          <>
             {activeGoals} active goal{activeGoals === 1 ? '' : 's'}
             {needLook > 0 && (
               <>
@@ -667,10 +667,12 @@ export default function GoalsPage() {
                 </span>
               </>
             )}
-          </h1>
-          <PrimaryButton onClick={() => setShowCreate(true)}>+ New goal</PrimaryButton>
-        </div>
-      </header>
+          </>
+        }
+        actions={<PrimaryButton onClick={() => setShowCreate(true)}>+ New goal</PrimaryButton>}
+      />
+      <div className="flex-1 overflow-auto bg-bg">
+        <div className="mx-auto max-w-[1200px] px-6 py-8 sm:px-9">
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3">
@@ -861,6 +863,8 @@ export default function GoalsPage() {
       )}
 
       {showCreate && <CreateGoalDialog onClose={() => setShowCreate(false)} />}
+        </div>
+      </div>
     </div>
   );
 }
