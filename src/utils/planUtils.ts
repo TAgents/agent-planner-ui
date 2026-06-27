@@ -2,19 +2,11 @@ import { PlanNode, FlowNode, FlowEdge, NodeStatus, NodeType, EdgeType } from '..
 import { Network, ListChecks, Goal, Calendar, AlertTriangle } from 'lucide-react';
 import React from 'react';
 
-/**
- * Calculates the progress percentage of a plan based on node statuses
- * @param nodes Array of plan nodes
- * @returns Progress percentage (0-100)
- */
-export const calculatePlanProgress = (nodes: PlanNode[]): number => {
-  if (!nodes.length) return 0;
-  
-  const totalNodes = nodes.length;
-  const completedNodes = nodes.filter(node => node.status === 'completed').length;
-  
-  return Math.round((completedNodes / totalNodes) * 100);
-};
+// NOTE: the old calculatePlanProgress() lived here — it computed progress over
+// ALL nodes (root + phases included), the exact denominator bug behind the
+// 68-vs-100 split. It had no callers and was removed. Plan progress is canonical
+// server-side (plan.rollup); for the rare live-compute case use
+// src/selectors/computeStats (work nodes only).
 
 /**
  * Gets the status color based on node status
