@@ -6,6 +6,7 @@ import {
   CriticalPathSubway,
   GhostButton,
   GoalCompass,
+  IconButton,
   Kicker,
   ObjectChip,
   Pill,
@@ -981,7 +982,7 @@ const ContradictionsModal: React.FC<{ goalId: string; onClose: () => void }> = (
               Facts about this goal’s work that newer knowledge has superseded.
             </p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-[13px] text-text-muted hover:text-text">✕</button>
+          <IconButton onClick={onClose} aria-label="Close">✕</IconButton>
         </div>
 
         <div className="max-h-[68vh] overflow-y-auto px-5 py-4">

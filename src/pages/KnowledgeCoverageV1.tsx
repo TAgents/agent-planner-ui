@@ -4,7 +4,6 @@ import { useQuery } from 'react-query';
 import {
   Card,
   Pill,
-  SectionHead,
   type PillColor,
 } from '../components/v1';
 import { request } from '../services/api-client';

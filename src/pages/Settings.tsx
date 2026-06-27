@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTokens } from '../hooks/useTokens';
 import { Key, Copy, Check, X, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { McpSetupBlock } from '../components/common/McpSetupBlock';
+import { PrimaryButton, GhostButton } from '../components/v1';
 
 const getApiUrl = () => {
   const hostname = window.location.hostname;
@@ -128,12 +129,12 @@ const Settings: React.FC = () => {
             </span>
             <span className="text-[11px] tabular-nums text-text-sec">{tokens.length}</span>
           </div>
-          <button
+          <GhostButton
             onClick={() => setOpenCreateDialog(true)}
-            className="rounded-md border border-border bg-surface-hi px-2.5 py-1 text-[11px] font-medium text-text transition-colors hover:bg-bg"
+            className="px-2.5 py-1 text-[11px]"
           >
             + New token
-          </button>
+          </GhostButton>
         </div>
 
         {error && (
@@ -213,16 +214,16 @@ const Settings: React.FC = () => {
               </p>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end gap-2">
-              <button onClick={() => setOpenCreateDialog(false)} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
+              <GhostButton onClick={() => setOpenCreateDialog(false)} className="px-3 py-1.5 text-[11px]">
                 Cancel
-              </button>
-              <button
+              </GhostButton>
+              <PrimaryButton
                 onClick={handleCreateToken}
                 disabled={!tokenName.trim()}
-                className="px-3 py-1.5 text-[11px] font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40 transition-colors"
+                className="px-3 py-1.5 text-[11px]"
               >
                 Create
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -238,15 +239,15 @@ const Settings: React.FC = () => {
               <p className="text-[11px] text-gray-500 dark:text-gray-400">Applications using it will lose access.</p>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end gap-2">
-              <button onClick={() => setOpenConfirmDialog(false)} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
+              <GhostButton onClick={() => setOpenConfirmDialog(false)} className="px-3 py-1.5 text-[11px]">
                 Cancel
-              </button>
-              <button
+              </GhostButton>
+              <PrimaryButton
                 onClick={handleRevokeToken}
-                className="px-3 py-1.5 text-[11px] font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                className="bg-red px-3 py-1.5 text-[11px] text-white"
               >
                 Revoke
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -269,8 +270,8 @@ const Settings: React.FC = () => {
                 <code className="flex-1 text-[11px] font-mono text-gray-900 dark:text-white break-all">
                   {tokenCopied ? '••••••••••••••••••••••••••••••••' : newToken.token}
                 </code>
-                <button onClick={copyTokenToClipboard} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">
-                  {tokenCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                <button onClick={copyTokenToClipboard} aria-label="Copy token" className="flex-shrink-0 p-1 text-text-muted transition-colors hover:text-text">
+                  {tokenCopied ? <Check className="w-3 h-3 text-emerald" /> : <Copy className="w-3 h-3" />}
                 </button>
               </div>
 
@@ -286,9 +287,9 @@ const Settings: React.FC = () => {
               </div>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end">
-              <button onClick={clearNewToken} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
+              <GhostButton onClick={clearNewToken} className="px-3 py-1.5 text-[11px]">
                 Done
-              </button>
+              </GhostButton>
             </div>
           </div>
         </div>

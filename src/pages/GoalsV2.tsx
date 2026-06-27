@@ -5,6 +5,7 @@ import { ObjectChip } from '../components/v1';
 import GoalAttainmentBadge from '../components/goals/GoalAttainmentBadge';
 import {
   Card,
+  GhostButton,
   Pill,
   PrimaryButton,
   Spark,
@@ -228,13 +229,9 @@ function CreateGoalDialog({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs text-text-sec transition-colors hover:bg-surface-hi"
-            >
+            <GhostButton type="button" onClick={onClose} className="px-3 py-1.5">
               Cancel
-            </button>
+            </GhostButton>
             <PrimaryButton
               type="submit"
               disabled={createGoal.isLoading || !title.trim()}
