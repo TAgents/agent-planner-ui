@@ -338,6 +338,7 @@ export function useGoalState(goalId: string | undefined) {
 export interface GoalDashboardRow {
   id: string;
   status: string;
+  workspace_id?: string | null;
   health: GoalHealth;
   linked_plan_progress?: {
     percent_completed: number;
