@@ -179,6 +179,19 @@ const GoalDetailV1: React.FC = () => {
           </div>
         </div>
       </header>
+      {isAchieved && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-emerald/40 bg-emerald/[0.07] px-4 py-3">
+          <span className="font-display text-[18px] leading-none text-emerald">✓</span>
+          <div>
+            <p className="font-display text-[13px] font-semibold text-text">Goal achieved</p>
+            <p className="text-[12px] leading-[1.5] text-text-sec">
+              {attainment.measurable_count > 0
+                ? `All ${attainment.measurable_count} measurable criteria are met — this goal closed itself.`
+                : 'Marked achieved.'}
+            </p>
+          </div>
+        </div>
+      )}
       {showMove && (
         <MoveGoalModal goal={goal as any} onClose={() => setShowMove(false)} />
       )}
@@ -308,6 +321,9 @@ const GoalDetailV1: React.FC = () => {
             <div className="mt-4">
               <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
                 Linked plans · {linkedPlans.length}
+                {gs?.hidden_linked_plan_count
+                  ? ` · +${gs.hidden_linked_plan_count} you can't access`
+                  : ''}
               </span>
               <ul className="mt-2 flex flex-col gap-1.5">
                 {linkedPlans.map((p) => (
@@ -329,6 +345,7 @@ const GoalDetailV1: React.FC = () => {
             </div>
           )}
         </Card>
+        <BottlenecksCard bottlenecks={gs?.bottlenecks || []} />
         </div>
       )}
 
@@ -386,6 +403,42 @@ const CompassStat: React.FC<{ label: string; value: number; tone: 'violet' | 'am
         {label}
       </span>
     </div>
+  );
+};
+
+/**
+ * Bottlenecks — incomplete achiever-path tasks blocking the most downstream
+ * work, from goal_state. Renders nothing when clear (keeps the page calm).
+ */
+const BottlenecksCard: React.FC<{ bottlenecks: GoalStateResult['bottlenecks'] }> = ({ bottlenecks }) => {
+  const open = (bottlenecks || []).filter((b) => b.status !== 'completed');
+  if (open.length === 0) return null;
+  return (
+    <Card pad={20}>
+      <SectionHead kicker="◆ Bottlenecks" title="Holding the goal back" />
+      <ul className="mt-3 flex flex-col gap-1.5">
+        {open.map((b) => (
+          <li
+            key={b.node_id}
+            className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-[12.5px]"
+          >
+            <span
+              className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${
+                b.status === 'blocked' ? 'bg-red' : b.status === 'in_progress' ? 'bg-amber' : 'bg-text-muted/40'
+              }`}
+            />
+            <span className="truncate text-text" title={b.title}>
+              {b.title}
+            </span>
+            {b.direct_downstream_count > 0 && (
+              <span className="ml-auto flex-shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-text-muted">
+                blocks {b.direct_downstream_count}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 };
 
@@ -569,6 +622,31 @@ const QualityScoreCard: React.FC<{
           </ul>
         </div>
       </div>
+      {dimensions && (
+        <ul className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3">
+          {(['clarity', 'measurability', 'actionability', 'knowledge_grounding', 'commitment'] as const).map((key) => {
+            const d = dimensions[key];
+            if (!d) return null;
+            const pct = Math.round((d.score || 0) * 100);
+            return (
+              <li key={key} className="flex items-center gap-2.5" title={d.detail}>
+                <span className="w-[88px] flex-shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-text-muted">
+                  {key.replace('_', ' ')}
+                </span>
+                <div className="h-[4px] flex-1 overflow-hidden rounded-full bg-surface-hi">
+                  <div
+                    className={`h-full ${pct >= 80 ? 'bg-emerald' : pct >= 40 ? 'bg-amber' : 'bg-red'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="w-[112px] flex-shrink-0 truncate text-right font-mono text-[9px] text-text-muted">
+                  {d.detail}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       {score100 !== null && suggestions.length > 0 && (
         <p className="mt-3 text-[12px] leading-[1.55] text-text-sec">
           <span className="font-display font-semibold text-text">Why {score100}? </span>
