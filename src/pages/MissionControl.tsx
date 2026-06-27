@@ -123,6 +123,10 @@ const MissionControl: React.FC = () => {
   const goals = goalsDashboard.data?.goals || [];
   const goalsInMotion = goals.filter((g) => g.status === 'active').length;
   const onTrackCount = goals.filter((g) => g.health === 'on_track').length;
+  // Goals whose canonical health is at_risk or stale — "need a look". Distinct
+  // from the decision queue (allPending), which is what's literally awaiting an
+  // approval from you.
+  const needAttentionCount = goals.filter((g) => g.health !== 'on_track').length;
 
   const contradictions = coherence.data?.signals.contradictions ?? 0;
   const healthScore = coherence.data ? Math.round(coherence.data.score * 100) : null;
@@ -149,7 +153,13 @@ const MissionControl: React.FC = () => {
           </h1>
           <p className="mt-1 text-[13px] leading-[1.5] text-text-sec">
             {goals.length > 0 ? (
-              <>{onTrackCount} on track · what needs you, and where to focus next.</>
+              <>
+                {onTrackCount} on track
+                {needAttentionCount > 0 && (
+                  <span className="text-amber"> · {needAttentionCount} need a look</span>
+                )}{' '}
+                · what needs you, and where to focus next.
+              </>
             ) : (
               <>What's in motion, what needs you, and what's drifting.</>
             )}
@@ -166,7 +176,9 @@ const MissionControl: React.FC = () => {
                   className={`inline-block h-1.5 w-1.5 rounded-full ${healthScore >= 80 ? 'bg-emerald' : healthScore >= 60 ? 'bg-amber' : 'bg-red'}`}
                 />
                 Health {healthScore}
-                {contradictions > 0 && <span className="text-amber"> · △{contradictions}</span>}
+                {contradictions > 0 && (
+                  <span className="text-amber"> · △{contradictions} tension{contradictions === 1 ? '' : 's'}</span>
+                )}
               </span>
               <span aria-hidden>·</span>
             </>
@@ -190,10 +202,14 @@ const MissionControl: React.FC = () => {
           <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
             <PulseStat
               value={allPending.length}
-              label="Need attention"
+              label="Awaiting you"
               tone={allPending.length > 0 ? 'amber' : 'muted'}
             />
-            <PulseStat value={summary.data?.active_goals_count ?? 0} label="Active goals" />
+            <PulseStat
+              value={needAttentionCount}
+              label="Goals need a look"
+              tone={needAttentionCount > 0 ? 'amber' : 'muted'}
+            />
             <PulseStat value={summary.data?.active_plans_count ?? 0} label="Active plans" />
             <PulseStat
               value={velocity.data?.total ?? summary.data?.tasks_completed_this_week ?? 0}
