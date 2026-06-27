@@ -17,6 +17,7 @@ import { useUpdateWorkspace, useWorkspace } from '../hooks/useWorkspaces';
 import { useOrganizations } from '../hooks/useOrganizations';
 import { usePlans } from '../hooks/usePlans';
 import { useGoalsV2 } from '../hooks/useGoalsV2';
+import GoalAttainmentBadge from '../components/goals/GoalAttainmentBadge';
 import { activityService } from '../services/api';
 import type { Activity, Workspace } from '../types';
 
@@ -343,9 +344,12 @@ const GoalsPanel: React.FC<{ goals: any[]; workspaceId: string }> = ({ goals, wo
           className="flex items-start gap-3 rounded-lg border border-border bg-bg p-3.5 transition-colors hover:bg-surface-hi"
         >
           <Pill color="emerald">Goal</Pill>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="text-[13px] font-semibold text-text">{g.title}</div>
-            <div className="mt-1 text-[11px] text-text-sec">{g.status ?? 'active'}</div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-sec">
+              <span className="capitalize">{g.status ?? 'active'}</span>
+              <GoalAttainmentBadge successCriteria={g.successCriteria} />
+            </div>
           </div>
         </Link>
       ))}
