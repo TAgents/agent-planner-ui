@@ -12,11 +12,14 @@ type Collaborator = {
   userId?: string;
   name?: string;
   email?: string;
-  role?: Role | string;
+  role?: Role | 'owner' | string;
+  user?: { id?: string; name?: string; email?: string };
 };
 
 const ROLES: Role[] = ['viewer', 'editor', 'admin'];
-const collabId = (c: Collaborator) => c.user_id || c.userId || c.id || '';
+const collabId = (c: Collaborator) => c.user_id || c.userId || c.user?.id || c.id || '';
+const collabName = (c: Collaborator) => c.user?.name || c.name || c.user?.email || c.email || 'User';
+const collabEmail = (c: Collaborator) => c.user?.email || c.email || '';
 
 /**
  * Share a plan with other users (human-steering: access control, not content
@@ -119,31 +122,38 @@ const SharePlanModal: React.FC<{ plan: Plan; onClose: () => void }> = ({ plan, o
             )}
             {collaborators.map((c) => {
               const id = collabId(c);
+              const name = collabName(c);
+              const email = collabEmail(c);
+              const isOwner = c.role === 'owner';
               return (
-                <li key={id || c.email} className="flex items-center justify-between gap-2 px-3 py-2">
+                <li key={id || email} className="flex items-center justify-between gap-2 px-3 py-2">
                   <div className="min-w-0">
-                    <div className="truncate text-[13px] text-text">{c.name || c.email || 'User'}</div>
-                    {c.name && c.email && <div className="truncate text-[11px] text-text-muted">{c.email}</div>}
+                    <div className="truncate text-[13px] text-text">{name}</div>
+                    {name !== email && email && <div className="truncate text-[11px] text-text-muted">{email}</div>}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <select
-                      value={(c.role as Role) || 'viewer'}
-                      onChange={(e) => changeRole.mutate({ userId: id, role: e.target.value as Role })}
-                      disabled={!id || changeRole.isLoading}
-                      className="rounded-md border border-border bg-bg px-2 py-1 text-[12px] capitalize text-text outline-none focus:border-amber"
-                    >
-                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => remove.mutate(id)}
-                      disabled={!id || remove.isLoading}
-                      title="Remove access"
-                      className="rounded-md border border-border px-2 py-1 text-[12px] text-text-sec transition-colors hover:border-red hover:text-red"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  {isOwner ? (
+                    <Pill color="amber">Owner</Pill>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={(c.role as Role) || 'viewer'}
+                        onChange={(e) => changeRole.mutate({ userId: id, role: e.target.value as Role })}
+                        disabled={!id || changeRole.isLoading}
+                        className="rounded-md border border-border bg-bg px-2 py-1 text-[12px] capitalize text-text outline-none focus:border-amber"
+                      >
+                        {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => remove.mutate(id)}
+                        disabled={!id || remove.isLoading}
+                        title="Remove access"
+                        className="rounded-md border border-border px-2 py-1 text-[12px] text-text-sec transition-colors hover:border-red hover:text-red"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </li>
               );
             })}
