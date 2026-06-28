@@ -78,14 +78,12 @@ export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) 
     ({ planId, data }: { planId: string; data: Partial<Plan> }) => 
       planService.updatePlan(planId, data),
     {
-      onSuccess: (data) => {
-        // Update the plan in the cache
-        queryClient.invalidateQueries('plans');
-        // Safely invalidate specific plan query
-        const planId = data?.data?.id || (data as any)?.id;
-        if (planId) {
-          queryClient.invalidateQueries(['plan', planId]);
-        }
+      onSuccess: () => {
+        // Single-plan queries are keyed ['plan', userId, planId], so invalidate
+        // the ['plan'] prefix (a ['plan', planId] match would miss the userId
+        // segment and never refresh the detail view). Same for the list.
+        queryClient.invalidateQueries(['plans']);
+        queryClient.invalidateQueries(['plan']);
       },
     }
   );

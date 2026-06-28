@@ -203,7 +203,9 @@ const PlansList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading } = usePlans(1, 100);
   const { data: wsData } = useWorkspaces();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  // Default to Active plans — the list of what's in flight is the useful first
+  // view; All/Draft/Done/Archived remain one click away (with counts).
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [sort, setSort] = useState<SortKey>('updated');
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);

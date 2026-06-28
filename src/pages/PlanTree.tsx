@@ -22,8 +22,39 @@ import { useNodeDependencies } from '../hooks/useDependencies';
 import { coherenceService } from '../services/knowledge.service';
 import type { PlanNode, NodeStatus, NodeType, Dependency } from '../types';
 import { computeStats, statsFromRollup, flattenTree, effectivePhaseStatus, type PlanStats as Stats, type TreeRow } from './PlanTree.helpers';
+import SharePlanModal from '../components/plans/SharePlanModal';
 
 type DetailTab = 'details' | 'comments' | 'logs' | 'agent';
+
+type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
+const PLAN_STATUSES: PlanStatus[] = ['draft', 'active', 'completed', 'archived'];
+
+/**
+ * Human-steering control: change a plan's lifecycle status. Note `active⇄completed`
+ * is also auto-maintained server-side from work completion, so a manual override
+ * here is reconciled the next time a task's status changes.
+ */
+const PlanStatusControl: React.FC<{ plan: PlanType }> = ({ plan }) => {
+  const { updatePlan } = usePlans(1, 100, undefined, false);
+  const current = (plan.status as PlanStatus) || 'draft';
+  const tone =
+    current === 'active' ? 'border-amber text-amber'
+      : current === 'completed' ? 'border-emerald text-emerald'
+        : current === 'archived' ? 'border-border text-text-muted'
+          : 'border-border text-text-sec';
+  return (
+    <select
+      aria-label="Plan status"
+      title="Change plan status"
+      value={current}
+      disabled={updatePlan.isLoading}
+      onChange={(e) => updatePlan.mutate({ planId: plan.id, data: { status: e.target.value } as Partial<PlanType> })}
+      className={`rounded-md border bg-surface px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] capitalize outline-none transition-colors hover:border-amber focus:border-amber ${tone}`}
+    >
+      {PLAN_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+    </select>
+  );
+};
 
 const STATUS_GLYPH: Record<NodeStatus, string> = {
   not_started: '○',
@@ -145,6 +176,7 @@ const PlanTree: React.FC = () => {
   const [tab, setTab] = useState<DetailTab>('details');
   const [showSaveAsBlueprint, setShowSaveAsBlueprint] = useState(false);
   const [showMove, setShowMove] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const selectedNode = useMemo(
     () => (selected ? flat.find((n) => n.id === selected) || null : flat[0] || null),
@@ -161,9 +193,7 @@ const PlanTree: React.FC = () => {
         actions={
           plan ? (
             <>
-              <Pill color={plan.status === 'active' ? 'amber' : plan.status === 'completed' ? 'emerald' : 'slate'}>
-                {plan.status}
-              </Pill>
+              <PlanStatusControl plan={plan} />
               {plan.visibility === 'public' && <Pill color="slate">Public</Pill>}
               <Link
                 to={`/app/knowledge/timeline?plan=${plan.id}`}
@@ -173,6 +203,7 @@ const PlanTree: React.FC = () => {
                 <span>◆ Knowledge</span>
                 <span aria-hidden>→</span>
               </Link>
+              <GhostButton onClick={() => setShowShare(true)}>Share →</GhostButton>
               <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
               <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>Save as Blueprint →</GhostButton>
             </>
@@ -194,6 +225,9 @@ const PlanTree: React.FC = () => {
           plan={plan}
           onClose={() => setShowMove(false)}
         />
+      )}
+      {showShare && plan && (
+        <SharePlanModal plan={plan} onClose={() => setShowShare(false)} />
       )}
 
       {stats.total > 0 && (
