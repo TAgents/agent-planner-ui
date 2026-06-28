@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTimeline } from '../../hooks/useTimeline';
-import { TimelineKind, TimelineQuery, SubjectType } from '../../services/timeline.service';
+import { TimelineKind, TimelineQuery, SubjectType, TimelineEntry } from '../../services/timeline.service';
 import { TimelineItem } from './TimelineItem';
 
 const KIND_FILTERS: { value: TimelineKind | 'all'; label: string }[] = [
@@ -23,8 +23,8 @@ export interface TimelineProps {
   limit?: number;
   /** Optional slot under the header (e.g. a comment composer). */
   header?: React.ReactNode;
-  /** Per-item actions, keyed by entry id → author edit/delete controls. */
-  renderItemActions?: (entryId: string, kind: TimelineKind, actorId: string | null) => React.ReactNode;
+  /** Per-item actions (e.g. author edit/delete controls for comments). */
+  renderItemActions?: (entry: TimelineEntry) => React.ReactNode;
   className?: string;
   emptyLabel?: string;
 }
@@ -93,7 +93,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <TimelineItem
               key={entry.id}
               entry={entry}
-              actions={renderItemActions?.(entry.id, entry.kind, entry.actor_id)}
+              actions={renderItemActions?.(entry)}
             />
           ))}
         </ul>
