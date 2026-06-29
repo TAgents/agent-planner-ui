@@ -230,7 +230,7 @@ const KnowledgeCoverageV1: React.FC = () => {
   }, [data, search]);
 
   return (
-    <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
           { value: `${Math.round(orgRatio * 100)}%`, label: 'coverage' },

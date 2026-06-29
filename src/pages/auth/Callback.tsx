@@ -68,10 +68,10 @@ const Callback: React.FC = () => {
 
         const orgs = data.user?.organizations || [];
         if (orgs.length > 1 && !localStorage.getItem('active_org_id')) {
-          navigate('/select-org', { state: { from: '/app/plans' }, replace: true });
+          navigate('/select-org', { state: { from: '/app/chat' }, replace: true });
         } else {
           if (orgs.length === 1) localStorage.setItem('active_org_id', orgs[0].id);
-          navigate('/app/plans', { replace: true });
+          navigate('/app/chat', { replace: true });
         }
       } catch (err: any) {
         if (cancelled) return;

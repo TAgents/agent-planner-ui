@@ -111,7 +111,7 @@ function getCommentList(raw: unknown): any[] {
 const PlanTree: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const safePlanId = planId || '';
-  const { plan } = usePlan(safePlanId);
+  const { plan, refetch: refetchPlan } = usePlan(safePlanId);
   const { nodes, isLoading } = useNodes(safePlanId);
   const flat = useMemo(() => flattenTree((nodes as PlanNode[] | undefined) || []), [nodes]);
   const stats = useMemo(() => computeStats((nodes as PlanNode[] | undefined) || []), [nodes]);
@@ -123,19 +123,30 @@ const PlanTree: React.FC = () => {
   const [showSaveAsBlueprint, setShowSaveAsBlueprint] = useState(false);
   const [showMove, setShowMove] = useState(false);
 
+  // Activate gate: an inactive plan is just an idea — agents won't pick up its
+  // tasks (no token cost) until it's activated here.
+  const { updatePlan } = usePlans(1, 100, undefined, false);
+  const activate = async () => {
+    if (!plan) return;
+    await updatePlan.mutateAsync({ planId: plan.id, data: { active: true } as any });
+    // usePlan's query key includes userId, which the mutation's invalidation
+    // doesn't match — refetch explicitly so the banner/badge update immediately.
+    await refetchPlan();
+  };
+
   const selectedNode = useMemo(
     () => (selected ? flat.find((n) => n.id === selected) || null : flat[0] || null),
     [flat, selected],
   );
 
   return (
-    <div className="mx-auto max-w-[1280px] px-6 py-10 sm:px-9">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <header className="mb-8">
         <PlanBreadcrumb plan={plan} />
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <Kicker className="mb-1">◆ Plan</Kicker>
-            <h1 className="font-display text-[26px] font-bold tracking-[-0.03em] text-text">
+            <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
               {plan?.title || 'Loading…'}
             </h1>
             {plan?.description && (
@@ -146,9 +157,17 @@ const PlanTree: React.FC = () => {
           </div>
           {plan && (
             <div className="flex flex-shrink-0 items-center gap-2">
-              <Pill color={plan.status === 'active' ? 'amber' : plan.status === 'completed' ? 'emerald' : 'slate'}>
-                {plan.status}
+              <Pill color={plan.active ? 'emerald' : 'slate'}>
+                {plan.active ? 'Active' : 'Inactive'}
               </Pill>
+              {(plan.status === 'completed' || plan.status === 'archived') && (
+                <Pill color={plan.status === 'completed' ? 'emerald' : 'slate'}>{plan.status}</Pill>
+              )}
+              {!plan.active && (
+                <PrimaryButton onClick={activate} disabled={updatePlan.isLoading}>
+                  {updatePlan.isLoading ? 'Activating…' : 'Activate →'}
+                </PrimaryButton>
+              )}
               {plan.visibility === 'public' && <Pill color="slate">Public</Pill>}
               <Link
                 to={`/app/knowledge/timeline?plan=${plan.id}`}
@@ -168,6 +187,24 @@ const PlanTree: React.FC = () => {
           )}
         </div>
       </header>
+
+      {plan && !plan.active && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-border bg-surface px-4 py-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              ◆ Inactive
+            </p>
+            <p className="mt-0.5 text-[13px] text-text-sec">
+              This plan is just an idea right now — agents won't work on it, so it costs no tokens.
+              Activate it when you're ready for agents to start.
+            </p>
+          </div>
+          <PrimaryButton onClick={activate} disabled={updatePlan.isLoading}>
+            {updatePlan.isLoading ? 'Activating…' : 'Activate plan →'}
+          </PrimaryButton>
+        </div>
+      )}
+
       {showSaveAsBlueprint && plan && (
         <SaveAsBlueprintModal
           planId={plan.id}
@@ -936,7 +973,7 @@ const PlanBreadcrumb: React.FC<{ plan: PlanType | undefined | null }> = ({ plan 
   }
   // No workspace yet (personal/no-org plan, or still loading)
   return (
-    <Breadcrumb items={[{ label: 'Plans', to: '/app/plans' }, plan?.title || 'Plan']} />
+    <Breadcrumb items={[{ label: 'Goals', to: '/app/goals' }, plan?.title || 'Plan']} />
   );
 };
 

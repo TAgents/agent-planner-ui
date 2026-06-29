@@ -150,17 +150,20 @@ module.exports = {
       // CSS variables — base layer is fine for these
       addBase({
         '.dark': {
-          '--ob-50':  '#ede8df',
-          '--ob-100': '#d4cfc5',
-          '--ob-200': '#a09882',
-          '--ob-300': '#8a8270',
-          '--ob-400': '#6b6354',
-          '--ob-500': '#4a4438',
-          '--ob-600': '#2a261e',
-          '--ob-700': '#1e1b15',
-          '--ob-800': '#16140f',
-          '--ob-900': '#0e0c0a',
-          '--ob-950': '#0a0907',
+          // Neutral (slightly cool) greyscale — no warm/yellow cast. These
+          // back the legacy gray-*/white overrides below; the v1 tokens live
+          // in src/index.css.
+          '--ob-50':  '#eceef2',
+          '--ob-100': '#d2d4da',
+          '--ob-200': '#9a9ca3',
+          '--ob-300': '#84868f',
+          '--ob-400': '#6e7078',
+          '--ob-500': '#4e505a',
+          '--ob-600': '#2a2a30',
+          '--ob-700': '#1d1d21',
+          '--ob-800': '#141417',
+          '--ob-900': '#0d0d0f',
+          '--ob-950': '#0a0a0c',
         },
       });
 
@@ -185,11 +188,11 @@ module.exports = {
         '.dark .dark\\:bg-gray-900':  { 'background-color': `var(--ob-900) ${i}` },
         '.dark .dark\\:bg-gray-950':  { 'background-color': `var(--ob-950) ${i}` },
         // Gray background with opacity
-        '.dark .dark\\:bg-gray-800\\/50': { 'background-color': `rgba(22, 20, 15, 0.5) ${i}` },
-        '.dark .dark\\:bg-gray-800\\/80': { 'background-color': `rgba(22, 20, 15, 0.8) ${i}` },
-        '.dark .dark\\:bg-gray-900\\/80': { 'background-color': `rgba(14, 12, 10, 0.8) ${i}` },
-        '.dark .bg-gray-800\\/50': { 'background-color': `rgba(22, 20, 15, 0.5) ${i}` },
-        '.dark .bg-gray-800\\/80': { 'background-color': `rgba(22, 20, 15, 0.8) ${i}` },
+        '.dark .dark\\:bg-gray-800\\/50': { 'background-color': `rgba(20, 20, 23, 0.5) ${i}` },
+        '.dark .dark\\:bg-gray-800\\/80': { 'background-color': `rgba(20, 20, 23, 0.8) ${i}` },
+        '.dark .dark\\:bg-gray-900\\/80': { 'background-color': `rgba(13, 13, 15, 0.8) ${i}` },
+        '.dark .bg-gray-800\\/50': { 'background-color': `rgba(20, 20, 23, 0.5) ${i}` },
+        '.dark .bg-gray-800\\/80': { 'background-color': `rgba(20, 20, 23, 0.8) ${i}` },
         // White background in dark mode
         '.dark .bg-white':  { 'background-color': `var(--ob-800) ${i}` },
         '.dark .dark\\:bg-white': { 'background-color': `var(--ob-800) ${i}` },
@@ -205,16 +208,16 @@ module.exports = {
         '.dark .dark\\:border-gray-600': { 'border-color': `var(--ob-600) ${i}` },
         '.dark .dark\\:border-gray-700': { 'border-color': `var(--ob-600) ${i}` },
         '.dark .dark\\:border-gray-800': { 'border-color': `var(--ob-600) ${i}` },
-        '.dark .dark\\:border-gray-700\\/50': { 'border-color': `rgba(42, 38, 30, 0.5) ${i}` },
-        '.dark .dark\\:border-gray-800\\/60': { 'border-color': `rgba(42, 38, 30, 0.6) ${i}` },
-        '.dark .dark\\:border-gray-800\\/80': { 'border-color': `rgba(42, 38, 30, 0.8) ${i}` },
+        '.dark .dark\\:border-gray-700\\/50': { 'border-color': `rgba(40, 40, 45, 0.5) ${i}` },
+        '.dark .dark\\:border-gray-800\\/60': { 'border-color': `rgba(40, 40, 45, 0.6) ${i}` },
+        '.dark .dark\\:border-gray-800\\/80': { 'border-color': `rgba(40, 40, 45, 0.8) ${i}` },
         '.dark .border-gray-200':     { 'border-color': `var(--ob-600) ${i}` },
-        '.dark .border-gray-200\\/60': { 'border-color': `rgba(42, 38, 30, 0.6) ${i}` },
+        '.dark .border-gray-200\\/60': { 'border-color': `rgba(40, 40, 45, 0.6) ${i}` },
         '.dark .border-gray-300':     { 'border-color': `var(--ob-600) ${i}` },
         // Hover states
         '.dark .dark\\:hover\\:bg-gray-700:hover':  { 'background-color': `var(--ob-700) ${i}` },
         '.dark .dark\\:hover\\:bg-gray-800:hover':  { 'background-color': `var(--ob-700) ${i}` },
-        '.dark .dark\\:hover\\:bg-gray-800\\/50:hover': { 'background-color': `rgba(22, 20, 15, 0.5) ${i}` },
+        '.dark .dark\\:hover\\:bg-gray-800\\/50:hover': { 'background-color': `rgba(20, 20, 23, 0.5) ${i}` },
         '.dark .hover\\:bg-gray-100:hover': { 'background-color': `var(--ob-700) ${i}` },
         // Non-prefixed gray text used in dark mode
         '.dark .text-gray-500': { 'color': `var(--ob-400) ${i}` },

@@ -177,7 +177,7 @@ const KnowledgeGraphV1: React.FC = () => {
   })();
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-9">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
           { value: state.entities.length || '—', label: 'entities' },

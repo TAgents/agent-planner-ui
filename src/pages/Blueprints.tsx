@@ -5,7 +5,6 @@ import {
   GhostButton,
   Kicker,
   PrimaryButton,
-  TopBar,
   cn,
 } from '../components/v1';
 import { useBlueprints } from '../hooks/useBlueprints';
@@ -71,19 +70,23 @@ const Blueprints: React.FC = () => {
   }, [all]);
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        kicker="Blueprints"
-        title="Reusable operating models"
-        subtitle="Save what works once. Fork it into a live workspace, or add it to one as a plan."
-        actions={(
-          <div className="flex items-center gap-2">
-            <GhostButton onClick={() => alert('Public discovery coming soon.')}>Browse community</GhostButton>
-            <PrimaryButton onClick={() => alert('Create a Blueprint by saving an existing plan.')}>Create Blueprint</PrimaryButton>
-          </div>
-        )}
-      />
-      <div className="flex flex-1 flex-col gap-[18px] overflow-auto bg-bg p-6">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Kicker className="mb-2">◆ Blueprints</Kicker>
+          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+            Reusable operating models
+          </h1>
+          <p className="mt-1 text-[13px] text-text-sec">
+            Save what works once. Fork it into a live workspace, or add it to one as a plan.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <GhostButton onClick={() => alert('Public discovery coming soon.')}>Browse community</GhostButton>
+          <PrimaryButton onClick={() => alert('Create a Blueprint by saving an existing plan.')}>Create Blueprint</PrimaryButton>
+        </div>
+      </header>
+      <div className="flex flex-col gap-[18px]">
         <React.Fragment>
           <Hero totals={totals} totalCount={all.length} />
           <Filters
@@ -137,7 +140,7 @@ const Filters: React.FC<{
   setCategory: (c: string | null) => void;
 }> = ({ tab, setTab, counts, categories, category, setCategory }) => (
   <div className="flex flex-wrap items-center gap-3">
-    <div className="flex items-center rounded-lg border border-border bg-surface p-[3px]">
+    <div className="flex flex-wrap gap-2">
       {TABS.map((t) => {
         const on = t.id === tab;
         return (
@@ -145,13 +148,13 @@ const Filters: React.FC<{
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-[12px] transition-colors',
-              on ? 'bg-surface-hi font-semibold text-text' : 'font-medium text-text-sec hover:text-text',
-            )}
+            className={`rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
+              on
+                ? 'border-amber bg-amber-soft text-amber'
+                : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
+            }`}
           >
-            {t.label}
-            <span className="font-mono text-[9.5px] text-text-muted">{counts[t.id]}</span>
+            {t.label} · {counts[t.id]}
           </button>
         );
       })}

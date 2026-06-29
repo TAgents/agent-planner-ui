@@ -12,8 +12,9 @@ import PublicLayout from './components/layout/PublicLayout';
 // Pages
 import Landing from './pages/Landing';
 import Explore from './pages/Explore';
-import PlansList from './pages/PlansList';
+import GoalsList from './pages/GoalsList';
 import PlanTree from './pages/PlanTree';
+import Chat from './pages/Chat';
 import PublicPlan from './pages/PublicPlanV1';
 import PublicBlueprint from './pages/PublicBlueprint';
 import Login from './pages/auth/Login';
@@ -29,7 +30,6 @@ import NotificationsSettings from './pages/settings/NotificationsSettings';
 import BillingSettings from './pages/settings/BillingSettings';
 import DangerZone from './pages/settings/DangerZone';
 import SettingsLayout from './components/settings/SettingsLayout';
-import GoalsList from './pages/GoalsV2';
 import GoalDetail from './pages/GoalDetailV1';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
@@ -107,25 +107,30 @@ const App: React.FC = () => {
                 <Route path="/connect/:client" element={<ConnectPage />} />
                 <Route path="/explore/clone/:sourceId" element={<ExploreClone />} />
                 <Route path="/app" element={<MainLayout />}>
-                  <Route index element={<MissionControl />} />
+                  {/* Chat is the default landing — users are sent here first. */}
+                  <Route index element={<Navigate to="/app/chat" replace />} />
                   <Route path="dashboard" element={<MissionControl />} />
-                  {/* Insights / Strategy / Portfolio folded into the unified Mission home */}
-                  <Route path="insights" element={<Navigate to="/app" replace />} />
-                  <Route path="strategy" element={<Navigate to="/app" replace />} />
+                  {/* Insights / Strategy / Portfolio folded into the Mission dashboard */}
+                  <Route path="insights" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="strategy" element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="workspaces" element={<ErrorBoundary><Workspaces /></ErrorBoundary>} />
                   <Route path="workspaces/:id" element={<ErrorBoundary><WorkspaceDetail /></ErrorBoundary>} />
                   <Route path="blueprints" element={<ErrorBoundary><Blueprints /></ErrorBoundary>} />
                   <Route path="blueprints/:id" element={<ErrorBoundary><BlueprintDetail /></ErrorBoundary>} />
-                  <Route path="plans" element={<PlansList />} />
+                  {/* Goals lead the work surface; the Goals page is the goal-grouped overview. */}
+                  <Route path="goals" element={<GoalsList />} />
+                  {/* Plans are folded into goals — the flat list redirects into Goals. */}
+                  <Route path="plans" element={<Navigate to="/app/goals" replace />} />
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanTree />} />
-                  <Route path="goals" element={<ErrorBoundary><GoalsList /></ErrorBoundary>} />
+                  <Route path="chat" element={<Chat />} />
+                  <Route path="chat/:conversationId" element={<Chat />} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
                   <Route path="knowledge" element={<Navigate to="/app/knowledge/timeline" replace />} />
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimeline /></ErrorBoundary>} />
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverage /></ErrorBoundary>} />
                   <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraph /></ErrorBoundary>} />
-                  <Route path="portfolio" element={<Navigate to="/app" replace />} />
+                  <Route path="portfolio" element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="settings" element={<SettingsLayout />}>
                     <Route index element={<Navigate to="profile" replace />} />
                     <Route path="profile" element={<ProfileSettings />} />

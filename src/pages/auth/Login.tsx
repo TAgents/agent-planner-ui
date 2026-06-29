@@ -58,7 +58,7 @@ const Login: React.FC = () => {
       window.dispatchEvent(new Event('auth-change'));
 
       const state = location.state as LocationState;
-      const from = state?.from?.pathname || '/app/plans';
+      const from = state?.from?.pathname || '/app/chat';
 
       // Check if user needs to pick an org
       const session = JSON.parse(localStorage.getItem('auth_session') || '{}');

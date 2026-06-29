@@ -204,7 +204,7 @@ const KnowledgeTimelineV1: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1080px] px-6 py-10 sm:px-9">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
           { value: atEpisodeCap ? `${counts.all}+` : counts.all, label: 'episodes' },
@@ -228,16 +228,15 @@ const KnowledgeTimelineV1: React.FC = () => {
                 key={f.id}
                 type="button"
                 onClick={() => setFilter(f.id)}
-                className={`rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+                className={`rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
                   active
-                    ? 'bg-text text-bg'
+                    ? 'border-amber bg-amber-soft text-amber'
                     : f.tone === 'red' && f.count > 0
-                      ? 'text-red hover:bg-surface-hi/40'
-                      : 'text-text-sec hover:bg-surface-hi/40'
+                      ? 'border-border bg-surface text-red hover:bg-surface-hi'
+                      : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
                 }`}
               >
-                {f.label}{' '}
-                <span className={`ml-0.5 ${active ? 'text-bg/70' : 'text-text-muted'}`}>{f.count}</span>
+                {f.label} · {f.count}
               </button>
             );
           })}

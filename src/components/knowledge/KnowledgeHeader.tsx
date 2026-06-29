@@ -36,7 +36,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <Kicker className="mb-2">◇ Knowledge · what the agents know</Kicker>
+        <Kicker className="mb-2">◆ Knowledge · what the agents know</Kicker>
         <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
           {stats.map((s, i) => (
             <span key={s.label}>

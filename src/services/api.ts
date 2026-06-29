@@ -7,6 +7,36 @@ import { decisionsApi, agentRequestApi } from './decisions.service';
 import { graphitiService, coherenceService, knowledgeLoopService } from './knowledge.service';
 import { goalDashboardService, nodeViewService, goalBdiService } from './goals.service';
 
+/**
+ * Keep the cached `auth_session` in sync after profile / org edits. The session
+ * is only written at login, so without this the sidebar / top bar / org switcher
+ * keep showing the stale login-time name until the next sign-in.
+ */
+export function syncCachedSessionUser(patch: { name?: string; avatar_url?: string }): void {
+  try {
+    const raw = localStorage.getItem('auth_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s?.user) return;
+    if (patch.name !== undefined) s.user.name = patch.name;
+    if (patch.avatar_url !== undefined) s.user.avatar_url = patch.avatar_url;
+    localStorage.setItem('auth_session', JSON.stringify(s));
+  } catch { /* non-fatal — display will catch up on next login */ }
+}
+
+export function syncCachedSessionOrg(orgId: string, patch: { name?: string }): void {
+  try {
+    const raw = localStorage.getItem('auth_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s?.user || !Array.isArray(s.user.organizations)) return;
+    s.user.organizations = s.user.organizations.map((o: any) =>
+      o && o.id === orgId ? { ...o, ...patch } : o,
+    );
+    localStorage.setItem('auth_session', JSON.stringify(s));
+  } catch { /* non-fatal */ }
+}
+
 // Authentication endpoints - now using your API instead of direct Supabase
 export const authService = {
   login: async (email: string, password: string) => {
@@ -220,6 +250,8 @@ export const authService = {
         url: '/auth/profile',
         data
       });
+      // Refresh the cached session so the new name shows everywhere immediately.
+      syncCachedSessionUser({ name: data.name, avatar_url: data.avatar_url });
       return { status: 200, data: response };
     } catch (error: any) {
       if (process.env.NODE_ENV === 'development') {
@@ -797,6 +829,8 @@ export const organizationService = {
 
   update: async (orgId: string, data: { name?: string; description?: string; avatarUrl?: string }) => {
     const res = await api.put(`/organizations/${orgId}`, data);
+    // Keep the cached session's org name in sync so the top bar / switcher update.
+    if (data.name !== undefined) syncCachedSessionOrg(orgId, { name: data.name });
     return res.data as Organization;
   },
 

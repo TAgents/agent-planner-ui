@@ -137,7 +137,7 @@ const MissionControl: React.FC = () => {
   });
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 py-10 sm:px-9">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <Kicker className="mb-2">◆ Mission Control</Kicker>
@@ -207,13 +207,13 @@ const MissionControl: React.FC = () => {
                 Awaiting your call
                 <Pill color={allPending.length > 0 ? 'amber' : 'slate'}>{allPending.length}</Pill>
               </span>
+              {/* The decision queue lives here on Mission Control — there's no
+                  separate decisions page, so show an overflow hint instead of a
+                  dead link when there are more pending than the few listed. */}
               {pending.data?.total !== undefined && pending.data.total > allPending.length && (
-                <Link
-                  to="/app/decisions"
-                  className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted hover:text-text"
-                >
-                  View all →
-                </Link>
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
+                  +{pending.data.total - allPending.length} more
+                </span>
               )}
             </div>
             {allPending.length === 0 ? (

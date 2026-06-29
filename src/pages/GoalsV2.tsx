@@ -137,7 +137,7 @@ function bdiSparkSeries(goal: GoalV2): number[] {
   return buckets;
 }
 
-function CreateGoalDialog({ onClose }: { onClose: () => void }) {
+export function CreateGoalDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const createGoal = useCreateGoal();
   const [title, setTitle] = useState('');
@@ -615,7 +615,7 @@ export default function GoalsPage() {
   ).length;
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8 sm:px-9">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <header className="mb-6">
         <Kicker className="mb-2">◆ Goals</Kicker>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -647,22 +647,13 @@ export default function GoalsPage() {
                 key={f.id}
                 type="button"
                 onClick={() => setStatusFilter(f.id)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                className={`rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
                   isActive
-                    ? 'bg-text text-bg'
-                    : 'text-text-sec hover:bg-surface-hi',
-                )}
+                    ? 'border-amber bg-amber-soft text-amber'
+                    : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
+                }`}
               >
-                {f.label}
-                <span
-                  className={cn(
-                    'font-mono text-[9px]',
-                    isActive ? 'opacity-70' : 'opacity-55',
-                  )}
-                >
-                  {statusCounts[f.id] || 0}
-                </span>
+                {f.label} · {statusCounts[f.id] || 0}
               </button>
             );
           })}
@@ -712,12 +703,11 @@ export default function GoalsPage() {
                 key={f.id}
                 type="button"
                 onClick={() => setTypeFilter(f.id)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-colors',
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
                   isActive
-                    ? 'border-border-hi bg-surface-hi text-text'
-                    : 'border-border bg-surface text-text-sec hover:bg-surface-hi',
-                )}
+                    ? 'border-amber bg-amber-soft text-amber'
+                    : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
+                }`}
               >
                 {f.glyph && (
                   <span
@@ -727,10 +717,7 @@ export default function GoalsPage() {
                     {f.glyph}
                   </span>
                 )}
-                {f.label}
-                <span className="font-mono text-[9px] opacity-55">
-                  {typeCounts[f.id] || 0}
-                </span>
+                {f.label} · {typeCounts[f.id] || 0}
               </button>
             );
           })}

@@ -16,7 +16,7 @@
   --border-hi:   212 207 197; /* #d4cfc5 */
   --text:         22  20  15; /* #16140f */
   --text-sec:     90  84  72; /* #5a5448 */
-  --text-muted:  138 132 116; /* #8a8474 */
+  --text-muted:  112 106  94; /* darker for WCAG AA contrast on light bg */
   --amber:       184 136  46; /* #b8882e */
   --emerald:      61 122 110; /* #3d7a6e */
   --red:         176  56  56; /* #b03838 */
@@ -24,19 +24,21 @@
   --slate:       160 152 130; /* #a09882 */
 }
 .dark {
-  --bg:           14  12  10; /* #0e0c0a */
-  --surface:      22  20  15; /* #16140f */
-  --surface-hi:   30  27  21; /* #1e1b15 */
-  --border:       42  38  30; /* #2a261e */
-  --border-hi:    58  53  40; /* #3a3528 */
-  --text:        237 232 223; /* #ede8df */
-  --text-sec:    160 152 130; /* #a09882 */
-  --text-muted:  107  99  84; /* #6b6354 */
-  --amber:       212 162  78; /* #d4a24e */
+  /* Neutral (very slightly cool) greys — no warm/yellow cast. Accent hues
+     (amber/emerald/red/violet) are intentional and kept as-is. */
+  --bg:           13  13  15; /* near-black, neutral */
+  --surface:      20  20  23;
+  --surface-hi:   29  29  33;
+  --border:       40  40  45;
+  --border-hi:    55  55  62;
+  --text:        236 237 239; /* near-white, neutral */
+  --text-sec:    154 156 163;
+  --text-muted:  139 141 149; /* lighter for WCAG AA contrast on dark bg */
+  --amber:       212 162  78; /* #d4a24e — brand accent */
   --emerald:      91 168 154; /* #5ba89a */
   --red:         201  74  74; /* #c94a4a */
   --violet:      138 124 184; /* #8a7cb8 */
-  --slate:        74  68  56; /* #4a4438 */
+  --slate:        78  80  88;
 }
 
 /* Outside @layer so it has higher specificity — prevents white flash and overscroll */
@@ -44,7 +46,7 @@ html {
   background-color: #ffffff;
 }
 html.dark {
-  background-color: #0e0c0a; /* obsidian-900 — warm black */
+  background-color: #0d0d0f; /* neutral near-black (matches --bg) */
 }
 
 @layer base {
@@ -59,21 +61,21 @@ html.dark {
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Override text-white in dark mode to use warm cream */
+  /* Override text-white in dark mode to use the neutral near-white token */
   .dark .text-white,
   .dark [class*="dark:text-white"] {
-    color: #ede8df;
+    color: #eceef2;
   }
 
-  /* Focus rings: amber instead of blue in dark mode */
-  .dark a:focus, .dark button:focus, .dark input:focus, .dark select:focus, .dark textarea:focus {
-    @apply outline-none ring-2 ring-opacity-50;
-    --tw-ring-color: #d4a24e;
-  }
-
-  /* Light mode focus */
-  a:focus, button:focus, input:focus, select:focus, textarea:focus {
-    @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+  /* Keyboard-focus rings: amber in both themes (was blue in light mode), and
+     only on keyboard focus (:focus-visible) so mouse clicks don't flash a ring. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-2;
+    --tw-ring-color: rgb(var(--amber) / 0.6);
   }
 
   /* Custom scrollbar styling */

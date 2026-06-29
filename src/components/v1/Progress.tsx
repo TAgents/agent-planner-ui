@@ -23,7 +23,7 @@ const COLOR_CLASS: Record<ProgressColor, string> = {
 
 /**
  * Single-color thin progress bar. For the segmented (done/doing/blocked)
- * variant on the Plans Index, see PlansList.tsx's SegmentedProgress.
+ * variant on the Goals index, see GoalsList.tsx's SegmentedProgress.
  */
 export function Progress({ value, height = 4, color = 'amber', className }: ProgressProps) {
   const v = Math.max(0, Math.min(100, value));
