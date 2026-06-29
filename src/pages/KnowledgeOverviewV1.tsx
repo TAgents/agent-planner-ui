@@ -4,6 +4,7 @@ import { useQuery } from 'react-query';
 import { Card, Pill, SectionHead } from '../components/v1';
 import { request } from '../services/api-client';
 import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
+import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
 import { useGraphitiEpisodes } from '../hooks/useGraphitiKnowledge';
 import type { GraphitiEpisode } from '../services/knowledge.service';
 import { formatDistanceToNow } from '../utils/dateUtils';
@@ -61,7 +62,7 @@ const KnowledgeOverviewV1: React.FC = () => {
   const coverageTone = coveragePct == null ? 'text' : coveragePct >= 50 ? 'text' : 'amber';
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
           { value: coveragePct == null ? '—' : `${coveragePct}%`, label: 'coverage', tone: coverageTone as any },
@@ -72,9 +73,8 @@ const KnowledgeOverviewV1: React.FC = () => {
         onSearchChange={() => {}}
         searchPlaceholder="Search knowledge…"
       />
-      <div className="flex-1 overflow-auto bg-bg">
-        <div className="mx-auto max-w-[1200px] px-6 py-8 sm:px-9">
-          <div className="grid gap-6 md:grid-cols-3">
+      <KnowledgeTabs />
+      <div className="mt-6 grid gap-6 md:grid-cols-3">
         {/* ── Do we have what we need? → Coverage ── */}
         <Link to="/app/knowledge/coverage" className="group">
           <Card pad={20} className="h-full transition-colors group-hover:border-amber">
@@ -175,8 +175,6 @@ const KnowledgeOverviewV1: React.FC = () => {
             )}
           </Card>
         </Link>
-          </div>
-        </div>
       </div>
     </div>
   );
