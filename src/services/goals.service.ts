@@ -11,7 +11,29 @@ export const goalDashboardService = {
   getDashboard: () => api.get('/goals/dashboard').then(r => r.data),
   getBriefing: (goalId: string) => api.get(`/goals/${goalId}/briefing`).then(r => r.data),
   getCoherence: (goalId: string) => api.get(`/goals/${goalId}/coherence`).then(r => r.data),
+  // The actual facts behind the coherence "N contradictions" count: current vs
+  // superseded facts, built from the same query as getCoherence.
+  getContradictions: (goalId: string): Promise<GoalContradictions> =>
+    api.get(`/goals/${goalId}/contradictions`).then(r => r.data),
 };
+
+export interface ContradictionFact {
+  uuid: string;
+  fact: string;
+  name?: string;
+  created_at?: string;
+  valid_at?: string | null;
+  invalid_at?: string | null;
+  expired_at?: string | null;
+}
+
+export interface GoalContradictions {
+  goal_id: string;
+  query: string | null;
+  current: ContradictionFact[];
+  superseded: ContradictionFact[];
+  contradictions_found: boolean;
+}
 
 // ── Node Agent View API ────────────────────────────────────
 

@@ -33,19 +33,8 @@ export function ClientTile({
   onClick,
   className,
 }: ClientTileProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'relative flex flex-col items-stretch gap-[10px] rounded-[10px] border p-4',
-        'text-left transition-colors duration-150 hover:bg-surface-hi/60',
-        active ? 'border-amber bg-surface-hi' : 'border-border bg-surface',
-        compact ? 'gap-[6px] min-h-[88px] px-[14px] py-3' : 'min-h-[120px]',
-        className,
-      )}
-    >
+  const content = (
+    <>
       {recommended && (
         <span
           className={cn(
@@ -84,6 +73,32 @@ export function ClientTile({
           {sub}
         </span>
       </span>
+    </>
+  );
+
+  const tileClassName = cn(
+    'relative flex flex-col items-stretch gap-[10px] rounded-[10px] border p-4',
+    'text-left transition-colors duration-150 hover:bg-surface-hi/60',
+    active ? 'border-amber bg-surface-hi' : 'border-border bg-surface',
+    compact ? 'gap-[6px] min-h-[88px] px-[14px] py-3' : 'min-h-[120px]',
+    className,
+  );
+
+  if (!onClick) {
+    return <div className={tileClassName}>{content}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        tileClassName,
+        'cursor-pointer',
+      )}
+    >
+      {content}
     </button>
   );
 }

@@ -13,6 +13,7 @@ export interface GraphitiStatus {
 }
 
 export interface EpisodePlanLink {
+  episode_id?: string;
   node_id: string;
   node_title: string;
   plan_id: string;

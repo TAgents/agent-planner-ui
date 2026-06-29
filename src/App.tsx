@@ -51,6 +51,7 @@ import Blueprints from './pages/Blueprints';
 import BlueprintDetail from './pages/BlueprintDetail';
 
 // Lazy-load heavy pages (ReactFlow)
+const KnowledgeOverview = React.lazy(() => import('./pages/KnowledgeOverviewV1'));
 const KnowledgeTimeline = React.lazy(() => import('./pages/KnowledgeTimelineV1'));
 const KnowledgeCoverage = React.lazy(() => import('./pages/KnowledgeCoverageV1'));
 const KnowledgeGraph = React.lazy(() => import('./pages/KnowledgeGraphV1'));
@@ -126,7 +127,7 @@ const App: React.FC = () => {
                   <Route path="chat" element={<Chat />} />
                   <Route path="chat/:conversationId" element={<Chat />} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
-                  <Route path="knowledge" element={<Navigate to="/app/knowledge/timeline" replace />} />
+                  <Route path="knowledge" element={<ErrorBoundary><KnowledgeOverview /></ErrorBoundary>} />
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimeline /></ErrorBoundary>} />
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverage /></ErrorBoundary>} />
                   <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraph /></ErrorBoundary>} />

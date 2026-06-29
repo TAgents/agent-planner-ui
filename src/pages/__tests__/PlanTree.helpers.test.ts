@@ -1,5 +1,5 @@
-import { computeStats, flattenTree } from '../PlanTree.helpers';
-import type { PlanNode } from '../../types';
+import { computeStats, statsFromRollup, flattenTree } from '../PlanTree.helpers';
+import type { PlanNode, PlanRollup } from '../../types';
 
 const make = (over: Partial<PlanNode>): PlanNode =>
   ({
@@ -52,6 +52,28 @@ describe('PlanTree helpers', () => {
     it('treats unknown statuses as todo', () => {
       const nodes = [make({ id: 'a', status: 'mystery' as any })];
       expect(computeStats(nodes).todo).toBe(1);
+    });
+  });
+
+  describe('statsFromRollup ↔ computeStats parity', () => {
+    const rollup: PlanRollup = {
+      progress_pct: 20,
+      total_work: 5,
+      completed_work: 1,
+      status_counts: { not_started: 1, in_progress: 1, completed: 1, blocked: 1, plan_ready: 1 },
+      blocked_pct: 20,
+    };
+
+    it('projects the server rollup into the same Stats shape computeStats produces', () => {
+      // Same plan, two paths: the client mirror over nodes vs the server rollup.
+      const nodes = [
+        make({ id: 'a', status: 'completed' }),
+        make({ id: 'b', status: 'in_progress' }),
+        make({ id: 'c', status: 'blocked' }),
+        make({ id: 'd', status: 'plan_ready' }),
+        make({ id: 'e', status: 'not_started' }),
+      ];
+      expect(statsFromRollup(rollup)).toEqual(computeStats(nodes));
     });
   });
 

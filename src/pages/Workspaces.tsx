@@ -11,6 +11,8 @@ import {
   type ProgressColor,
 } from '../components/v1';
 import { useCreateWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
+import { useGoalDashboard } from '../hooks/useGoalsV2';
+import type { GoalHealth } from '../utils/goalHealth';
 import { useOrganizations } from '../hooks/useOrganizations';
 import type { Workspace } from '../types';
 
@@ -70,19 +72,40 @@ const Workspaces: React.FC = () => {
   const includeArchived = filter === 'archived';
   const { data, isLoading, error } = useWorkspaces(undefined, { includeArchived });
   const { byId: orgsById } = useOrganizations();
+  const dashboard = useGoalDashboard();
   const me = userId();
 
   const all = data?.workspaces ?? [];
 
-  const counts = useMemo(() => ({
-    all:      all.filter((w) => !w.archivedAt).length,
-    mine:     all.filter((w) => w.ownerId === me && !w.archivedAt).length,
-    healthy:  all.filter((w) => !w.archivedAt).length, // placeholder until health is wired
-    waiting:  0,
-    risk:     0,
-    idle:     0,
-    archived: all.filter((w) => !!w.archivedAt).length,
-  }), [all, me]);
+  // Canonical workspace health, rolled up from each workspace's active goals'
+  // health (the shared dashboard source Mission + Goals list use).
+  const healthByWorkspace = useMemo(() => {
+    const byWs = new Map<string, GoalHealth[]>();
+    for (const g of dashboard.data?.goals || []) {
+      if (!g.workspace_id) continue;
+      const arr = byWs.get(g.workspace_id) || [];
+      arr.push(g.health);
+      byWs.set(g.workspace_id, arr);
+    }
+    const m = new Map<string, Health>();
+    for (const [wsId, hs] of Array.from(byWs.entries())) m.set(wsId, rollupWorkspaceHealth(hs));
+    return m;
+  }, [dashboard.data]);
+  const healthFor = (w: Workspace): Health => healthByWorkspace.get(w.id) ?? 'idle';
+
+  const counts = useMemo(() => {
+    const live = all.filter((w) => !w.archivedAt);
+    const c = { all: live.length, mine: 0, healthy: 0, waiting: 0, risk: 0, idle: 0, archived: all.filter((w) => !!w.archivedAt).length };
+    for (const w of live) {
+      if (w.ownerId === me) c.mine += 1;
+      const h = healthByWorkspace.get(w.id) ?? 'idle';
+      if (h === 'on-track') c.healthy += 1;
+      else if (h === 'wait') c.waiting += 1;
+      else if (h === 'risk') c.risk += 1;
+      else c.idle += 1;
+    }
+    return c;
+  }, [all, me, healthByWorkspace]);
 
   const filtered = useMemo(() => {
     const live = all.filter((w) => !w.archivedAt);
@@ -90,6 +113,10 @@ const Workspaces: React.FC = () => {
     switch (filter) {
       case 'archived': rows = all.filter((w) => !!w.archivedAt); break;
       case 'mine':     rows = live.filter((w) => w.ownerId === me); break;
+      case 'healthy':  rows = live.filter((w) => healthFor(w) === 'on-track'); break;
+      case 'waiting':  rows = live.filter((w) => healthFor(w) === 'wait'); break;
+      case 'risk':     rows = live.filter((w) => healthFor(w) === 'risk'); break;
+      case 'idle':     rows = live.filter((w) => healthFor(w) === 'idle'); break;
       default:         rows = live;
     }
     if (sourceFilter === 'forked') rows = rows.filter((w) => !!w.forkedFromBlueprintId);
@@ -104,7 +131,7 @@ const Workspaces: React.FC = () => {
       );
     }
     return rows;
-  }, [all, filter, me, query, sourceFilter, ownerFilter]);
+  }, [all, filter, me, query, sourceFilter, ownerFilter, healthByWorkspace]);
 
   return (
     <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
@@ -140,7 +167,7 @@ const Workspaces: React.FC = () => {
                 : <>No workspaces yet. <button type="button" onClick={() => setShowCreate(true)} className="text-amber underline">Create one</button>{' or '}<Link to="/app/blueprints" className="text-amber underline">fork a Blueprint</Link>.</>}
             </EmptyState>
           )}
-          {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} orgsById={orgsById} />}
+          {!isLoading && filtered.length > 0 && <WorkspaceTable rows={filtered} orgsById={orgsById} healthById={healthByWorkspace} />}
         </React.Fragment>
       </div>
       {showCreate && (
@@ -352,13 +379,17 @@ const HEALTH_META: Record<Health, { color: ProgressColor; label: string; tw: str
   idle:       { color: 'text-muted', label: 'Idle',  tw: 'text-text-muted' },
 };
 
-function inferHealth(_w: Workspace): Health {
-  // Health rollup is a future server-side aggregation. For now,
-  // every live workspace shows "on-track" as the neutral default.
+// Workspace health rolls up from its goals' canonical health (Phase 1 shared
+// selector, via /goals/dashboard): worst-wins. A workspace with no active goals
+// is "idle" — nothing's driving it — rather than falsely "Healthy".
+function rollupWorkspaceHealth(goalHealths: GoalHealth[]): Health {
+  if (goalHealths.length === 0) return 'idle';
+  if (goalHealths.includes('at_risk')) return 'risk';
+  if (goalHealths.includes('stale')) return 'idle';
   return 'on-track';
 }
 
-const WorkspaceTable: React.FC<{ rows: Workspace[]; orgsById: Map<string, { isPersonal: boolean }> }> = ({ rows, orgsById }) => (
+const WorkspaceTable: React.FC<{ rows: Workspace[]; orgsById: Map<string, { isPersonal: boolean }>; healthById: Map<string, Health> }> = ({ rows, orgsById, healthById }) => (
   <div className="overflow-hidden rounded-xl border border-border bg-surface">
     <div className="grid grid-cols-[24px_1.8fr_1.5fr_1.3fr_110px_1fr_100px_90px] items-center gap-3.5 border-b border-border bg-surface-hi px-[18px] py-[11px]">
       <span />
@@ -367,13 +398,14 @@ const WorkspaceTable: React.FC<{ rows: Workspace[]; orgsById: Map<string, { isPe
       ))}
     </div>
     {rows.map((w, i) => {
-      const h = inferHealth(w);
+      const h = healthById.get(w.id) ?? 'idle';
       const meta = HEALTH_META[h];
       const isLast = i === rows.length - 1;
       const goalCount = w.goalCount ?? 0;
       const planCount = w.planCount ?? 0;
-      // Progress is goal/plan-derived; we don't have a real % yet, so 0.
-      const progress = 0;
+      // Real rollup: completed task+milestone nodes across the workspace's
+      // non-archived plans (server-computed, GET /workspaces).
+      const progress = w.progressPct ?? 0;
       return (
         <Link
           key={w.id}

@@ -78,14 +78,12 @@ export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) 
     ({ planId, data }: { planId: string; data: Partial<Plan> }) => 
       planService.updatePlan(planId, data),
     {
-      onSuccess: (data) => {
-        // Update the plan in the cache
-        queryClient.invalidateQueries('plans');
-        // Safely invalidate specific plan query
-        const planId = data?.data?.id || (data as any)?.id;
-        if (planId) {
-          queryClient.invalidateQueries(['plan', planId]);
-        }
+      onSuccess: () => {
+        // Single-plan queries are keyed ['plan', userId, planId], so invalidate
+        // the ['plan'] prefix (a ['plan', planId] match would miss the userId
+        // segment and never refresh the detail view). Same for the list.
+        queryClient.invalidateQueries(['plans']);
+        queryClient.invalidateQueries(['plan']);
       },
     }
   );
@@ -118,9 +116,8 @@ export const usePlans = (page = 1, limit = 10, status?: string, enabled = true) 
   let plansWithProgress = [];
   if (paginatedData?.data) {
     plansWithProgress = paginatedData.data.map((plan: Plan) => {
-      // If plan already has progress, use it, otherwise set to 0 for now
-      // In a real implementation, we'd calculate this based on nodes completion
-      // We would need to fetch nodes for each plan and calculate progress
+      // progress is canonical server-side (plan.rollup.progress_pct, projected
+      // onto plan.progress). Never recompute here — just default a missing value.
       return {
         ...plan,
         progress: typeof plan.progress === 'number' ? plan.progress : 0

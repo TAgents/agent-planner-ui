@@ -1,35 +1,12 @@
 import type { PlanNode } from '../types';
 
-export type PlanStats = {
-  total: number;
-  done: number;
-  doing: number;
-  blocked: number;
-  planReady: number;
-  todo: number;
-};
+// Plan metric selectors now live in src/selectors (the canonical home for
+// client-side mirrors of the server rollup). Re-exported here for the existing
+// PlanTree call sites + tests. flattenTree below is tree STRUCTURE, not a
+// derived metric, so it stays local.
+export { statsFromRollup, computeStats, effectivePhaseStatus, type PlanStats } from '../selectors';
 
 export type TreeRow = PlanNode & { depth: number; childCount: number };
-
-/**
- * Tree-row counts excluding the root node. Mirrors the per-status
- * breakdown used by the Plans Index segmented bar so the same numbers
- * render in both surfaces — closes the "index shows more than the
- * detail" gap.
- */
-export function computeStats(nodes: PlanNode[]): PlanStats {
-  const stats: PlanStats = { total: 0, done: 0, doing: 0, blocked: 0, planReady: 0, todo: 0 };
-  for (const n of nodes) {
-    if (n.node_type === 'root') continue;
-    stats.total += 1;
-    if (n.status === 'completed') stats.done += 1;
-    else if (n.status === 'in_progress') stats.doing += 1;
-    else if (n.status === 'blocked') stats.blocked += 1;
-    else if (n.status === 'plan_ready') stats.planReady += 1;
-    else stats.todo += 1;
-  }
-  return stats;
-}
 
 /**
  * Flatten the parent_id tree into a depth-aware row list. Children

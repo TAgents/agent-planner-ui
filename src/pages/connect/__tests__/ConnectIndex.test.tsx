@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ConnectIndex from '../ConnectIndex';
-import { CLIENT_CONFIGS, CLIENT_ORDER } from '../../onboarding/clientConfigs';
+import { CLIENT_CONFIGS, TOKEN_CLIENT_ORDER } from '../../onboarding/clientConfigs';
 
 const renderPage = () =>
   render(
@@ -12,9 +12,9 @@ const renderPage = () =>
   );
 
 describe('ConnectIndex', () => {
-  it('renders a tile for every client in CLIENT_ORDER', () => {
+  it('renders a token-setup tile for every token client', () => {
     renderPage();
-    for (const id of CLIENT_ORDER) {
+    for (const id of TOKEN_CLIENT_ORDER) {
       const c = CLIENT_CONFIGS[id];
       expect(screen.getByText(c.name)).toBeInTheDocument();
     }
@@ -22,7 +22,7 @@ describe('ConnectIndex', () => {
 
   it('each tile deep-links to /connect/<client>', () => {
     renderPage();
-    for (const id of CLIENT_ORDER) {
+    for (const id of TOKEN_CLIENT_ORDER) {
       const c = CLIENT_CONFIGS[id];
       const link = screen.getByText(c.name).closest('a');
       expect(link).not.toBeNull();
@@ -32,7 +32,7 @@ describe('ConnectIndex', () => {
 
   it('exposes a guided-wizard link to /onboarding', () => {
     renderPage();
-    const link = screen.getByRole('link', { name: /open the guided wizard/i });
+    const link = screen.getByRole('link', { name: /guided wizard/i });
     expect(link).toHaveAttribute('href', '/onboarding');
   });
 

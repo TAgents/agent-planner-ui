@@ -15,22 +15,19 @@ export type GoalCompassAxis = {
 export type GoalCompassProps = {
   /** Center title (typically truncated goal name). */
   centerLabel: React.ReactNode;
-  /** Exactly 4 axes, North → East → South → West order (B / D / I / C). */
-  axes: [GoalCompassAxis, GoalCompassAxis, GoalCompassAxis, GoalCompassAxis];
+  /** 3–6 labeled axes, placed evenly around the circle starting at the top. */
+  axes: GoalCompassAxis[];
   size?: number;
   className?: string;
 };
 
 /**
- * Goal Compass — 4-quadrant SVG with the goal at center and four
- * four labeled axes.
+ * Goal Compass — radial SVG with the goal at center and N evenly-spaced
+ * labeled axes (starting at the top, clockwise).
  *
  * Per-axis radial line length scales with count (log-bounded so a
  * single mega-axis doesn't squash the others), with a small dot at
  * the line tip + count label outboard.
- *
- * No animation library; entrance transitions on the radial lines via
- * stroke-dashoffset.
  */
 export function GoalCompass({ centerLabel, axes, size = 220, className }: GoalCompassProps) {
   const cx = size / 2;
@@ -44,13 +41,20 @@ export function GoalCompass({ centerLabel, axes, size = 220, className }: GoalCo
     return innerR + (outerR - innerR) * Math.max(0.08, t);
   };
 
-  // Coordinates per axis (N, E, S, W).
-  const positions = [
-    { dx: 0, dy: -1, anchor: 'middle' as const, baseline: 'auto' as const, labelOffset: -10 },
-    { dx: 1, dy: 0, anchor: 'start' as const, baseline: 'middle' as const, labelOffset: 10 },
-    { dx: 0, dy: 1, anchor: 'middle' as const, baseline: 'hanging' as const, labelOffset: 14 },
-    { dx: -1, dy: 0, anchor: 'end' as const, baseline: 'middle' as const, labelOffset: -10 },
-  ];
+  // Evenly space N axes around the circle, first one at the top (−90°).
+  const n = Math.max(1, axes.length);
+  const positions = axes.map((_, i) => {
+    const angle = (-90 + (i * 360) / n) * (Math.PI / 180);
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    return {
+      dx,
+      dy,
+      anchor: (dx > 0.3 ? 'start' : dx < -0.3 ? 'end' : 'middle') as 'start' | 'end' | 'middle',
+      baseline: (dy > 0.3 ? 'hanging' : dy < -0.3 ? 'auto' : 'middle') as 'hanging' | 'auto' | 'middle',
+      labelOffset: dy < -0.3 ? -8 : dy > 0.3 ? 12 : 0,
+    };
+  });
 
   return (
     <div className={cn('relative flex items-center justify-center', className)} style={{ width: size, height: size }}>
@@ -68,9 +72,19 @@ export function GoalCompass({ centerLabel, axes, size = 220, className }: GoalCo
             opacity={0.5}
           />
         ))}
-        {/* Cardinal cross */}
-        <line x1={cx} y1={cy - outerR} x2={cx} y2={cy + outerR} stroke="rgb(var(--border))" strokeWidth={1} />
-        <line x1={cx - outerR} y1={cy} x2={cx + outerR} y2={cy} stroke="rgb(var(--border))" strokeWidth={1} />
+        {/* Light radial guide to each axis */}
+        {positions.map((pos, i) => (
+          <line
+            key={`guide-${i}`}
+            x1={cx}
+            y1={cy}
+            x2={cx + pos.dx * outerR}
+            y2={cy + pos.dy * outerR}
+            stroke="rgb(var(--border))"
+            strokeWidth={1}
+            opacity={0.5}
+          />
+        ))}
 
         {axes.map((axis, i) => {
           const pos = positions[i];

@@ -135,6 +135,63 @@ export const CLIENT_ORDER: ClientId[] = [
   'openclaw',
 ];
 
+// ── Remote MCP connector (OAuth) ─────────────────────────────────────────────
+// The connector path needs NO API token: the user pastes one URL and signs in.
+// Same endpoint for every client; identity is handled by the OAuth sign-in.
+// This is the recommended path for Claude (web/Desktop/Cowork) and ChatGPT.
+export const MCP_CONNECTOR_URL = 'https://agentplanner.io/mcp';
+
+export type ConnectorClientId = 'claude' | 'chatgpt';
+
+export type ConnectorClient = {
+  id: ConnectorClientId;
+  glyph: string;
+  name: string;
+  /** One-line "use this when…" framing. */
+  tagline: string;
+  /** Individual-user setup steps, mirroring the client's current UI. */
+  steps: string[];
+  /** Team/Enterprise caveat, where the flow differs. */
+  teamNote?: string;
+  /** Per-conversation enablement reminder. */
+  enableNote?: string;
+};
+
+export const CONNECTOR_CLIENTS: ConnectorClient[] = [
+  {
+    id: 'claude',
+    glyph: 'C',
+    name: 'Claude',
+    tagline: 'Claude on web, Desktop, or Cowork — through a secure remote MCP connector. No API token to copy.',
+    steps: [
+      'Open Claude → Settings → Connectors → Add custom connector.',
+      'Paste the AgentPlanner connector URL below and click Add.',
+      'Click Connect and sign in with your AgentPlanner account.',
+    ],
+    teamNote:
+      'Team / Enterprise: an owner may need to add the connector under Organization settings first; then each member connects and signs in individually.',
+    enableNote:
+      'In a chat, you may still need to switch it on from the + (Connectors) menu before Claude uses it.',
+  },
+  {
+    id: 'chatgpt',
+    glyph: 'G',
+    name: 'ChatGPT',
+    tagline: 'ChatGPT via the Apps SDK connector. No API token to copy.',
+    steps: [
+      'Open ChatGPT → Settings → Apps & Connectors → Advanced → turn on Developer Mode (workspace admin).',
+      'Under Apps & Connectors, add a custom connector and paste the AgentPlanner URL below.',
+      'Sign in with your AgentPlanner account when prompted.',
+    ],
+    enableNote: 'In a chat, enable AgentPlanner from the apps / connectors menu if it isn’t already on.',
+  },
+];
+
+// Token-based clients for the "advanced" section of the connect hub — the ones
+// that genuinely use a header token / local stdio (NOT Claude web or ChatGPT,
+// which use the connector above).
+export const TOKEN_CLIENT_ORDER: ClientId[] = ['claude-code', 'cursor', 'claude-desktop', 'openclaw'];
+
 /** Replace ${TOKEN} in snippet lines with the user's token. */
 export function inlineToken(lines: ClientSnippetLine[], token: string): ClientSnippetLine[] {
   return lines.map((ln) => {

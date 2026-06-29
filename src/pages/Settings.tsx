@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTokens } from '../hooks/useTokens';
-import { TokenPermission } from '../types';
 import { Key, Copy, Check, X, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { McpSetupBlock } from '../components/common/McpSetupBlock';
+import { PrimaryButton, GhostButton } from '../components/v1';
 
 const getApiUrl = () => {
   const hostname = window.location.hostname;
@@ -12,12 +12,6 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
-
-const permClass: Record<string, string> = {
-  admin: 'bg-red/15 text-red',
-  write: 'bg-amber/15 text-amber',
-  read: 'bg-emerald/15 text-emerald',
-};
 
 const Settings: React.FC = () => {
   const { tokens, loading, error, newToken, createToken, revokeToken, clearNewToken, fetchTokens } = useTokens();
@@ -34,7 +28,6 @@ const Settings: React.FC = () => {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [tokenToRevoke, setTokenToRevoke] = useState<string | null>(null);
   const [tokenName, setTokenName] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState<TokenPermission[]>(['read']);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [tokenCopied, setTokenCopied] = useState(false);
 
@@ -45,10 +38,9 @@ const Settings: React.FC = () => {
 
   const handleCreateToken = async () => {
     try {
-      await createToken(tokenName, selectedPermissions);
+      await createToken(tokenName);
       setOpenCreateDialog(false);
       setTokenName('');
-      setSelectedPermissions(['read']);
       fetchTokens();
       showNotification('Token created', 'success');
     } catch (err: any) {
@@ -112,11 +104,22 @@ const Settings: React.FC = () => {
         <div className="flex-1">
           <h1 className="font-display text-[18px] font-semibold tracking-tight text-text">API tokens</h1>
           <p className="text-[12px] text-text-sec">
-            Programmatic access for agents, CI, and integrations
-            {activeOrg ? ` · ${activeOrg.name}` : ''}.
+            For MCP clients that connect with a header token — Claude Code, Cursor, and local/stdio
+            setups{activeOrg ? ` · ${activeOrg.name}` : ''}.
           </p>
         </div>
       </header>
+
+      {/* Steer Claude/ChatGPT users to the token-free connector path. */}
+      <div className="rounded-lg border border-border bg-surface px-3 py-2.5 text-[12px] leading-[1.5] text-text-sec">
+        Using <span className="font-medium text-text">Claude</span> or{' '}
+        <span className="font-medium text-text">ChatGPT</span>? You don’t need a token — connect them
+        as an app from{' '}
+        <a href="/app/settings/connections" className="text-text underline underline-offset-2">
+          Connected apps
+        </a>
+        . Tokens here are for token-based MCP clients and local setups.
+      </div>
 
       <div className="rounded-xl border border-border bg-surface">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -126,12 +129,12 @@ const Settings: React.FC = () => {
             </span>
             <span className="text-[11px] tabular-nums text-text-sec">{tokens.length}</span>
           </div>
-          <button
+          <GhostButton
             onClick={() => setOpenCreateDialog(true)}
-            className="rounded-md border border-border bg-surface-hi px-2.5 py-1 text-[11px] font-medium text-text transition-colors hover:bg-bg"
+            className="px-2.5 py-1 text-[11px]"
           >
             + New token
-          </button>
+          </GhostButton>
         </div>
 
         {error && (
@@ -162,18 +165,6 @@ const Settings: React.FC = () => {
                     created {formatCreated(tokenCreatedAt(token))}
                     {tokenLastUsed(token) && ` · last used ${formatRelative(tokenLastUsed(token)!)}`}
                   </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {token.permissions.map((p) => (
-                    <span
-                      key={p}
-                      className={`rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide ${
-                        permClass[p] || 'bg-surface-hi text-text-sec'
-                      }`}
-                    >
-                      {p}
-                    </span>
-                  ))}
                 </div>
                 <button
                   onClick={() => {
@@ -218,34 +209,21 @@ const Settings: React.FC = () => {
                 className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-md focus:ring-1 focus:ring-blue-500 dark:text-white placeholder-gray-400"
                 autoFocus
               />
-              <fieldset>
-                <legend className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">Permissions</legend>
-                <div className="flex gap-3">
-                  {(['read', 'write', 'admin'] as TokenPermission[]).map((p) => (
-                    <label key={p} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="h-3 w-3 text-blue-600 rounded border-gray-300 dark:border-gray-600"
-                        checked={selectedPermissions.includes(p)}
-                        onChange={() => setSelectedPermissions(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])}
-                      />
-                      <span className="capitalize">{p}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Full access — the token can read and act on your workspace, same as a connected app.
+              </p>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end gap-2">
-              <button onClick={() => setOpenCreateDialog(false)} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
+              <GhostButton onClick={() => setOpenCreateDialog(false)} className="px-3 py-1.5 text-[11px]">
                 Cancel
-              </button>
-              <button
+              </GhostButton>
+              <PrimaryButton
                 onClick={handleCreateToken}
                 disabled={!tokenName.trim()}
-                className="px-3 py-1.5 text-[11px] font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40 transition-colors"
+                className="px-3 py-1.5 text-[11px]"
               >
                 Create
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -261,15 +239,15 @@ const Settings: React.FC = () => {
               <p className="text-[11px] text-gray-500 dark:text-gray-400">Applications using it will lose access.</p>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end gap-2">
-              <button onClick={() => setOpenConfirmDialog(false)} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
+              <GhostButton onClick={() => setOpenConfirmDialog(false)} className="px-3 py-1.5 text-[11px]">
                 Cancel
-              </button>
-              <button
+              </GhostButton>
+              <PrimaryButton
                 onClick={handleRevokeToken}
-                className="px-3 py-1.5 text-[11px] font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                className="bg-red px-3 py-1.5 text-[11px] text-white"
               >
                 Revoke
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -292,8 +270,8 @@ const Settings: React.FC = () => {
                 <code className="flex-1 text-[11px] font-mono text-gray-900 dark:text-white break-all">
                   {tokenCopied ? '••••••••••••••••••••••••••••••••' : newToken.token}
                 </code>
-                <button onClick={copyTokenToClipboard} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">
-                  {tokenCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                <button onClick={copyTokenToClipboard} aria-label="Copy token" className="flex-shrink-0 p-1 text-text-muted transition-colors hover:text-text">
+                  {tokenCopied ? <Check className="w-3 h-3 text-emerald" /> : <Copy className="w-3 h-3" />}
                 </button>
               </div>
 
@@ -309,9 +287,9 @@ const Settings: React.FC = () => {
               </div>
             </div>
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800/60 flex justify-end">
-              <button onClick={clearNewToken} className="px-3 py-1.5 text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
+              <GhostButton onClick={clearNewToken} className="px-3 py-1.5 text-[11px]">
                 Done
-              </button>
+              </GhostButton>
             </div>
           </div>
         </div>
