@@ -96,7 +96,7 @@ const Login: React.FC = () => {
 
   return (
     <AuthSplitLayout
-      kicker="◆ Sign in"
+      kicker="Sign in"
       title="Welcome back"
       subtitle="Pick up where your agents left off."
       altCta={
@@ -208,7 +208,7 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
               <>

@@ -4,6 +4,7 @@ import { Moon, Sun, HelpCircle } from 'lucide-react';
 import { AppShell, type AppShellNavId } from '../v1';
 import { useUI } from '../../contexts/UIContext';
 import GuidedTour from '../help/GuidedTour';
+import ChatDock from '../chat/ChatDock';
 
 /**
  * Resolves the active sidebar item from the current pathname. Everything not
@@ -118,9 +119,12 @@ const MainLayout: React.FC = () => {
           </div>
         }
       >
-        <main className="h-full overflow-y-auto">
-          <Outlet />
-        </main>
+        <div className="flex h-full">
+          <ChatDock />
+          <main className="h-full min-w-0 flex-1 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
       </AppShell>
       <GuidedTour run={runTour} onClose={() => setRunTour(false)} />
     </div>

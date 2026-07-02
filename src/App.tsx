@@ -1,7 +1,7 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { UIProvider } from './contexts/UIContext';
+import { UIProvider, useUI } from './contexts/UIContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { PresenceProvider } from './contexts/PresenceContext';
 
@@ -14,7 +14,6 @@ import Landing from './pages/Landing';
 import Explore from './pages/Explore';
 import GoalsList from './pages/GoalsList';
 import PlanTree from './pages/PlanTree';
-import Chat from './pages/Chat';
 import PublicPlan from './pages/PublicPlanV1';
 import PublicBlueprint from './pages/PublicBlueprint';
 import Login from './pages/auth/Login';
@@ -66,6 +65,27 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * The assistant is now a persistent dock (see components/chat/ChatDock), not a
+ * page. Legacy /app/chat links open the dock and land on Mission; a conversation
+ * id in the URL is stashed so the dock selects it on its next mount.
+ */
+const ChatRoute: React.FC = () => {
+  const { conversationId } = useParams<{ conversationId?: string }>();
+  const { setChatDockOpen } = useUI();
+  useEffect(() => {
+    setChatDockOpen(true);
+    if (conversationId) {
+      try {
+        localStorage.setItem('ap-chat-active', conversationId);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [conversationId, setChatDockOpen]);
+  return <Navigate to="/app/dashboard" replace />;
+};
+
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -108,8 +128,8 @@ const App: React.FC = () => {
                 <Route path="/connect/:client" element={<ConnectPage />} />
                 <Route path="/explore/clone/:sourceId" element={<ExploreClone />} />
                 <Route path="/app" element={<MainLayout />}>
-                  {/* Chat is the default landing — users are sent here first. */}
-                  <Route index element={<Navigate to="/app/chat" replace />} />
+                  {/* Mission is the default landing; the assistant rides along as a dock. */}
+                  <Route index element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="dashboard" element={<MissionControl />} />
                   {/* Insights / Strategy / Portfolio folded into the Mission dashboard */}
                   <Route path="insights" element={<Navigate to="/app/dashboard" replace />} />
@@ -124,8 +144,8 @@ const App: React.FC = () => {
                   <Route path="plans" element={<Navigate to="/app/goals" replace />} />
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanTree />} />
-                  <Route path="chat" element={<Chat />} />
-                  <Route path="chat/:conversationId" element={<Chat />} />
+                  <Route path="chat" element={<ChatRoute />} />
+                  <Route path="chat/:conversationId" element={<ChatRoute />} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
                   <Route path="knowledge" element={<ErrorBoundary><KnowledgeOverview /></ErrorBoundary>} />
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimeline /></ErrorBoundary>} />

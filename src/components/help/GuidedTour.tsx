@@ -80,11 +80,11 @@ const STEPS: Step[] = [
     body: 'Each goal heads the plans pursuing it; plans with no goal sit under “Plans without a goal”. Open any row for its live detail — Compass, critical path, and the tasks agents are working.',
   },
   {
-    route: '/app/chat',
+    route: '/app/dashboard',
     selector: '[data-tour="chat-composer"]',
-    placement: 'top',
-    title: 'Just ask — Chat does the rest',
-    body: 'The fastest way to get anything done: tell the assistant. It can do everything you can here — find work, create goals & plans, make changes — and it always asks before deleting. Go ahead, type your first message. (Replay this tour anytime from Help.)',
+    placement: 'right',
+    title: 'Just ask — the assistant does the rest',
+    body: 'The assistant is always here on the left, on every screen. The fastest way to get anything done: tell it. It can do everything you can here — find work, create goals & plans, make changes — and it always asks before deleting. Go ahead, type your first message. (Replay this tour anytime from Help.)',
   },
 ];
 

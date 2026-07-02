@@ -6,7 +6,6 @@ import {
   Target,
   Brain,
   LayoutTemplate,
-  MessageSquare,
   Menu,
   X,
   type LucideIcon,
@@ -40,7 +39,6 @@ const PRIMARY_NAV: AppShellNavItem[] = [
   { id: 'mission', label: 'Mission', hint: "Today's overview", to: '/app/dashboard', icon: LayoutDashboard },
   { id: 'workspaces', label: 'Workspaces', hint: 'Folders of work', to: '/app/workspaces', icon: Boxes },
   { id: 'goals', label: 'Goals', hint: 'Outcomes & the plans that reach them', to: '/app/goals', icon: Target },
-  { id: 'chat', label: 'Chat', hint: 'Ask the AI to do things', to: '/app/chat', icon: MessageSquare },
   { id: 'know', label: 'Knowledge', hint: 'What agents have learned', to: '/app/knowledge', icon: Brain },
 ];
 

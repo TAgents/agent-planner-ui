@@ -4,10 +4,10 @@ import { Github } from 'lucide-react';
 
 /**
  * Landing footer. Top row: four grouped columns — Product, Resources,
- * Company (links back to Talking Agents + contact), Legal. Bottom row:
- * copyright + GitHub + npm. Contact uses a plain mailto: for now —
- * accepts some spam risk in exchange for zero infra. Swap to a form
- * later if volume warrants it.
+ * Company (links back to Talking Agents + contact), Legal. Bottom row is a
+ * mini title block: bordered cells carrying the copyright, the legend, and
+ * GitHub. Contact uses a plain mailto: for now — accepts some spam risk in
+ * exchange for zero infra. Swap to a form later if volume warrants it.
  */
 const Footer: React.FC = () => {
   return (
@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
       <div className="mx-auto max-w-[1080px] px-6">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <Column title="Product">
-            <ExternalLink href="/explore" useRouter>Explore Blueprints</ExternalLink>
+            <ExternalLink href="/explore" useRouter>Explore blueprints</ExternalLink>
             <ExternalLink href="/login" useRouter>Sign in</ExternalLink>
             <ExternalLink href="/api/api-docs/">API reference</ExternalLink>
             <ExternalLink href="https://github.com/TAgents/agent-planner/blob/main/docs/GETTING_STARTED.md">Docs</ExternalLink>
@@ -42,20 +42,23 @@ const Footer: React.FC = () => {
           </Column>
         </div>
 
-        <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 text-xs text-text-muted sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <span>© {new Date().getFullYear()} Talking Agents Oy</span>
-            <span className="opacity-40">·</span>
-            <span className="font-mono uppercase tracking-[0.14em]">Workspace = live · Blueprint = reusable</span>
+        {/* mini title block */}
+        <div className="mt-10 grid grid-cols-1 border border-border font-mono text-[10px] tracking-[0.1em] text-text-muted sm:grid-cols-[1fr_auto_auto]">
+          <div className="flex items-center border-b border-border px-3.5 py-2.5 uppercase sm:border-b-0 sm:border-r">
+            Blueprint = reusable (dashed) · Workspace = live (solid ink)
+          </div>
+          <div className="flex items-center border-b border-border px-3.5 py-2.5 sm:border-b-0 sm:border-r">
+            © {new Date().getFullYear()} Talking Agents Oy
           </div>
           <a
             href="https://github.com/tagents"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub"
-            className="text-text-muted transition-colors hover:text-text"
+            className="flex items-center gap-2 px-3.5 py-2.5 text-text-muted transition-colors hover:text-text"
           >
-            <Github className="h-4 w-4" />
+            <Github className="h-3.5 w-3.5" />
+            <span className="uppercase">Source</span>
           </a>
         </div>
       </div>

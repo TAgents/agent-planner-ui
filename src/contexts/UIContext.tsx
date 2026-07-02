@@ -1,11 +1,17 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { SidebarState, NodeDetailsState, AppSidebarState } from '../types';
 
+interface ChatDockState {
+  open: boolean;
+  width: number;
+}
+
 interface UIState {
   sidebar: SidebarState;
   appSidebar: AppSidebarState;
   nodeDetails: NodeDetailsState;
   darkMode: boolean;
+  chatDock: ChatDockState;
 }
 
 type UIAction =
@@ -18,7 +24,10 @@ type UIAction =
   | { type: 'OPEN_NODE_DETAILS'; payload: string }
   | { type: 'CLOSE_NODE_DETAILS' }
   | { type: 'TOGGLE_DARK_MODE' }
-  | { type: 'SET_DARK_MODE'; payload: boolean };
+  | { type: 'SET_DARK_MODE'; payload: boolean }
+  | { type: 'TOGGLE_CHAT_DOCK' }
+  | { type: 'SET_CHAT_DOCK_OPEN'; payload: boolean }
+  | { type: 'SET_CHAT_DOCK_WIDTH'; payload: number };
 
 interface UIContextProps {
   state: UIState;
@@ -32,6 +41,9 @@ interface UIContextProps {
   closeNodeDetails: () => void;
   toggleDarkMode: () => void;
   setDarkMode: (enabled: boolean) => void;
+  toggleChatDock: () => void;
+  setChatDockOpen: (open: boolean) => void;
+  setChatDockWidth: (width: number) => void;
 }
 
 const defaultState: UIState = {
@@ -47,6 +59,10 @@ const defaultState: UIState = {
     selectedNodeId: null,
   },
   darkMode: true,
+  chatDock: {
+    open: true,
+    width: 380,
+  },
 };
 
 const UIContext = createContext<UIContextProps | undefined>(undefined);
@@ -127,6 +143,21 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         ...state,
         darkMode: action.payload,
       };
+    case 'TOGGLE_CHAT_DOCK':
+      return {
+        ...state,
+        chatDock: { ...state.chatDock, open: !state.chatDock.open },
+      };
+    case 'SET_CHAT_DOCK_OPEN':
+      return {
+        ...state,
+        chatDock: { ...state.chatDock, open: action.payload },
+      };
+    case 'SET_CHAT_DOCK_WIDTH':
+      return {
+        ...state,
+        chatDock: { ...state.chatDock, width: action.payload },
+      };
     default:
       return state;
   }
@@ -160,6 +191,32 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [state.darkMode]);
 
+  // Chat dock: restore open/width from localStorage once on mount.
+  useEffect(() => {
+    try {
+      const openStored = localStorage.getItem('ap-chatdock-open');
+      if (openStored === 'true' || openStored === 'false') {
+        dispatch({ type: 'SET_CHAT_DOCK_OPEN', payload: openStored === 'true' });
+      }
+      const widthStored = Number(localStorage.getItem('ap-chatdock-width'));
+      if (Number.isFinite(widthStored) && widthStored >= 320 && widthStored <= 560) {
+        dispatch({ type: 'SET_CHAT_DOCK_WIDTH', payload: widthStored });
+      }
+    } catch {
+      /* localStorage unavailable — keep defaults */
+    }
+  }, []);
+
+  // Persist chat dock preferences whenever they change.
+  useEffect(() => {
+    try {
+      localStorage.setItem('ap-chatdock-open', String(state.chatDock.open));
+      localStorage.setItem('ap-chatdock-width', String(state.chatDock.width));
+    } catch {
+      /* ignore */
+    }
+  }, [state.chatDock.open, state.chatDock.width]);
+
   // Context actions
   const toggleSidebar = () => dispatch({ type: 'TOGGLE_SIDEBAR' });
   const setSidebarOpen = (open: boolean) => dispatch({ type: 'SET_SIDEBAR_OPEN', payload: open });
@@ -182,6 +239,10 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'SET_DARK_MODE', payload: enabled });
   };
 
+  const toggleChatDock = () => dispatch({ type: 'TOGGLE_CHAT_DOCK' });
+  const setChatDockOpen = (open: boolean) => dispatch({ type: 'SET_CHAT_DOCK_OPEN', payload: open });
+  const setChatDockWidth = (width: number) => dispatch({ type: 'SET_CHAT_DOCK_WIDTH', payload: width });
+
 
   return (
     <UIContext.Provider
@@ -197,6 +258,9 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
         closeNodeDetails,
         toggleDarkMode,
         setDarkMode,
+        toggleChatDock,
+        setChatDockOpen,
+        setChatDockWidth,
       }}
     >
       {children}
