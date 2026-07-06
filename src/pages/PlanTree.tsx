@@ -246,7 +246,7 @@ const PlanTree: React.FC = () => {
       )}
       {stats.total > 0 && <SegmentedProgress className="mb-6" stats={stats} />}
 
-      <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card pad={0} className="overflow-hidden">
           <div className="border-b border-border px-[18px] py-3">
             <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-text-muted">
@@ -313,7 +313,7 @@ const PlanTree: React.FC = () => {
           </ul>
         </Card>
 
-        <div className="lg:sticky lg:top-6 lg:self-start">
+        <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
           {selectedNode ? (
             <DetailPanel
               key={selectedNode.id}

@@ -50,10 +50,10 @@ export const TimelineItem: React.FC<TimelineItemProps> = ({ entry, actions }) =>
       </span>
 
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${kind.chip}`}>{kind.label}</span>
-            <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{entry.entry_type}</span>
+            <span className="min-w-0 break-all text-xs font-mono text-gray-400 dark:text-gray-500">{entry.entry_type}</span>
             {entry.actor_name && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded ${actorClass}`}>
                 {entry.actor_type === 'agent' ? '🤖 ' : ''}{entry.actor_name}
@@ -79,7 +79,7 @@ export const TimelineItem: React.FC<TimelineItemProps> = ({ entry, actions }) =>
             )}
           </div>
 
-          <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+          <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap [overflow-wrap:anywhere]">
             {headline(entry)}
           </p>
 

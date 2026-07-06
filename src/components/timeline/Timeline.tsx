@@ -50,7 +50,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const entries = data?.entries ?? [];
 
   return (
-    <div className={className}>
+    <div className={`min-w-0 ${className}`}>
       {(showFilter || header) && (
         <div className="flex items-center justify-between gap-2 mb-3">
           {showFilter ? (
