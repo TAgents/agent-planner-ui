@@ -16,7 +16,8 @@ import { useNodes } from '../hooks/useNodes';
 import { useWorkspace, useWorkspaces } from '../hooks/useWorkspaces';
 import { useSavePlanAsBlueprint } from '../hooks/useBlueprints';
 import type { Plan as PlanType, BlueprintVisibility } from '../types';
-import { commentService, logService } from '../services/api';
+import { logService } from '../services/api';
+import { SubjectTimeline } from '../components/timeline/SubjectTimeline';
 import { nodeService } from '../services/nodes.service';
 import { useNodeDependencies } from '../hooks/useDependencies';
 import { coherenceService } from '../services/knowledge.service';
@@ -24,7 +25,7 @@ import type { PlanNode, NodeStatus, NodeType, Dependency } from '../types';
 import { computeStats, statsFromRollup, flattenTree, effectivePhaseStatus, type PlanStats as Stats, type TreeRow } from './PlanTree.helpers';
 import SharePlanModal from '../components/plans/SharePlanModal';
 
-type DetailTab = 'details' | 'comments' | 'logs' | 'agent';
+type DetailTab = 'details' | 'agent' | 'timeline';
 
 type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
 const PLAN_STATUSES: PlanStatus[] = ['draft', 'active', 'completed', 'archived'];
@@ -132,14 +133,6 @@ const STATUS_BAR_CLS: Record<NodeStatus, string> = {
 };
 
 /** Comments service may return either Comment[] or ApiResponse<Comment[]>. */
-function getCommentList(raw: unknown): any[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  const obj = raw as { data?: unknown };
-  if (Array.isArray(obj.data)) return obj.data;
-  return [];
-}
-
 const PlanTree: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const safePlanId = planId || '';
@@ -423,8 +416,7 @@ const DetailPanel: React.FC<{
   const TABS: { id: DetailTab; label: string }[] = [
     { id: 'details', label: 'Details' },
     { id: 'agent', label: 'Agent' },
-    { id: 'comments', label: 'Comments' },
-    { id: 'logs', label: 'Logs' },
+    { id: 'timeline', label: 'Timeline' },
   ];
 
   // Tree list endpoint omits description, timestamps, agent_instructions,
@@ -452,12 +444,6 @@ const DetailPanel: React.FC<{
     { enabled: tab === 'agent' && !!node.id, staleTime: 30_000 },
   );
 
-  const comments = useQuery(
-    ['plan-tree', planId, node.id, 'comments'],
-    () => commentService.getComments(planId, node.id),
-    { enabled: tab === 'comments', staleTime: 30_000 },
-  );
-
   const logs = useQuery(
     ['plan-tree', planId, node.id, 'logs'],
     () => logService.getLogs(planId, node.id) as Promise<Array<{
@@ -467,9 +453,9 @@ const DetailPanel: React.FC<{
       created_at: string;
       user_name?: string;
     }>>,
-    // Details tab also previews the last 3 logs (matches the spec right
-    // rail), so this query runs whenever Details OR Logs is open.
-    { enabled: tab === 'logs' || tab === 'details', staleTime: 30_000 },
+    // Details tab previews the last 3 logs inline; the full unified stream
+    // (events + logs + comments) lives in the Timeline tab.
+    { enabled: tab === 'details', staleTime: 30_000 },
   );
 
   // Upstream dependencies + episode links power the D and K sigil cards
@@ -731,48 +717,8 @@ const DetailPanel: React.FC<{
           </div>
         )}
 
-        {tab === 'comments' && (
-          <div className="text-[12.5px]">
-            {comments.isLoading && <p className="text-text-muted">Loading comments…</p>}
-            {!comments.isLoading && getCommentList(comments.data).length === 0 && (
-              <p className="text-text-muted">No comments yet.</p>
-            )}
-            <ul className="flex flex-col divide-y divide-border">
-              {getCommentList(comments.data).map((c: any) => (
-                <li key={c.id} className="py-3">
-                  <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-text-muted">
-                    <span className="font-display text-[12px] font-semibold text-text">
-                      {c.user_name || c.user?.name || 'Someone'}
-                    </span>
-                    <span className="font-mono uppercase tracking-[0.1em]">{relTime(c.created_at)}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap text-text-sec">{c.content}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {tab === 'logs' && (
-          <div className="text-[12px]">
-            {logs.isLoading && <p className="text-text-muted">Loading logs…</p>}
-            {!logs.isLoading && (!logs.data || logs.data.length === 0) && (
-              <p className="text-text-muted">No log events yet.</p>
-            )}
-            <ul className="flex flex-col divide-y divide-border">
-              {(logs.data || []).map((l) => (
-                <li key={l.id} className="flex items-start gap-3 py-2">
-                  <span className="mt-[2px] font-mono text-[9px] uppercase tracking-[0.12em] text-text-muted">
-                    {relTime(l.created_at)}
-                  </span>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text-muted">
-                    {l.log_type || 'log'}
-                  </span>
-                  <span className="flex-1 whitespace-pre-wrap text-text-sec">{l.content}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {tab === 'timeline' && (
+          <SubjectTimeline subjectType="node" subjectId={node.id} />
         )}
       </div>
     </Card>
