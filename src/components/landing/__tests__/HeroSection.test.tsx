@@ -20,15 +20,15 @@ const renderHero = () =>
  * /connect/* deep links still work; they just aren't on the hero.
  */
 describe('HeroSection', () => {
-  it('renders the workspace-first headline', () => {
+  it('renders the shared-brain headline', () => {
     renderHero();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn repeatable work into/i);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/live workspaces/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Your agents need/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/shared brain/i);
   });
 
-  it('CTA "Create Workspace" links to /login', () => {
+  it('CTA "Create a workspace" links to /login', () => {
     renderHero();
-    const cta = screen.getByText(/Create Workspace/i).closest('a');
+    const cta = screen.getByText(/Create a workspace/i).closest('a');
     expect(cta).not.toBeNull();
     expect(cta).toHaveAttribute('href', '/login');
   });

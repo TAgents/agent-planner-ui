@@ -26,52 +26,49 @@ export const api = axios.create({
   timeout: API_CONFIG.TIMEOUT,
 });
 
+/**
+ * The one place that understands the `auth_session` localStorage shape.
+ * Everything that needs the session or a token (axios interceptor, the chat
+ * SSE fetch, per-user query keys) goes through these.
+ */
+export function getSession(): any | null {
+  try {
+    const raw = localStorage.getItem('auth_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAuthToken(): string | null {
+  const session = getSession();
+  if (!session) return null;
+  if (typeof session === 'string') return session;
+  return session.access_token || session.accessToken || null;
+}
+
+/** Auth headers for requests made outside the axios instance (e.g. SSE fetch). */
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const activeOrgId = localStorage.getItem('active_org_id');
+  if (activeOrgId) headers['X-Organization-Id'] = activeOrgId;
+  return headers;
+}
+
 // Request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
-    const sessionStr = localStorage.getItem('auth_session');
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Interceptor checking auth_session:', sessionStr ? 'Found' : 'Not found');
-    }
-
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Parsed session object (keys only):', Object.keys(session));
-        }
-
-        let token = null;
-        if (session.access_token) {
-          token = session.access_token;
-        } else if (session.accessToken) {
-          token = session.accessToken;
-        } else if (typeof session === 'string') {
-          token = session;
-        }
-
-        if (token) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Setting Authorization header with token');
-          }
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        const activeOrgId = localStorage.getItem('active_org_id');
-        if (activeOrgId) {
-          config.headers['X-Organization-Id'] = activeOrgId;
-        }
-
-        if (!token && process.env.NODE_ENV === 'development') {
-          console.warn('No token found in session. Session keys:', Object.keys(session || {}));
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to parse session', e);
-        }
-      }
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     } else if (process.env.NODE_ENV === 'development') {
-      console.warn('No auth_session found in localStorage');
+      console.warn('No auth token found in auth_session');
+    }
+    const activeOrgId = localStorage.getItem('active_org_id');
+    if (activeOrgId) {
+      config.headers['X-Organization-Id'] = activeOrgId;
     }
     return config;
   },

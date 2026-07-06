@@ -1,19 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { conversationService } from '../services/conversations.service';
+import { getSession } from '../services/api-client';
 
 function userId(): string {
-  try {
-    const s = JSON.parse(localStorage.getItem('auth_session') || '{}');
-    return s.user?.id || s.user?.email || 'anonymous';
-  } catch {
-    return 'anonymous';
-  }
+  const s = getSession();
+  return s?.user?.id || s?.user?.email || 'anonymous';
 }
 
 export function useConversations() {
   const uid = userId();
   const qc = useQueryClient();
-  const hasSession = !!localStorage.getItem('auth_session');
+  const hasSession = !!getSession();
 
   const query = useQuery(['conversations', uid], () => conversationService.list(), {
     enabled: hasSession,

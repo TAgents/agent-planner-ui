@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from 'react-query';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   Plus,
   Send,
+  Square,
   Trash2,
   Sparkles,
   Loader2,
@@ -69,10 +71,26 @@ const ChatDock: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
+  // The in-flight stream and the conversation it belongs to. Lets us cancel it
+  // (Stop button, unmount) and detect a switch to a *different* conversation —
+  // the transient stream state must never render into another thread.
+  const abortRef = useRef<AbortController | null>(null);
+  const streamCidRef = useRef<string | null>(null);
+  const qc = useQueryClient();
 
-  // Reset transient turn state when switching conversations — never mid-send.
+  const stopStreaming = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  // Cancel any in-flight stream when the dock unmounts (e.g. logout).
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Reset transient turn state when switching conversations. A send may set
+  // activeId itself (new-conversation flow) — that's the stream's own thread,
+  // so leave it alone; switching to any *other* thread cancels the stream.
   useEffect(() => {
-    if (sendingRef.current) return;
+    if (sendingRef.current && streamCidRef.current === activeId) return;
+    if (sendingRef.current) abortRef.current?.abort();
     setError(null);
     setPendingUser(null);
     setStreamText('');
@@ -105,6 +123,9 @@ const ChatDock: React.FC = () => {
     }
 
     sendingRef.current = true;
+    streamCidRef.current = cid!;
+    const controller = new AbortController();
+    abortRef.current = controller;
     setStreaming(true);
     setPendingUser(text);
     setStreamText('');
@@ -133,9 +154,10 @@ const ChatDock: React.FC = () => {
         turn.error = msg;
       },
       onDone: () => {},
-    });
+    }, controller.signal);
 
-    await refetchMessages();
+    // Refetch by the stream's own conversation key — activeId may have moved on.
+    await qc.invalidateQueries(['conversation', cid, 'messages']);
     refetchConversations();
     setStreaming(false);
     setPendingUser(null);
@@ -146,7 +168,9 @@ const ChatDock: React.FC = () => {
       setInput(text);
     }
     sendingRef.current = false;
-  }, [input, streaming, activeId, createConversation, setActive, refetchMessages, refetchConversations]);
+    streamCidRef.current = null;
+    abortRef.current = null;
+  }, [input, streaming, activeId, createConversation, setActive, qc, refetchConversations]);
 
   const onConfirm = useCallback(
     async (actionId: string, approve: boolean) => {
@@ -302,30 +326,36 @@ const ChatDock: React.FC = () => {
                       <p className="px-2 py-3 text-center text-[12px] text-text-muted">No conversations yet.</p>
                     )}
                     {conversations.map((c: any) => (
-                      <button
+                      <div
                         key={c.id}
-                        type="button"
-                        onClick={() => {
-                          setActive(c.id);
-                          setHistoryOpen(false);
-                        }}
                         className={cn(
-                          'group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors',
+                          'group flex w-full items-center gap-2 rounded-md transition-colors',
                           c.id === activeId ? 'bg-surface-hi text-text' : 'text-text-sec hover:bg-surface-hi/60 hover:text-text',
                         )}
                       >
-                        <span className="min-w-0 flex-1 truncate">{c.title || 'New chat'}</span>
-                        <span className="font-mono text-[9.5px] text-text-muted group-hover:hidden">{relTime(c.updated_at)}</span>
-                        <span
-                          role="button"
-                          tabIndex={0}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActive(c.id);
+                            setHistoryOpen(false);
+                          }}
+                          className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left text-[13px]"
+                        >
+                          <span className="min-w-0 flex-1 truncate">{c.title || 'New chat'}</span>
+                          <span className="font-mono text-[9.5px] text-text-muted group-hover:hidden group-focus-within:hidden">
+                            {relTime(c.updated_at)}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={(e) => onDelete(c.id, e)}
                           aria-label="Delete conversation"
-                          className="hidden text-text-muted hover:text-red group-hover:block"
+                          title="Delete conversation"
+                          className="hidden pr-2.5 text-text-muted hover:text-red focus-visible:block group-focus-within:block group-hover:block"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </span>
-                      </button>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </>
@@ -436,8 +466,14 @@ const ChatDock: React.FC = () => {
               placeholder="Message the assistant…"
               className="max-h-[160px] min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
             />
-            <PrimaryButton onClick={handleSend} disabled={!input.trim() || streaming} className="h-[44px] w-[44px] !p-0">
-              {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <PrimaryButton
+              onClick={streaming ? stopStreaming : handleSend}
+              disabled={!streaming && !input.trim()}
+              aria-label={streaming ? 'Stop generating' : 'Send message'}
+              title={streaming ? 'Stop generating' : 'Send'}
+              className="h-[44px] w-[44px] !p-0"
+            >
+              {streaming ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             </PrimaryButton>
           </div>
         </div>

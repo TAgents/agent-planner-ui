@@ -6,7 +6,6 @@ import {
   ObjectChip,
   Pill,
   Spark,
-  type PillColor,
 } from '../components/v1';
 import { useQuery } from 'react-query';
 import {

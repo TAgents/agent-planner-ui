@@ -1,9 +1,10 @@
 /**
  * Streams an assistant turn over SSE (raw fetch + ReadableStream, so we can
- * attach the Authorization header — EventSource can't). Parses `event:`/`data:`
- * frames and dispatches to handlers.
+ * attach the Authorization header — EventSource can't). Framing is handled by
+ * the spec-conformant SseParser; this file maps events to handlers.
  */
-import { API_CONFIG } from '../services/api-client';
+import { API_CONFIG, getAuthHeaders } from '../services/api-client';
+import { SseParser } from '../services/sse';
 
 export type StreamHandlers = {
   onToken: (delta: string) => void;
@@ -16,35 +17,27 @@ export type StreamHandlers = {
   onDone: () => void;
 };
 
-function authToken(): string | null {
-  try {
-    const s = JSON.parse(localStorage.getItem('auth_session') || '{}');
-    return s.access_token || s.accessToken || s.token || null;
-  } catch {
-    return null;
-  }
-}
-
+/**
+ * POST the user message and stream the assistant turn. Resolves when the
+ * stream ends. An abort via `signal` resolves silently — no onError — since
+ * cancellation is the caller's own action, not a failure.
+ */
 export async function streamChat(
   conversationId: string,
   content: string,
   handlers: StreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
-  const token = authToken();
   let res: Response;
   try {
     res = await fetch(`${API_CONFIG.BASE_URL}/conversations/${conversationId}/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ content }),
       signal,
     });
   } catch (e: any) {
-    handlers.onError(e?.message || 'Network error');
+    if (e?.name !== 'AbortError') handlers.onError(e?.message || 'Network error');
     return;
   }
 
@@ -59,10 +52,6 @@ export async function streamChat(
     handlers.onError(msg);
     return;
   }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = '';
 
   const dispatch = (event: string, data: any) => {
     switch (event) {
@@ -95,28 +84,27 @@ export async function streamChat(
     }
   };
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    let idx;
-    while ((idx = buf.indexOf('\n\n')) !== -1) {
-      const frame = buf.slice(0, idx);
-      buf = buf.slice(idx + 2);
-      let event = 'message';
-      let dataStr = '';
-      for (const line of frame.split('\n')) {
-        if (line.startsWith('event:')) event = line.slice(6).trim();
-        else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
-      }
-      let data: any = {};
-      try {
-        data = dataStr ? JSON.parse(dataStr) : {};
-      } catch {
-        /* ignore malformed frame */
-      }
-      dispatch(event, data);
+  const parser = new SseParser(({ event, data }) => {
+    let parsed: any = {};
+    try {
+      parsed = data ? JSON.parse(data) : {};
+    } catch {
+      return; // malformed frame — skip
     }
+    dispatch(event, parsed);
+  });
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  try {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parser.feed(decoder.decode(value, { stream: true }));
+    }
+    parser.end();
+  } catch (e: any) {
+    if (e?.name !== 'AbortError') handlers.onError(e?.message || 'Stream interrupted');
   }
 }
