@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { SubjectTimeline } from '../components/timeline/SubjectTimeline';
 import { useQuery } from 'react-query';
 import {
   Card,
@@ -25,7 +26,7 @@ import { request } from '../services/api-client';
 import { goalDashboardService, goalBdiService, type GoalContradictions } from '../services/goals.service';
 import type { Plan } from '../types';
 
-type Tab = 'overview' | 'tasks' | 'knowledge' | 'evaluations';
+type Tab = 'overview' | 'tasks' | 'knowledge' | 'evaluations' | 'timeline';
 
 function relTime(iso?: string): string {
   if (!iso) return 'never';
@@ -133,6 +134,7 @@ const GoalDetailV1: React.FC = () => {
     { id: 'tasks', label: 'Tasks & dependencies' },
     { id: 'knowledge', label: 'Knowledge' },
     { id: 'evaluations', label: `Evaluations · ${(goal.evaluations || []).length}` },
+    { id: 'timeline', label: 'Timeline' },
   ];
 
   // Headline execution progress = the canonical rollup (the SAME number Mission
@@ -407,6 +409,12 @@ const GoalDetailV1: React.FC = () => {
               ))}
             </ul>
           )}
+        </Card>
+      )}
+
+      {tab === 'timeline' && (
+        <Card pad={20}>
+          <SubjectTimeline subjectType="goal" subjectId={goal.id} />
         </Card>
       )}
         </div>

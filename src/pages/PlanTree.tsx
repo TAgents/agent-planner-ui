@@ -718,7 +718,9 @@ const DetailPanel: React.FC<{
         )}
 
         {tab === 'timeline' && (
-          <SubjectTimeline subjectType="node" subjectId={node.id} />
+          node.node_type === 'root'
+            ? <SubjectTimeline subjectType="plan" subjectId={planId} />
+            : <SubjectTimeline subjectType="node" subjectId={node.id} />
         )}
       </div>
     </Card>
