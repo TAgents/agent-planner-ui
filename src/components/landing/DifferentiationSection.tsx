@@ -6,7 +6,7 @@ import React from 'react';
  * not a drawing.
  */
 const DifferentiationSection: React.FC = () => (
-  <section className="bp-grid-faint border-b border-border">
+  <section className="bp-grid-faint">
     <div className="relative mx-auto max-w-[880px] px-6 py-24 text-center sm:px-9">
       <Crosshair className="left-2 top-8" />
       <Crosshair className="right-2 top-8" />

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
  * with corner registration ticks — the next drawing waiting to be started.
  */
 const FinalCtaSection: React.FC = () => (
-  <section className="border-b border-border bg-surface-hi">
+  <section className="bg-surface-hi">
     <div className="mx-auto max-w-[1080px] px-6 py-20 sm:px-9">
       <div className="bp-grid relative border border-border-hi bg-surface px-7 py-10 sm:px-10">
         {/* corner ticks */}

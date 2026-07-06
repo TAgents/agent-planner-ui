@@ -13,7 +13,7 @@ const STEPS = [
  * honest — this is the actual order of operations.
  */
 const ProductFlowSection: React.FC = () => (
-  <section className="border-b border-border bg-surface-hi">
+  <section className="bg-surface-hi">
     <div className="mx-auto max-w-[1180px] px-6 py-20 sm:px-9 md:py-24">
       <div className="mb-12 flex flex-wrap items-baseline justify-between gap-3">
         <div>
@@ -30,11 +30,6 @@ const ProductFlowSection: React.FC = () => (
       </div>
 
       <ol className="relative grid list-none grid-cols-1 gap-y-10 sm:grid-cols-2 sm:gap-y-12 lg:grid-cols-4 lg:gap-y-0">
-        {/* connector line across all steps (desktop) */}
-        <span
-          aria-hidden
-          className="absolute left-0 right-0 top-[11px] hidden border-t border-dashed border-border-hi lg:block"
-        />
         {STEPS.map((s) => (
           <li key={s.n} className="relative lg:pr-8">
             {/* node marker */}

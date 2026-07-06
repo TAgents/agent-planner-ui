@@ -10,7 +10,7 @@ import OntologyDiagram from './OntologyDiagram';
  */
 const HeroSection: React.FC = () => {
   return (
-    <section className="bp-grid-faint relative border-b border-border">
+    <section className="bp-grid-faint relative">
       <div className="mx-auto grid max-w-[1180px] items-center gap-12 px-6 py-16 sm:px-9 md:py-20 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
         {/* Left — copy + CTAs */}
         <div className="landing-fade-up">

@@ -25,9 +25,9 @@ const clients = [
 
 export const SocialProofSection: React.FC = () => {
   return (
-    <section className="py-10 md:py-16" style={{ borderTop: `1px solid ${c.borderSubtle}` }}>
+    <section className="py-14 md:py-20" style={{ background: c.surface }}>
       <div className="max-w-[1080px] mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10 md:gap-16 landing-fade-up landing-delay-5">
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10 md:gap-16 landing-fade-up landing-delay-2">
           {/* Left — steps */}
           <div>
             <div className="font-mono text-[0.65rem] uppercase tracking-[0.12em] mb-4" style={{ color: c.textMuted }}>
@@ -80,7 +80,7 @@ export const SocialProofSection: React.FC = () => {
           </div>
 
           {/* Right — code */}
-          <div className="code-glow code-scan">
+          <div>
             <McpSetupBlock
               apiUrl="https://agentplanner.io/api"
               token="your_api_token_here"

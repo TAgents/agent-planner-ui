@@ -39,7 +39,7 @@ const KIND_META: Record<Kind, { name: string; stroke: string; dashed: boolean }>
  * teaches the same vocabulary the hero drawing uses.
  */
 const WhyDifferentSection: React.FC = () => (
-  <section className="border-b border-border">
+  <section>
     <div className="mx-auto max-w-[1180px] px-6 py-20 sm:px-9 md:py-24">
       <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
         Fig. 02 — Object model

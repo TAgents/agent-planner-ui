@@ -22,7 +22,7 @@ const CASES = [
 ];
 
 const UseCasesSection: React.FC = () => (
-  <section className="border-b border-border">
+  <section>
     <div className="mx-auto max-w-[1180px] px-6 py-20 sm:px-9 md:py-24">
       <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
         Fig. 04 — Where it fits

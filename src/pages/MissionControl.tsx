@@ -19,6 +19,7 @@ import { goalDashboardService } from '../services/goals.service';
 import { request } from '../services/api-client';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { usePlans } from '../hooks/usePlans';
+import ConnectAgentBanner from '../components/connect/ConnectAgentBanner';
 import type { Plan, Workspace } from '../types';
 
 function relTime(iso?: string): string {
@@ -179,6 +180,10 @@ const MissionControl: React.FC = () => {
           </span>
         </div>
       </header>
+
+      {/* Activation: the agent connector is the enabling step for everything
+          below, so it leads the dashboard until a connection exists. */}
+      <ConnectAgentBanner />
 
       <div className="mb-8">
         <Card pad={20}>
@@ -357,7 +362,7 @@ const CollapsibleConstellation: React.FC<{
 const CollapsibleSection: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
   const [open, setOpen] = React.useState(false);
   return (
-    <section className="border-t border-dashed border-border pt-5">
+    <section className="pt-5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

@@ -11,7 +11,7 @@ import { Github } from 'lucide-react';
  */
 const Footer: React.FC = () => {
   return (
-    <footer className="border-t border-border bg-bg py-12">
+    <footer className="bg-bg py-12">
       <div className="mx-auto max-w-[1080px] px-6">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <Column title="Product">
