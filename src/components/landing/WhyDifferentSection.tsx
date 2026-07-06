@@ -6,12 +6,12 @@ const BLOCKS: Array<{ kind: Kind; title: string; body: string }> = [
   {
     kind: 'blueprint',
     title: 'Blueprints capture what works',
-    body: 'Save a winning workflow once — fork it into a fresh workspace any time you need to run it again.',
+    body: 'Save a winning workflow once, then fork it into a fresh workspace whenever you need it again.',
   },
   {
     kind: 'workspace',
     title: 'Workspaces are where work lives',
-    body: 'A live operating surface for a real effort — goals, plans, agents, and decisions in one place.',
+    body: 'A live operating surface for real work, with goals, plans, agents, and decisions in one place.',
   },
   {
     kind: 'goal',
@@ -42,7 +42,7 @@ const WhyDifferentSection: React.FC = () => (
   <section>
     <div className="mx-auto max-w-[1180px] px-6 py-20 sm:px-9 md:py-24">
       <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-        Fig. 02 — Object model
+        Fig. 02 · Object model
       </span>
       <h2 className="mt-3 max-w-[680px] font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.005em] text-text sm:text-[40px]">
         Most tools track tasks. AgentPlanner structures the way you actually run work.

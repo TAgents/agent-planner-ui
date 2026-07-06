@@ -31,8 +31,8 @@ const Footer: React.FC = () => {
           <Column title="Company">
             <ExternalLink href="https://talkingagents.com">Talking Agents ↗</ExternalLink>
             <ExternalLink href="https://talkingagents.com/services">Services</ExternalLink>
-            <ExternalLink href="mailto:michael@talkingagents.com?subject=AgentPlanner%20—%20Hello">Contact</ExternalLink>
-            <ExternalLink href="mailto:michael@talkingagents.com?subject=AgentPlanner%20—%20Investor%20inquiry">Investors</ExternalLink>
+            <ExternalLink href="mailto:michael@talkingagents.com?subject=AgentPlanner%3A%20Hello">Contact</ExternalLink>
+            <ExternalLink href="mailto:michael@talkingagents.com?subject=AgentPlanner%3A%20Investor%20inquiry">Investors</ExternalLink>
           </Column>
 
           <Column title="Legal">

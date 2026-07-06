@@ -19,7 +19,7 @@ const DifferentiationSection: React.FC = () => (
       <h2 className="mt-5 font-display text-[38px] font-semibold leading-[1.08] tracking-[-0.005em] text-text sm:text-[46px]">
         A system for turning reusable operating knowledge into{' '}
         <span className="text-amber">live, goal-aligned workspaces</span>{' '}
-        — with agents in the work.
+        that humans and agents run together.
       </h2>
     </div>
   </section>

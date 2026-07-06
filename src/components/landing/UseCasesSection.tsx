@@ -16,7 +16,7 @@ const CASES = [
   {
     tag: 'Repeatable AI workflows',
     title: 'Give agents real ground to operate on',
-    body: 'Structured workspaces where agents do useful work — not just generate text.',
+    body: 'Structured workspaces where agents get real work done.',
     examples: ['Research → brief', 'Inbox triage', 'Spec → PR draft'],
   },
 ];
@@ -25,7 +25,7 @@ const UseCasesSection: React.FC = () => (
   <section>
     <div className="mx-auto max-w-[1180px] px-6 py-20 sm:px-9 md:py-24">
       <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-        Fig. 04 — Where it fits
+        Fig. 04 · Where it fits
       </span>
       <h2 className="mt-3 font-display text-[34px] font-semibold tracking-[-0.005em] text-text">
         Three lanes that compound.

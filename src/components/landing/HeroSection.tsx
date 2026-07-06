@@ -24,9 +24,9 @@ const HeroSection: React.FC = () => {
             a <span className="text-amber">shared brain</span>.
           </h1>
           <p className="mt-6 max-w-[54ch] text-[15px] leading-[1.65] text-text-sec">
-            AgentPlanner is the persistent substrate agents and humans run on.
+            AgentPlanner is the shared workspace agents and humans run on.
             Fork a reusable Blueprint into a live Workspace, wire goals to
-            plans, and keep every dependency, decision, and learning — even
+            plans, and keep every dependency, decision, and learning, even
             when the context window doesn't.
           </p>
 

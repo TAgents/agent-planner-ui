@@ -20,7 +20,7 @@ const FinalCtaSection: React.FC = () => (
         <div className="flex flex-wrap items-center justify-between gap-9">
           <div className="max-w-[560px]">
             <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-              Sheet 02 — Yours
+              Sheet 02 · Yours
             </span>
             <h3 className="mt-3 font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.005em] text-text">
               Spin up one live workspace. Reuse the process forever.

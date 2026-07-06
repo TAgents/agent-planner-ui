@@ -103,7 +103,7 @@ const OntologyDiagram: React.FC = () => {
             Growth Engine
           </text>
           <text x="252" y="107" className="fill-text-muted font-mono text-[8px]" style={{ letterSpacing: '0.08em' }}>
-            FORKED FROM — PRODUCT LAUNCH V3
+            FORKED FROM · PRODUCT LAUNCH V3
           </text>
 
           {/* goal bar */}
@@ -123,7 +123,7 @@ const OntologyDiagram: React.FC = () => {
         <g className="bp-ink bp-d4">
           <rect x="252" y="160" width="264" height="150" rx="4" className="fill-surface stroke-border-hi" strokeWidth="1" />
           <text x="262" y="181" className="fill-text-sec font-mono text-[8.5px] font-semibold" style={{ letterSpacing: '0.12em' }}>
-            PLAN — LAUNCH PLAN
+            PLAN · LAUNCH PLAN
           </text>
           <text x="506" y="181" textAnchor="end" className="fill-text-muted font-mono text-[8px]" style={{ letterSpacing: '0.08em' }}>
             4 PHASES
@@ -150,7 +150,7 @@ const OntologyDiagram: React.FC = () => {
         <g className="bp-ink bp-d5">
           <circle cx="257" cy="330" r="3" className="bp-pulse fill-emerald" />
           <text x="267" y="333" className="fill-text-sec font-mono text-[8.5px]" style={{ letterSpacing: '0.1em' }}>
-            2 AGENTS ON DUTY — PLANNER, REVIEWER
+            2 AGENTS ON DUTY · PLANNER, REVIEWER
           </text>
           <circle cx="257" cy="348" r="3" className="fill-red" />
           <text x="267" y="351" className="fill-text-sec font-mono text-[8.5px]" style={{ letterSpacing: '0.1em' }}>
@@ -180,22 +180,22 @@ const OntologyDiagram: React.FC = () => {
           <line x1="424" y1="430" x2="424" y2="484" className="stroke-text/30" strokeWidth="1" />
 
           <text x="24" y="447" className="fill-text font-mono text-[9px] font-semibold" style={{ letterSpacing: '0.08em' }}>
-            FIG. 01 — BLUEPRINT → LIVE WORKSPACE
+            FIG. 01 · BLUEPRINT → LIVE WORKSPACE
           </text>
           <text x="318" y="447" className="fill-text-sec font-mono text-[8px]" style={{ letterSpacing: '0.1em' }}>
-            SCALE — 1:1
+            SCALE · 1:1
           </text>
           <text x="432" y="447" className="fill-text-sec font-mono text-[8px]" style={{ letterSpacing: '0.1em' }}>
-            REV — 2026.05
+            REV · 2026.05
           </text>
           <text x="24" y="474" className="fill-text-sec font-mono text-[8px]" style={{ letterSpacing: '0.1em' }}>
-            DRAWN BY — HUMANS + AGENTS
+            DRAWN BY · HUMANS + AGENTS
           </text>
           <text x="318" y="474" className="fill-text-sec font-mono text-[8px]" style={{ letterSpacing: '0.1em' }}>
             AGENTPLANNER
           </text>
           <text x="432" y="474" className="fill-text-sec font-mono text-[8px]" style={{ letterSpacing: '0.1em' }}>
-            SHEET — 01 / 01
+            SHEET · 01 / 01
           </text>
         </g>
       </svg>
