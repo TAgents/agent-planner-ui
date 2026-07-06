@@ -62,25 +62,26 @@ Full rules: `docs/DERIVED_METRICS.md`.
 `api.ts` is the axios instance + interceptors + shared `request()`. Request interceptor injects JWT from `localStorage['auth_session']`. Response interceptor on 401 redirects to `/login`.
 
 Domain services live in their own files — import directly:
-- `plans.service.ts`, `nodes.service.ts`, `decisions.service.ts`, `knowledge.service.ts`, `goals.service.ts`, `integrations.service.ts`, `workspaces.service.ts`, `blueprints.service.ts`, `onboarding.service.ts`.
+- `plans.service.ts`, `nodes.service.ts`, `decisions.service.ts`, `knowledge.service.ts`, `goals.service.ts`, `integrations.service.ts`, `workspaces.service.ts`, `blueprints.service.ts`, `onboarding.service.ts`, `timeline.service.ts`.
 
 Small concerns (auth, comments, activity, search, tokens) stay inline in `api.ts`. `api.ts` also re-exports the domain services for backward compatibility — **new code should import from the domain file directly**, not via `api.ts`.
 
 ### Hooks (`src/hooks/`)
 
-Custom hooks wrap React Query: `usePlans`, `useNodes`, `useGoals`, `useDependencies`, `useGraphitiKnowledge`, `useAuth`, `useWebSocket`, `useDecisions`, `useAgentRequests`, etc. Components should call these — don't call services directly from JSX.
+Custom hooks wrap React Query: `usePlans`, `useNodes`, `useGoals`, `useDependencies`, `useGraphitiKnowledge`, `useAuth`, `useWebSocket`, `useDecisions`, `useAgentRequests`, `useTimeline`/`useTrace`, etc. Components should call these — don't call services directly from JSX.
 
 ### Components — feature-organized
 
 `components/plans/`, `goals/`, `visualization/`, `tree/`, `details/`, `layout/`, `auth/`, `common/`, `decisions/`, `github/`, `presence/`.
 
-**Node details panel** is the most complex area — read these before editing:
-- `UnifiedNodeDetails.tsx` (~600-line orchestration shell)
-- `NodeDetailsLogs.tsx`, `NodeDetailsAgent.tsx`
-- `NodeDetailsPrimitives.tsx` (shared sub-components — reuse, don't duplicate)
-- `NodeDependenciesTab.tsx`, `NodeKnowledgeTab.tsx`, `AgentContextPanel.tsx`
+**Plan + node detail** lives in `pages/PlanTree.tsx` — a `3fr/2fr` grid (tree list + right-rail `DetailPanel`). The `DetailPanel` has Details / Agent / **Timeline** tabs. Keep the grid as `lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]` with `min-w-0` on children — plain `fr` tracks have a min-content floor and long content blows the pane out to full width.
 
-The panel is **read-only by default** with approve/redirect actions — see the agent-first contract above.
+**Unified timeline** (`components/timeline/`) — one kind-aware stream (event / log / comment) over `GET /timeline`, reused on any subject:
+- `SubjectTimeline` — the drop-in for a node/plan/goal/workspace (`subjectType` + `subjectId`): the `Timeline` stream + comment composer + author-only edit/delete + the "⧉ trace" → `TraceModal` affordance. This is what you mount on a detail page.
+- `Timeline` / `TimelineItem` — the stream + per-entry rendering (actor/provenance badges); `TraceView` / `TraceModal` — one run grouped by `correlation_id` (the Execution Trace).
+- Long content must wrap: use `[overflow-wrap:anywhere]` (not `break-word`) so entries can't inflate the container's intrinsic width.
+
+The detail panel is **read-only by default** with approve/redirect actions — see the agent-first contract above.
 
 **Dependency visualization** uses `@xyflow/react`. `DependencyGraph.tsx` renders a DAG with custom nodes, critical-path highlighting, impact-analysis overlay, and an add-dependency modal. Tree view also shows dependency indicators.
 
