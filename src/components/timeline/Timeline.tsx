@@ -25,6 +25,8 @@ export interface TimelineProps {
   header?: React.ReactNode;
   /** Per-item actions (e.g. author edit/delete controls for comments). */
   renderItemActions?: (entry: TimelineEntry) => React.ReactNode;
+  /** When set, entries with a correlation_id get a "view trace" affordance. */
+  onOpenTrace?: (correlationId: string) => void;
   className?: string;
   emptyLabel?: string;
 }
@@ -36,7 +38,7 @@ export interface TimelineProps {
  */
 export const Timeline: React.FC<TimelineProps> = ({
   planId, nodeId, goalId, workspaceId, subjectType, subjectId,
-  showFilter = true, limit = 50, header, renderItemActions,
+  showFilter = true, limit = 50, header, renderItemActions, onOpenTrace,
   className = '', emptyLabel = 'No activity yet.',
 }) => {
   const [kind, setKind] = useState<TimelineKind | 'all'>('all');
@@ -94,6 +96,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               key={entry.id}
               entry={entry}
               actions={renderItemActions?.(entry)}
+              onOpenTrace={onOpenTrace}
             />
           ))}
         </ul>

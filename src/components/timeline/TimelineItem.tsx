@@ -34,9 +34,11 @@ export interface TimelineItemProps {
   entry: TimelineEntry;
   /** Render the comment author controls (edit/delete) — supplied by Timeline. */
   actions?: React.ReactNode;
+  /** When set and the entry has a correlation_id, show a "view trace" button. */
+  onOpenTrace?: (correlationId: string) => void;
 }
 
-export const TimelineItem: React.FC<TimelineItemProps> = ({ entry, actions }) => {
+export const TimelineItem: React.FC<TimelineItemProps> = ({ entry, actions, onOpenTrace }) => {
   const kind = KIND_STYLES[entry.kind] || KIND_STYLES.log;
   const actorClass = ACTOR_STYLES[entry.actor_type || 'system'] || ACTOR_STYLES.system;
   const prov = entry.provenance || {};
@@ -95,6 +97,16 @@ export const TimelineItem: React.FC<TimelineItemProps> = ({ entry, actions }) =>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {onOpenTrace && entry.correlation_id && (
+            <button
+              type="button"
+              onClick={() => onOpenTrace(entry.correlation_id as string)}
+              title="View the full execution trace for this run"
+              className="text-[11px] text-blue-600 hover:text-blue-700 dark:text-blue-400 whitespace-nowrap"
+            >
+              ⧉ trace
+            </button>
+          )}
           <time
             className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap"
             title={formatDateTime(entry.created_at)}

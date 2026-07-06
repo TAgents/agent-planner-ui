@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SubjectType, TimelineEntry } from '../../services/timeline.service';
 import { useAuth } from '../../hooks/useAuth';
 import { Timeline } from './Timeline';
 import { CommentComposer } from './CommentComposer';
 import { CommentItemActions } from './CommentItemActions';
+import { TraceModal } from './TraceModal';
 
 export interface SubjectTimelineProps {
   subjectType: SubjectType;
@@ -34,6 +35,7 @@ export const SubjectTimeline: React.FC<SubjectTimelineProps> = ({
   subjectType, subjectId, readOnly = false, showFilter = true, limit = 50, className,
 }) => {
   const { userId } = useAuth();
+  const [traceId, setTraceId] = useState<string | null>(null);
   const scopeKey = SCOPE_KEY[subjectType];
   const scopeProps = scopeKey ? { [scopeKey]: subjectId } : { subjectType, subjectId };
 
@@ -44,15 +46,19 @@ export const SubjectTimeline: React.FC<SubjectTimelineProps> = ({
   };
 
   return (
-    <Timeline
-      {...scopeProps}
-      showFilter={showFilter}
-      limit={limit}
-      className={className}
-      header={readOnly ? undefined : <CommentComposer subjectType={subjectType} subjectId={subjectId} />}
-      renderItemActions={renderItemActions}
-      emptyLabel={readOnly ? 'No activity yet.' : 'No activity yet — start the conversation.'}
-    />
+    <>
+      <Timeline
+        {...scopeProps}
+        showFilter={showFilter}
+        limit={limit}
+        className={className}
+        header={readOnly ? undefined : <CommentComposer subjectType={subjectType} subjectId={subjectId} />}
+        renderItemActions={renderItemActions}
+        onOpenTrace={setTraceId}
+        emptyLabel={readOnly ? 'No activity yet.' : 'No activity yet — start the conversation.'}
+      />
+      {traceId && <TraceModal correlationId={traceId} onClose={() => setTraceId(null)} />}
+    </>
   );
 };
 
