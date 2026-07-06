@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { TraceView } from './TraceView';
+import { IconButton } from '../v1';
 
 export interface TraceModalProps {
   correlationId: string;
@@ -24,17 +25,12 @@ export const TraceModal: React.FC<TraceModalProps> = ({ correlationId, onClose }
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl min-w-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl"
+        className="relative w-full min-w-0 max-w-2xl rounded-xl border border-border bg-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-3 top-3 z-10 text-xl leading-none text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          ×
-        </button>
+        <div className="absolute right-3 top-3 z-10">
+          <IconButton onClick={onClose} aria-label="Close">×</IconButton>
+        </div>
         <div className="max-h-[80vh] overflow-y-auto p-5">
           <TraceView correlationId={correlationId} />
         </div>

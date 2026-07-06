@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SubjectType } from '../../services/timeline.service';
 import { useTimelineComments } from '../../hooks/useTimeline';
+import { PrimaryButton } from '../v1';
 
 export interface CommentComposerProps {
   subjectType: SubjectType;
@@ -28,7 +29,7 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
   };
 
   return (
-    <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2">
+    <div className="rounded-md border border-border bg-surface p-2">
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -37,21 +38,16 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
         }}
         rows={2}
         placeholder={placeholder}
-        className="w-full resize-y bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none"
+        className="w-full resize-y bg-transparent text-[12.5px] text-text placeholder-text-muted focus:outline-none"
       />
-      <div className="flex items-center justify-between mt-1">
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">⌘/Ctrl+Enter to post</span>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!content.trim() || add.isLoading}
-          className="px-3 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+      <div className="mt-1 flex items-center justify-between">
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">⌘/Ctrl+Enter to post</span>
+        <PrimaryButton onClick={submit} disabled={!content.trim() || add.isLoading}>
           {add.isLoading ? 'Posting…' : 'Comment'}
-        </button>
+        </PrimaryButton>
       </div>
       {add.isError && (
-        <p className="text-[11px] text-red-500 mt-1">{(add.error as Error)?.message || 'Failed to post comment.'}</p>
+        <p className="mt-1 text-[11px] text-red">{(add.error as Error)?.message || 'Failed to post comment.'}</p>
       )}
     </div>
   );

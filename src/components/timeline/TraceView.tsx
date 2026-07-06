@@ -3,6 +3,7 @@ import { useTrace } from '../../hooks/useTimeline';
 import { TimelineEntry } from '../../services/timeline.service';
 import { TimelineItem } from './TimelineItem';
 import { formatDateTime } from '../../utils/dateUtils';
+import { Kicker, Pill } from '../v1';
 
 export interface TraceViewProps {
   correlationId: string;
@@ -32,7 +33,6 @@ function summarize(entries: TimelineEntry[]): TraceSummary {
     if (e.provenance?.surface) surfaces.add(e.provenance.surface);
     if (e.provenance?.model) models.add(e.provenance.model);
     if (e.provenance?.work_mode === 'shadow' || e.payload?.executed === false) shadow = true;
-    // First non-human actor is the run owner (the agent); fall back to first actor.
     if (!actorName && e.actor_name) { actorName = e.actor_name; actorType = e.actor_type; }
     if (e.actor_type === 'agent' && e.actor_name) { actorName = e.actor_name; actorType = 'agent'; }
   }
@@ -44,6 +44,13 @@ function summarize(entries: TimelineEntry[]): TraceSummary {
   };
 }
 
+const Stat: React.FC<{ label: string; value: number | string }> = ({ label, value }) => (
+  <div>
+    <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-text-muted">{label}</div>
+    <div className="text-[13px] font-semibold text-text">{value}</div>
+  </div>
+);
+
 /**
  * Execution Trace — one run's event/log/comment stream grouped by
  * correlation_id, oldest-first, with a provenance summary header. This is the
@@ -54,39 +61,35 @@ export const TraceView: React.FC<TraceViewProps> = ({ correlationId, className =
   const entries = data?.entries ?? [];
   const summary = useMemo(() => summarize(entries), [entries]);
 
-  if (isLoading) return <p className="text-sm text-gray-400 dark:text-gray-500 py-4">Loading trace…</p>;
-  if (isError) return <p className="text-sm text-red-500 py-4">Couldn't load this trace.</p>;
-  if (entries.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500 py-4">No entries for this run.</p>;
+  if (isLoading) return <p className="py-4 text-[12.5px] text-text-muted">Loading trace…</p>;
+  if (isError) return <p className="py-4 text-[12.5px] text-red">Couldn't load this trace.</p>;
+  if (entries.length === 0) return <p className="py-4 text-[12.5px] text-text-muted">No entries for this run.</p>;
 
   return (
-    <div className={className}>
+    <div className={`min-w-0 ${className}`}>
       {/* Run summary header */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 mb-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+      <div className="mb-4 rounded-lg border border-border bg-surface-hi/40 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Execution Trace</span>
+            <Kicker>◇ Execution Trace</Kicker>
             {summary.actorName && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+              <Pill color={summary.actorType === 'agent' ? 'violet' : 'slate'}>
                 {summary.actorType === 'agent' ? '🤖 ' : ''}{summary.actorName}
-              </span>
+              </Pill>
             )}
-            {summary.shadow && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                shadow run
-              </span>
-            )}
+            {summary.shadow && <Pill color="amber">shadow run</Pill>}
           </div>
-          <code className="text-[11px] text-gray-400 dark:text-gray-500">{correlationId.slice(0, 8)}</code>
+          <code className="font-mono text-[10px] text-text-muted">{correlationId.slice(0, 8)}</code>
         </div>
 
-        <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-gray-600 dark:text-gray-300">
-          <div><span className="text-gray-400 dark:text-gray-500">Events</span><div className="font-medium">{summary.counts.event}</div></div>
-          <div><span className="text-gray-400 dark:text-gray-500">Logs</span><div className="font-medium">{summary.counts.log}</div></div>
-          <div><span className="text-gray-400 dark:text-gray-500">Comments</span><div className="font-medium">{summary.counts.comment}</div></div>
-          <div><span className="text-gray-400 dark:text-gray-500">Steps</span><div className="font-medium">{entries.length}</div></div>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Stat label="Events" value={summary.counts.event} />
+          <Stat label="Logs" value={summary.counts.log} />
+          <Stat label="Comments" value={summary.counts.comment} />
+          <Stat label="Steps" value={entries.length} />
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-text-muted">
           {summary.startedAt && <span>Started {formatDateTime(summary.startedAt)}</span>}
           {summary.endedAt && summary.endedAt !== summary.startedAt && <span>· Last {formatDateTime(summary.endedAt)}</span>}
           {summary.surfaces.length > 0 && <span>· via {summary.surfaces.join(', ')}</span>}
@@ -95,7 +98,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ correlationId, className =
       </div>
 
       {/* Ordered run stream (oldest-first) */}
-      <ul className="relative border-l border-gray-200 dark:border-gray-700 ml-1">
+      <ul className="relative ml-1 border-l border-border">
         {entries.map((entry) => (
           <TimelineItem key={entry.id} entry={entry} />
         ))}

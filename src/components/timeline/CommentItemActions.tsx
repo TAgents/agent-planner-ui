@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TimelineEntry, SubjectType } from '../../services/timeline.service';
 import { useTimelineComments } from '../../hooks/useTimeline';
+import { LinkButton, PrimaryButton } from '../v1';
 
 export interface CommentItemActionsProps {
   entry: TimelineEntry;
@@ -29,34 +30,26 @@ export const CommentItemActions: React.FC<CommentItemActionsProps> = ({ entry, s
 
   if (editing) {
     return (
-      <div className="absolute right-0 top-0 z-10 w-64 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-2">
+      <div className="absolute right-0 top-0 z-10 w-64 rounded-md border border-border bg-surface p-2 shadow-lg">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
-          className="w-full resize-y bg-transparent text-sm text-gray-800 dark:text-gray-200 focus:outline-none"
+          className="w-full resize-y bg-transparent text-[12.5px] text-text focus:outline-none"
           autoFocus
         />
-        <div className="flex justify-end gap-2 mt-1">
-          <button type="button" onClick={() => { setEditing(false); setDraft(entry.content || ''); }}
-            className="px-2 py-0.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-            Cancel
-          </button>
-          <button type="button" onClick={save} disabled={edit.isLoading}
-            className="px-2 py-0.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
-            Save
-          </button>
+        <div className="mt-1 flex justify-end gap-2">
+          <LinkButton onClick={() => { setEditing(false); setDraft(entry.content || ''); }}>Cancel</LinkButton>
+          <PrimaryButton onClick={save} disabled={edit.isLoading}>Save</PrimaryButton>
         </div>
       </div>
     );
   }
 
   return (
-    <span className="flex items-center gap-1">
-      <button type="button" onClick={() => { setDraft(entry.content || ''); setEditing(true); }}
-        title="Edit" className="text-[11px] text-gray-400 hover:text-blue-600">Edit</button>
-      <button type="button" onClick={del} disabled={remove.isLoading}
-        title="Delete" className="text-[11px] text-gray-400 hover:text-red-600">Delete</button>
+    <span className="flex items-center gap-2">
+      <LinkButton onClick={() => { setDraft(entry.content || ''); setEditing(true); }} title="Edit">Edit</LinkButton>
+      <LinkButton onClick={del} disabled={remove.isLoading} title="Delete" className="hover:text-red">Delete</LinkButton>
     </span>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTimeline } from '../../hooks/useTimeline';
 import { TimelineKind, TimelineQuery, SubjectType, TimelineEntry } from '../../services/timeline.service';
 import { TimelineItem } from './TimelineItem';
+import { FilterChip } from '../v1';
 
 const KIND_FILTERS: { value: TimelineKind | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -53,44 +54,31 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   return (
     <div className={`min-w-0 ${className}`}>
-      {(showFilter || header) && (
-        <div className="flex items-center justify-between gap-2 mb-3">
-          {showFilter ? (
-            <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-              {KIND_FILTERS.map((f) => (
-                <button
-                  key={f.value}
-                  type="button"
-                  onClick={() => setKind(f.value)}
-                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                    kind === f.value
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          ) : <span />}
+      {showFilter && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          {KIND_FILTERS.map((f) => (
+            <FilterChip key={f.value} active={kind === f.value} onClick={() => setKind(f.value)}>
+              {f.label}
+            </FilterChip>
+          ))}
         </div>
       )}
 
       {header && <div className="mb-3">{header}</div>}
 
       {isLoading && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-4">Loading timeline…</p>
+        <p className="py-4 text-[12.5px] text-text-muted">Loading timeline…</p>
       )}
       {isError && (
-        <p className="text-sm text-red-500 py-4">Couldn't load the timeline.</p>
+        <p className="py-4 text-[12.5px] text-red">Couldn't load the timeline.</p>
       )}
 
       {!isLoading && !isError && entries.length === 0 && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-4">{emptyLabel}</p>
+        <p className="py-4 text-[12.5px] text-text-muted">{emptyLabel}</p>
       )}
 
       {entries.length > 0 && (
-        <ul className="relative border-l border-gray-200 dark:border-gray-700 ml-1">
+        <ul className="relative ml-1 border-l border-border">
           {entries.map((entry) => (
             <TimelineItem
               key={entry.id}
@@ -103,8 +91,8 @@ export const Timeline: React.FC<TimelineProps> = ({
       )}
 
       {data?.pagination?.has_more && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-          Showing {entries.length} of {data.pagination.total}.
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-text-muted">
+          Showing {entries.length} of {data.pagination.total}
         </p>
       )}
     </div>
