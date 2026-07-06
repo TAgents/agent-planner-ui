@@ -116,7 +116,9 @@ const ChatDock: React.FC = () => {
         const conv = await createConversation.mutateAsync(undefined);
         cid = conv.id;
         setActive(cid);
-      } catch {
+      } catch (e: any) {
+        // Surface the failure — a silently restored draft reads as a dead send button.
+        setError(e?.response?.data?.error || e?.message || 'Could not start a conversation');
         setInput(text); // restore the draft so the message isn't lost
         return;
       }
@@ -221,7 +223,7 @@ const ChatDock: React.FC = () => {
     document.body.style.cursor = 'col-resize';
   };
 
-  const showEmptyThread = !activeId || (messages.length === 0 && !streaming && !pendingUser && !error);
+  const showEmptyThread = (!activeId || (messages.length === 0 && !streaming && !pendingUser)) && !error;
 
   // ── Collapsed: slim rail on desktop, floating launcher on mobile ──────────
   if (!open) {
