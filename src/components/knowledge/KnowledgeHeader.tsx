@@ -1,6 +1,5 @@
 import React from 'react';
-import { TopBar } from '../v1';
-import KnowledgeTabs from './KnowledgeTabs';
+import { Kicker } from '../v1';
 
 export type HeaderStat = {
   /** Numeric value to render. */
@@ -23,12 +22,10 @@ export type KnowledgeHeaderProps = {
 };
 
 /**
- * Shared knowledge-surface header. Renders through the canonical {@link TopBar}
- * so the four knowledge lenses (Overview / Coverage / Timeline / Graph) read as
- * one product surface and match every other full-page view: the `◇ Knowledge`
- * kicker, the inline stat headline as the title, the search box as the action
- * cluster, and the lens tabs as the full-width controls row. Mount it at the top
- * of each lens's flex-col page shell.
+ * Shared knowledge-surface header. Mounts above `<KnowledgeTabs />` on
+ * each lens (Coverage / Timeline / Graph) so the three views read as a
+ * single product surface — single kicker, big stat headline, search
+ * input — instead of three separate pages.
  */
 const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   stats,
@@ -36,49 +33,42 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   onSearchChange,
   searchPlaceholder = 'Search knowledge…',
 }) => {
-  const title = (
-    <>
-      {stats.map((s, i) => (
-        <span key={s.label}>
-          {i > 0 && <span className="mx-2 text-text-muted">·</span>}
-          <span
-            className={
-              s.tone === 'amber'
-                ? 'text-amber'
-                : s.tone === 'red'
-                  ? 'text-red'
-                  : 'text-text'
-            }
-          >
-            {s.value} {s.label}
-          </span>
-        </span>
-      ))}
-    </>
-  );
-
-  const searchBox = (
-    <label className="flex w-full max-w-[280px] items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-[12px] text-text-sec transition-colors focus-within:border-amber">
-      <span aria-hidden className="font-mono text-[10px] text-text-muted">
-        ◇
-      </span>
-      <input
-        type="search"
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder={searchPlaceholder}
-        className="w-full bg-transparent outline-none placeholder:text-text-muted"
-      />
-    </label>
-  );
-
   return (
-    <TopBar
-      kicker="◇ Knowledge · what the agents know"
-      title={title}
-      actions={searchBox}
-      controls={<KnowledgeTabs />}
-    />
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0">
+        <Kicker className="mb-2">◆ Knowledge · what the agents know</Kicker>
+        <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+          {stats.map((s, i) => (
+            <span key={s.label}>
+              {i > 0 && <span className="mx-2 text-text-muted">·</span>}
+              <span
+                className={
+                  s.tone === 'amber'
+                    ? 'text-amber'
+                    : s.tone === 'red'
+                      ? 'text-red'
+                      : 'text-text'
+                }
+              >
+                {s.value} {s.label}
+              </span>
+            </span>
+          ))}
+        </h1>
+      </div>
+      <label className="flex w-full max-w-[280px] items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-[12px] text-text-sec transition-colors focus-within:border-amber">
+        <span aria-hidden className="font-mono text-[10px] text-text-muted">
+          ◇
+        </span>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={searchPlaceholder}
+          className="w-full bg-transparent outline-none placeholder:text-text-muted"
+        />
+      </label>
+    </header>
   );
 };
 

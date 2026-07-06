@@ -52,7 +52,7 @@ const Explore: React.FC = () => {
       )}
     </>
   );
-  return <div className="mx-auto max-w-[1180px] px-6 py-10 sm:px-9">{body}</div>;
+  return <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">{body}</div>;
 };
 
 // ─── Hero ─────────────────────────────────────────────────────────

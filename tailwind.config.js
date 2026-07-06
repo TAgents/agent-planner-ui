@@ -18,7 +18,8 @@ module.exports = {
         text: 'rgb(var(--text) / <alpha-value>)',
         'text-sec': 'rgb(var(--text-sec) / <alpha-value>)',
         'text-muted': 'rgb(var(--text-muted) / <alpha-value>)',
-        // Accent palette
+        // Accent palette — token name kept as `amber` (used everywhere); the
+        // VALUE is warm gold (Warm Obsidian). See src/index.css tokens.
         amber: {
           DEFAULT: 'rgb(var(--amber) / <alpha-value>)',
           soft: 'rgb(var(--amber) / 0.15)',
@@ -111,11 +112,13 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        // v1 redesign uses Space Grotesk for both display and body. Legacy stacks kept as fallback for in-flight components.
-        display: ['Space Grotesk', 'Bricolage Grotesque', 'system-ui', 'sans-serif'],
-        body: ['Space Grotesk', 'Figtree', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        // "Working drawings" identity: DIN-flavored condensed display
+        // (engineering-drawing lettering), operational body sans, and a
+        // compact technical mono for labels/data.
+        sans: ['Public Sans', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        display: ['Barlow Semi Condensed', 'Public Sans', 'system-ui', 'sans-serif'],
+        body: ['Public Sans', 'system-ui', 'sans-serif'],
+        mono: ['Spline Sans Mono', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       spacing: {
         '72': '18rem',
@@ -150,17 +153,20 @@ module.exports = {
       // CSS variables — base layer is fine for these
       addBase({
         '.dark': {
-          '--ob-50':  '#ede8df',
-          '--ob-100': '#d4cfc5',
-          '--ob-200': '#a09882',
-          '--ob-300': '#8a8270',
-          '--ob-400': '#6b6354',
-          '--ob-500': '#4a4438',
-          '--ob-600': '#2a261e',
-          '--ob-700': '#1e1b15',
-          '--ob-800': '#16140f',
+          // Warm Obsidian greyscale — deliberate warm/amber cast (the "yellow
+          // tint") to match the v1 tokens in src/index.css. These back the
+          // legacy gray-*/white overrides below for in-flight components.
+          '--ob-50':  '#efe9df',
+          '--ob-100': '#d8d0c2',
+          '--ob-200': '#a49a88',
+          '--ob-300': '#8c8270',
+          '--ob-400': '#746a58',
+          '--ob-500': '#524a3c',
+          '--ob-600': '#2c281f',
+          '--ob-700': '#1f1b14',
+          '--ob-800': '#161310',
           '--ob-900': '#0e0c0a',
-          '--ob-950': '#0a0907',
+          '--ob-950': '#0a0806',
         },
       });
 
@@ -185,11 +191,11 @@ module.exports = {
         '.dark .dark\\:bg-gray-900':  { 'background-color': `var(--ob-900) ${i}` },
         '.dark .dark\\:bg-gray-950':  { 'background-color': `var(--ob-950) ${i}` },
         // Gray background with opacity
-        '.dark .dark\\:bg-gray-800\\/50': { 'background-color': `rgba(22, 20, 15, 0.5) ${i}` },
-        '.dark .dark\\:bg-gray-800\\/80': { 'background-color': `rgba(22, 20, 15, 0.8) ${i}` },
+        '.dark .dark\\:bg-gray-800\\/50': { 'background-color': `rgba(20, 18, 15, 0.5) ${i}` },
+        '.dark .dark\\:bg-gray-800\\/80': { 'background-color': `rgba(20, 18, 15, 0.8) ${i}` },
         '.dark .dark\\:bg-gray-900\\/80': { 'background-color': `rgba(14, 12, 10, 0.8) ${i}` },
-        '.dark .bg-gray-800\\/50': { 'background-color': `rgba(22, 20, 15, 0.5) ${i}` },
-        '.dark .bg-gray-800\\/80': { 'background-color': `rgba(22, 20, 15, 0.8) ${i}` },
+        '.dark .bg-gray-800\\/50': { 'background-color': `rgba(20, 18, 15, 0.5) ${i}` },
+        '.dark .bg-gray-800\\/80': { 'background-color': `rgba(20, 18, 15, 0.8) ${i}` },
         // White background in dark mode
         '.dark .bg-white':  { 'background-color': `var(--ob-800) ${i}` },
         '.dark .dark\\:bg-white': { 'background-color': `var(--ob-800) ${i}` },
@@ -205,16 +211,16 @@ module.exports = {
         '.dark .dark\\:border-gray-600': { 'border-color': `var(--ob-600) ${i}` },
         '.dark .dark\\:border-gray-700': { 'border-color': `var(--ob-600) ${i}` },
         '.dark .dark\\:border-gray-800': { 'border-color': `var(--ob-600) ${i}` },
-        '.dark .dark\\:border-gray-700\\/50': { 'border-color': `rgba(42, 38, 30, 0.5) ${i}` },
-        '.dark .dark\\:border-gray-800\\/60': { 'border-color': `rgba(42, 38, 30, 0.6) ${i}` },
-        '.dark .dark\\:border-gray-800\\/80': { 'border-color': `rgba(42, 38, 30, 0.8) ${i}` },
+        '.dark .dark\\:border-gray-700\\/50': { 'border-color': `rgba(44, 40, 33, 0.5) ${i}` },
+        '.dark .dark\\:border-gray-800\\/60': { 'border-color': `rgba(44, 40, 33, 0.6) ${i}` },
+        '.dark .dark\\:border-gray-800\\/80': { 'border-color': `rgba(44, 40, 33, 0.8) ${i}` },
         '.dark .border-gray-200':     { 'border-color': `var(--ob-600) ${i}` },
-        '.dark .border-gray-200\\/60': { 'border-color': `rgba(42, 38, 30, 0.6) ${i}` },
+        '.dark .border-gray-200\\/60': { 'border-color': `rgba(44, 40, 33, 0.6) ${i}` },
         '.dark .border-gray-300':     { 'border-color': `var(--ob-600) ${i}` },
         // Hover states
         '.dark .dark\\:hover\\:bg-gray-700:hover':  { 'background-color': `var(--ob-700) ${i}` },
         '.dark .dark\\:hover\\:bg-gray-800:hover':  { 'background-color': `var(--ob-700) ${i}` },
-        '.dark .dark\\:hover\\:bg-gray-800\\/50:hover': { 'background-color': `rgba(22, 20, 15, 0.5) ${i}` },
+        '.dark .dark\\:hover\\:bg-gray-800\\/50:hover': { 'background-color': `rgba(20, 18, 15, 0.5) ${i}` },
         '.dark .hover\\:bg-gray-100:hover': { 'background-color': `var(--ob-700) ${i}` },
         // Non-prefixed gray text used in dark mode
         '.dark .text-gray-500': { 'color': `var(--ob-400) ${i}` },

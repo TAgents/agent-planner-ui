@@ -1,5 +1,4 @@
 import React from 'react';
-import { cn } from '../v1/cn';
 
 type Kind = 'blueprint' | 'workspace' | 'goal' | 'plan';
 
@@ -7,17 +6,17 @@ const BLOCKS: Array<{ kind: Kind; title: string; body: string }> = [
   {
     kind: 'blueprint',
     title: 'Blueprints capture what works',
-    body: 'Save a winning workflow once — fork it into a fresh workspace any time you need to run it again.',
+    body: 'Save a winning workflow once, then fork it into a fresh workspace whenever you need it again.',
   },
   {
     kind: 'workspace',
     title: 'Workspaces are where work lives',
-    body: 'A live operating surface for a real effort — goals, plans, agents, and decisions in one place.',
+    body: 'A live operating surface for real work, with goals, plans, agents, and decisions in one place.',
   },
   {
     kind: 'goal',
     title: 'Goals keep work aligned',
-    body: "Every workspace ties back to an outcome, so the team and agents know why the work matters.",
+    body: 'Every workspace ties back to an outcome, so the team and agents know why the work matters.',
   },
   {
     kind: 'plan',
@@ -26,20 +25,26 @@ const BLOCKS: Array<{ kind: Kind; title: string; body: string }> = [
   },
 ];
 
-const KIND_META: Record<Kind, { fg: string; glyph: string; name: string }> = {
-  blueprint: { fg: 'text-violet',   glyph: 'BP', name: 'Blueprint' },
-  workspace: { fg: 'text-amber',    glyph: 'WS', name: 'Workspace' },
-  goal:      { fg: 'text-emerald',  glyph: 'GO', name: 'Goal' },
-  plan:      { fg: 'text-text-sec', glyph: 'PL', name: 'Plan' },
+/** Legend swatches: dashed stroke = reusable/static, solid = live. */
+const KIND_META: Record<Kind, { name: string; stroke: string; dashed: boolean }> = {
+  blueprint: { name: 'Blueprint', stroke: 'stroke-violet', dashed: true },
+  workspace: { name: 'Workspace', stroke: 'stroke-amber', dashed: false },
+  goal:      { name: 'Goal', stroke: 'stroke-emerald', dashed: false },
+  plan:      { name: 'Plan', stroke: 'stroke-text-sec', dashed: false },
 };
 
+/**
+ * The object model, presented like a drawing legend: each object gets a
+ * line-style swatch (dashed = reusable, solid ink = live) so the section
+ * teaches the same vocabulary the hero drawing uses.
+ */
 const WhyDifferentSection: React.FC = () => (
-  <section className="border-b border-border">
+  <section>
     <div className="mx-auto max-w-[1180px] px-6 py-20 sm:px-9 md:py-24">
       <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-        Why this is different
+        Fig. 02 · Object model
       </span>
-      <h2 className="mt-3 max-w-[720px] font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-text sm:text-[32px]">
+      <h2 className="mt-3 max-w-[680px] font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.005em] text-text sm:text-[40px]">
         Most tools track tasks. AgentPlanner structures the way you actually run work.
       </h2>
       <div className="mt-10 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
@@ -48,18 +53,26 @@ const WhyDifferentSection: React.FC = () => (
           return (
             <div
               key={b.kind}
-              className="rounded-[10px] border border-border bg-surface p-[22px]"
+              className="rounded-[4px] border border-border bg-surface p-[22px]"
             >
-              <div className="mb-3.5 flex items-center gap-2">
-                <span className={cn(
-                  'rounded-sm bg-black/5 px-[5px] py-[2px] font-mono text-[9px] font-bold tracking-[0.08em] dark:bg-white/5',
-                  m.fg,
-                )}>{m.glyph}</span>
-                <div className="font-display text-[12px] font-semibold tracking-[-0.01em] text-text">
+              <div className="mb-4 flex items-center gap-2.5">
+                <svg width="26" height="18" viewBox="0 0 26 18" aria-hidden>
+                  <rect
+                    x="1"
+                    y="1"
+                    width="24"
+                    height="16"
+                    rx="2"
+                    className={`fill-none ${m.stroke}`}
+                    strokeWidth="1.5"
+                    strokeDasharray={m.dashed ? '4 3' : undefined}
+                  />
+                </svg>
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-text-sec">
                   {m.name}
-                </div>
+                </span>
               </div>
-              <div className="mb-2 font-display text-[16px] font-semibold leading-tight tracking-[-0.015em] text-text">
+              <div className="mb-2 font-display text-[19px] font-semibold leading-tight text-text">
                 {b.title}
               </div>
               <div className="text-[13px] leading-relaxed text-text-sec">

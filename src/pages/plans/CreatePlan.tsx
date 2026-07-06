@@ -36,7 +36,8 @@ const CreatePlan: React.FC = () => {
   // Legacy plan form state
   const [planTitle, setPlanTitle] = useState('');
   const [planDescription, setPlanDescription] = useState('');
-  const [planStatus, setPlanStatus] = useState<'draft' | 'active'>('draft');
+  // New plans start inactive — an idea agents won't burn tokens on until activated.
+  const [planActive, setPlanActive] = useState(false);
 
   const handleGoalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +78,7 @@ const CreatePlan: React.FC = () => {
       const result = await createPlan.mutateAsync({
         title: planTitle,
         description: planDescription,
-        status: planStatus,
+        active: planActive,
         ...(presetWorkspaceId ? { workspace_id: presetWorkspaceId } : {}),
       } as any);
 
@@ -91,7 +92,7 @@ const CreatePlan: React.FC = () => {
       if (planId) {
         navigate(`/app/plans/${planId}`);
       } else {
-        navigate('/app/plans');
+        navigate('/app/goals');
       }
     } catch (err: any) {
       console.error('Error creating plan:', err);
@@ -104,7 +105,7 @@ const CreatePlan: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Back link */}
         <button
-          onClick={() => navigate('/app/plans')}
+          onClick={() => navigate('/app/goals')}
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -314,32 +315,35 @@ const CreatePlan: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Status
+                    Start as
                   </label>
                   <div className="flex gap-4">
                     <label className="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
                         className="form-radio text-blue-600"
-                        name="planStatus"
-                        value="draft"
-                        checked={planStatus === 'draft'}
-                        onChange={() => setPlanStatus('draft')}
+                        name="planActive"
+                        value="inactive"
+                        checked={!planActive}
+                        onChange={() => setPlanActive(false)}
                       />
-                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Draft</span>
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Inactive</span>
                     </label>
                     <label className="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
                         className="form-radio text-blue-600"
-                        name="planStatus"
+                        name="planActive"
                         value="active"
-                        checked={planStatus === 'active'}
-                        onChange={() => setPlanStatus('active')}
+                        checked={planActive}
+                        onChange={() => setPlanActive(true)}
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Active</span>
                     </label>
                   </div>
+                  <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                    Inactive plans are just an idea — agents won't work on them (no token cost) until you activate.
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-3">

@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import LandingHeader from '../components/landing/LandingHeader';
 import HeroSection from '../components/landing/HeroSection';
+import SocialProofSection from '../components/landing/SocialProofSection';
 import WhyDifferentSection from '../components/landing/WhyDifferentSection';
 import ProductFlowSection from '../components/landing/ProductFlowSection';
 import UseCasesSection from '../components/landing/UseCasesSection';
@@ -37,6 +38,7 @@ const Landing: React.FC = () => {
       <div className="min-h-screen bg-bg font-body text-text">
         <LandingHeader />
         <HeroSection />
+        <SocialProofSection />
         <WhyDifferentSection />
         <ProductFlowSection />
         <UseCasesSection />

@@ -4,15 +4,12 @@ import {
   User,
   Building2,
   Plug,
-  AppWindow,
   Key,
   Bell,
   CreditCard,
   AlertTriangle,
 } from 'lucide-react';
 import { useTokens } from '../../hooks/useTokens';
-import { TopBar } from '../v1';
-import VersionBadge from './VersionBadge';
 
 interface Section {
   path: string;
@@ -71,12 +68,6 @@ const SettingsLayout: React.FC = () => {
     { path: '/app/settings/profile', label: 'Profile', sub: 'Personal info', icon: User },
     { path: '/app/settings/organization', label: 'Organization', sub: orgName, icon: Building2 },
     {
-      path: '/app/settings/connections',
-      label: 'Connected apps',
-      sub: 'Apps that can act as you',
-      icon: AppWindow,
-    },
-    {
       path: '/app/settings/agents',
       label: 'Agents & integrations',
       sub: 'MCP · Slack · webhooks',
@@ -102,41 +93,44 @@ const SettingsLayout: React.FC = () => {
   const aliases: Record<string, string> = {
     '/app/settings/organizations': '/app/settings/organization',
     '/app/settings/integrations': '/app/settings/agents',
+    '/app/settings/connections': '/app/settings/agents',
     '/app/settings': '/app/settings/profile',
   };
   const normalizedPath = aliases[location.pathname] || location.pathname;
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        kicker="◇ Settings"
-        title="Settings"
-        actions={
-          <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-text-sec">
+    <div className="min-h-full bg-bg text-text">
+      <div className="mx-auto flex max-w-[1180px] 2xl:max-w-[1600px] flex-col gap-6 px-6 py-6">
+        {/* Page header */}
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="font-display text-[12px] uppercase tracking-[0.18em] text-text-sec">
+              ◇ Settings
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-[12px] text-text-sec">
             <Link
               to="/app/settings/organization"
-              className="truncate hover:text-text"
+              className="hover:text-text"
               title="Active organization"
             >
               {orgName}
             </Link>
             <span className="text-border">·</span>
-            <Link to="/app/settings/profile" className="flex min-w-0 items-center gap-2 hover:text-text">
+            <Link to="/app/settings/profile" className="flex items-center gap-2 hover:text-text">
               <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface-hi font-mono text-[9px] uppercase text-text-sec">
                 {userMonogram(user.name)}
               </span>
-              <span className="truncate">
+              <span>
                 {user.name} · <span className="capitalize">{user.role}</span>
               </span>
             </Link>
           </div>
-        }
-      />
-      <div className="flex-1 overflow-auto bg-bg">
-        <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-9">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-[260px_1fr]">
+        </header>
+
+        <div className="grid grid-cols-[260px_1fr] gap-6">
           {/* Section rail */}
-          <nav aria-label="Settings sections" className="grid grid-cols-1 gap-1 sm:grid-cols-2 md:flex md:flex-col">
+          <nav aria-label="Settings sections" className="flex flex-col gap-1">
             {sections.map((s) => {
               const isActive =
                 normalizedPath === s.path || normalizedPath.startsWith(s.path + '/');
@@ -174,14 +168,12 @@ const SettingsLayout: React.FC = () => {
                 </NavLink>
               );
             })}
-            <VersionBadge />
           </nav>
 
           {/* Section content */}
           <main className="min-w-0">
             <Outlet />
           </main>
-          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { AuthSplitLayout } from '../../components/v1';
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,12 +14,12 @@ const ForgotPassword: React.FC = () => {
     setError(null);
 
     if (!email) {
-      setError('Please enter your email address');
+      setError('Enter your email address');
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError('Enter a valid email address');
       return;
     }
 
@@ -37,81 +38,92 @@ const ForgotPassword: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center">
-          <CheckCircle className="mx-auto w-10 h-10 text-green-500 mb-3" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Check your email</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Password reset link sent to {email}
-          </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      <AuthSplitLayout kicker="Reset password" title="Check your email">
+        <div>
+          <div className="flex items-start gap-3 rounded-[3px] border border-emerald/30 bg-emerald/10 px-4 py-3">
+            <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald" />
+            <p className="text-[13px] leading-relaxed text-text">
+              Password reset link sent to <span className="font-medium">{email}</span>.
+            </p>
+          </div>
+          <p className="mt-4 text-[12.5px] text-text-sec">
             Didn't receive it?{' '}
-            <button onClick={() => { setSuccess(false); setEmail(''); }} className="text-amber-600 dark:text-amber-400 hover:underline">
+            <button
+              onClick={() => { setSuccess(false); setEmail(''); }}
+              className="text-amber hover:underline"
+            >
               Try again
             </button>
           </p>
-          <Link to="/login" className="inline-flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:underline">
-            <ArrowLeft className="w-3 h-3" />
+          <Link
+            to="/login"
+            className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-amber hover:underline"
+          >
+            <ArrowLeft className="h-3 w-3" />
             Back to sign in
           </Link>
         </div>
-      </div>
+      </AuthSplitLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6">
-          <Link to="/login" className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
-            <ArrowLeft className="w-3 h-3" />
-            Back to sign in
-          </Link>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Reset password</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter your email to receive a reset link.</p>
-        </div>
+    <AuthSplitLayout
+      kicker="Reset password"
+      title="Reset your password"
+      subtitle="Enter your email and we'll send you a reset link."
+      altCta={
+        <Link to="/login" className="inline-flex items-center gap-1.5 text-amber hover:underline">
+          <ArrowLeft className="h-3 w-3" />
+          Back to sign in
+        </Link>
+      }
+    >
+      <div>
+        {error && (
+          <div className="mb-4 rounded-[3px] border border-red/30 bg-red/10 px-3 py-2 text-[12.5px] text-red">
+            {error}
+          </div>
+        )}
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-gray-900 dark:bg-amber-400 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                'Send reset link'
-              )}
-            </button>
-          </form>
-        </div>
+              Work email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-[3px] border border-border bg-surface px-3 py-2 text-[13px] text-text outline-none placeholder:text-text-muted focus:border-amber"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sending…
+              </>
+            ) : (
+              'Send reset link →'
+            )}
+          </button>
+        </form>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 };
 

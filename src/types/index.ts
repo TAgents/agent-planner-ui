@@ -121,6 +121,12 @@ export interface Plan {
   title: string;
   description: string;
   status: PlanStatus;
+  /**
+   * Agent-execution gate, independent of `status`. false = inactive (just an
+   * idea — agents won't work on it, so it costs no tokens); true = active.
+   * New plans default to inactive.
+   */
+  active: boolean;
   owner_id: string;
   visibility?: PlanVisibility;
   created_at: string;

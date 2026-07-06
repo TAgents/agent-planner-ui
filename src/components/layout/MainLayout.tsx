@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, HelpCircle } from 'lucide-react';
 import { AppShell, type AppShellNavId } from '../v1';
 import { useUI } from '../../contexts/UIContext';
+import GuidedTour from '../help/GuidedTour';
+import ChatDock from '../chat/ChatDock';
 
 /**
  * Resolves the active sidebar item from the current pathname. Everything not
@@ -12,8 +14,10 @@ import { useUI } from '../../contexts/UIContext';
 function activeNavId(pathname: string): AppShellNavId {
   if (pathname.startsWith('/app/workspaces')) return 'workspaces';
   if (pathname.startsWith('/app/blueprints')) return 'blueprints';
+  // Goals lead; Plans are folded into goals — both goal and plan pages highlight Goals.
   if (pathname.startsWith('/app/goals')) return 'goals';
-  if (pathname.startsWith('/app/plans')) return 'plans';
+  if (pathname.startsWith('/app/plans')) return 'goals';
+  if (pathname.startsWith('/app/chat')) return 'chat';
   if (pathname.startsWith('/app/knowledge')) return 'know';
   // Insights / Strategy / Portfolio fold into Mission (the home).
   return 'mission';
@@ -30,6 +34,29 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const { state, toggleDarkMode } = useUI();
   const active = activeNavId(location.pathname);
+  const [runTour, setRunTour] = useState(false);
+
+  // Auto-launch the tour once, the first time a user lands in the app. The
+  // "seen" flag is persisted so it never auto-opens again (they can still
+  // replay it from the Help button).
+  useEffect(() => {
+    let seen = true;
+    try {
+      seen = !!localStorage.getItem('ap-tour-seen');
+    } catch {
+      /* localStorage unavailable — treat as seen, don't nag */
+    }
+    if (seen) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem('ap-tour-seen', '1');
+      } catch {
+        /* ignore */
+      }
+      setRunTour(true);
+    }, 700);
+    return () => clearTimeout(t);
+  }, []);
 
   // Read user from auth_session for the rail footer monogram.
   const userName = (() => {
@@ -49,6 +76,18 @@ const MainLayout: React.FC = () => {
         active={active}
         footer={
           <div className="flex flex-col gap-0.5 border-t border-border pt-2">
+            <button
+              type="button"
+              data-tour="help"
+              onClick={() => setRunTour(true)}
+              aria-label="Help"
+              className="group flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-text-sec transition-colors hover:bg-surface-hi/60 hover:text-text"
+            >
+              <HelpCircle size={18} strokeWidth={2} className="flex-shrink-0 text-text-muted group-hover:text-text-sec" />
+              <span className="font-body text-[13.5px] font-medium leading-none">
+                Help
+              </span>
+            </button>
             <button
               type="button"
               onClick={toggleDarkMode}
@@ -80,10 +119,14 @@ const MainLayout: React.FC = () => {
           </div>
         }
       >
-        <main className="h-full overflow-y-auto">
-          <Outlet />
-        </main>
+        <div className="flex h-full">
+          <ChatDock />
+          <main className="h-full min-w-0 flex-1 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
       </AppShell>
+      <GuidedTour run={runTour} onClose={() => setRunTour(false)} />
     </div>
   );
 };

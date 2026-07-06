@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueries } from 'react-query';
 import {
+  Breadcrumb,
   Card,
   GhostButton,
   Kicker,
@@ -10,7 +11,6 @@ import {
   PrimaryButton,
   ProposedChip,
   StatusDot,
-  TopBar,
   cn,
 } from '../components/v1';
 import { useUpdateWorkspace, useWorkspace } from '../hooks/useWorkspaces';
@@ -44,46 +44,46 @@ const WorkspaceDetail: React.FC = () => {
   if (!workspace) return <Center>Workspace not found.</Center>;
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        breadcrumb={[{ label: 'Workspaces', to: '/app/workspaces' }, workspace.title]}
-        kicker={
-          <span className="inline-flex items-center gap-2">
-            <Kicker>Workspace · live</Kicker>
-            {workspace.isDefault && (
-              <span className="rounded bg-surface-hi px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">
-                Default
-              </span>
-            )}
-            {isPersonal && (
-              <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-sec">
-                Personal
-              </span>
-            )}
-          </span>
-        }
-        title={workspace.title}
-        subtitle={
-          <>
-            {workspace.description ?? '—'}
-            {workspace.forkedFromBlueprintId && (
-              <>
-                {' · '}
-                <Link to={`/app/blueprints/${workspace.forkedFromBlueprintId}`} className="text-amber underline">
-                  forked from blueprint
-                </Link>
-              </>
-            )}
-          </>
-        }
-        actions={(
-          <div className="flex items-center gap-2">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-7">
+        <Breadcrumb items={[{ label: 'Workspaces', to: '/app/workspaces' }, workspace.title]} />
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
+              <Kicker>◆ Workspace</Kicker>
+              {workspace.isDefault && (
+                <span className="rounded bg-surface-hi px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">
+                  Default
+                </span>
+              )}
+              {isPersonal && (
+                <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-sec">
+                  Personal
+                </span>
+              )}
+            </div>
+            <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+              {workspace.title}
+            </h1>
+            <p className="mt-2 max-w-[64ch] text-[13px] leading-[1.55] text-text-sec">
+              {workspace.description ?? '—'}
+              {workspace.forkedFromBlueprintId && (
+                <>
+                  {' · '}
+                  <Link to={`/app/blueprints/${workspace.forkedFromBlueprintId}`} className="text-amber underline">
+                    forked from blueprint
+                  </Link>
+                </>
+              )}
+            </p>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
             <GhostButton onClick={() => setShowEdit(true)}>Edit</GhostButton>
             <PrimaryButton onClick={() => navigate(`/app/plans/create?workspace=${id}`)}>New Plan</PrimaryButton>
           </div>
-        )}
-      />
-      <div className="flex flex-1 flex-col gap-4 overflow-auto bg-bg p-6">
+        </div>
+      </header>
+      <div className="flex flex-col gap-4">
         <SummaryStrip workspace={workspace} planCount={plans.length} goalCount={goals.length} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GoalsPanel goals={goals} workspaceId={id!} />

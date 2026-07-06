@@ -8,7 +8,6 @@ import {
   Kicker,
   Pill,
   PrimaryButton,
-  TopBar,
   type PillColor,
 } from '../components/v1';
 import { usePlan, usePlans } from '../hooks/usePlans';
@@ -23,39 +22,8 @@ import { useNodeDependencies } from '../hooks/useDependencies';
 import { coherenceService } from '../services/knowledge.service';
 import type { PlanNode, NodeStatus, NodeType, Dependency } from '../types';
 import { computeStats, statsFromRollup, flattenTree, effectivePhaseStatus, type PlanStats as Stats, type TreeRow } from './PlanTree.helpers';
-import SharePlanModal from '../components/plans/SharePlanModal';
 
 type DetailTab = 'details' | 'agent' | 'timeline';
-
-type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
-const PLAN_STATUSES: PlanStatus[] = ['draft', 'active', 'completed', 'archived'];
-
-/**
- * Human-steering control: change a plan's lifecycle status. Note `active⇄completed`
- * is also auto-maintained server-side from work completion, so a manual override
- * here is reconciled the next time a task's status changes.
- */
-const PlanStatusControl: React.FC<{ plan: PlanType }> = ({ plan }) => {
-  const { updatePlan } = usePlans(1, 100, undefined, false);
-  const current = (plan.status as PlanStatus) || 'draft';
-  const tone =
-    current === 'active' ? 'border-amber text-amber'
-      : current === 'completed' ? 'border-emerald text-emerald'
-        : current === 'archived' ? 'border-border text-text-muted'
-          : 'border-border text-text-sec';
-  return (
-    <select
-      aria-label="Plan status"
-      title="Change plan status"
-      value={current}
-      disabled={updatePlan.isLoading}
-      onChange={(e) => updatePlan.mutate({ planId: plan.id, data: { status: e.target.value } as Partial<PlanType> })}
-      className={`rounded-md border bg-surface px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] capitalize outline-none transition-colors hover:border-amber focus:border-amber ${tone}`}
-    >
-      {PLAN_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-    </select>
-  );
-};
 
 const STATUS_GLYPH: Record<NodeStatus, string> = {
   not_started: '○',
@@ -136,7 +104,7 @@ const STATUS_BAR_CLS: Record<NodeStatus, string> = {
 const PlanTree: React.FC = () => {
   const { planId } = useParams<{ planId: string }>();
   const safePlanId = planId || '';
-  const { plan } = usePlan(safePlanId);
+  const { plan, refetch: refetchPlan } = usePlan(safePlanId);
   const { nodes, isLoading } = useNodes(safePlanId);
   // Container (phase/root) roll-up status comes from the server rollup
   // (rollup.container_status); a phase reads "completed" once all its
@@ -169,7 +137,17 @@ const PlanTree: React.FC = () => {
   const [tab, setTab] = useState<DetailTab>('details');
   const [showSaveAsBlueprint, setShowSaveAsBlueprint] = useState(false);
   const [showMove, setShowMove] = useState(false);
-  const [showShare, setShowShare] = useState(false);
+
+  // Activate gate: an inactive plan is just an idea — agents won't pick up its
+  // tasks (no token cost) until it's activated here.
+  const { updatePlan } = usePlans(1, 100, undefined, false);
+  const activate = async () => {
+    if (!plan) return;
+    await updatePlan.mutateAsync({ planId: plan.id, data: { active: true } as any });
+    // usePlan's query key includes userId, which the mutation's invalidation
+    // doesn't match — refetch explicitly so the banner/badge update immediately.
+    await refetchPlan();
+  };
 
   const selectedNode = useMemo(
     () => (selected ? flat.find((n) => n.id === selected) || null : flat[0] || null),
@@ -177,16 +155,34 @@ const PlanTree: React.FC = () => {
   );
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        breadcrumb={<PlanBreadcrumb plan={plan} />}
-        kicker="◆ Plan"
-        title={plan?.title || 'Loading…'}
-        subtitle={plan?.description || undefined}
-        actions={
-          plan ? (
-            <>
-              <PlanStatusControl plan={plan} />
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-8">
+        <PlanBreadcrumb plan={plan} />
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Kicker className="mb-1">◆ Plan</Kicker>
+            <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+              {plan?.title || 'Loading…'}
+            </h1>
+            {plan?.description && (
+              <p className="mt-2 max-w-[60ch] text-[13px] leading-[1.55] text-text-sec">
+                {plan.description}
+              </p>
+            )}
+          </div>
+          {plan && (
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Pill color={plan.active ? 'emerald' : 'slate'}>
+                {plan.active ? 'Active' : 'Inactive'}
+              </Pill>
+              {(plan.status === 'completed' || plan.status === 'archived') && (
+                <Pill color={plan.status === 'completed' ? 'emerald' : 'slate'}>{plan.status}</Pill>
+              )}
+              {!plan.active && (
+                <PrimaryButton onClick={activate} disabled={updatePlan.isLoading}>
+                  {updatePlan.isLoading ? 'Activating…' : 'Activate →'}
+                </PrimaryButton>
+              )}
               {plan.visibility === 'public' && <Pill color="slate">Public</Pill>}
               <Link
                 to={`/app/knowledge/timeline?plan=${plan.id}`}
@@ -196,15 +192,34 @@ const PlanTree: React.FC = () => {
                 <span>◆ Knowledge</span>
                 <span aria-hidden>→</span>
               </Link>
-              <GhostButton onClick={() => setShowShare(true)}>Share →</GhostButton>
-              <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
-              <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>Save as Blueprint →</GhostButton>
-            </>
-          ) : undefined
-        }
-      />
-      <div className="flex-1 overflow-auto bg-bg">
-        <div className="mx-auto max-w-[1280px] px-6 py-8 sm:px-9">
+              <GhostButton onClick={() => setShowMove(true)}>
+                Move →
+              </GhostButton>
+              <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>
+                Save as Blueprint →
+              </GhostButton>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {plan && !plan.active && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-border bg-surface px-4 py-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              ◆ Inactive
+            </p>
+            <p className="mt-0.5 text-[13px] text-text-sec">
+              This plan is just an idea right now — agents won't work on it, so it costs no tokens.
+              Activate it when you're ready for agents to start.
+            </p>
+          </div>
+          <PrimaryButton onClick={activate} disabled={updatePlan.isLoading}>
+            {updatePlan.isLoading ? 'Activating…' : 'Activate plan →'}
+          </PrimaryButton>
+        </div>
+      )}
+
       {showSaveAsBlueprint && plan && (
         <SaveAsBlueprintModal
           planId={plan.id}
@@ -218,9 +233,6 @@ const PlanTree: React.FC = () => {
           plan={plan}
           onClose={() => setShowMove(false)}
         />
-      )}
-      {showShare && plan && (
-        <SharePlanModal plan={plan} onClose={() => setShowShare(false)} />
       )}
 
       {stats.total > 0 && (
@@ -327,8 +339,6 @@ const PlanTree: React.FC = () => {
               <p className="text-sm text-text-sec">Pick a node to inspect.</p>
             </Card>
           )}
-        </div>
-      </div>
         </div>
       </div>
     </div>
@@ -933,7 +943,7 @@ const PlanBreadcrumb: React.FC<{ plan: PlanType | undefined | null }> = ({ plan 
   }
   // No workspace yet (personal/no-org plan, or still loading)
   return (
-    <Breadcrumb items={[{ label: 'Plans', to: '/app/plans' }, plan?.title || 'Plan']} />
+    <Breadcrumb items={[{ label: 'Goals', to: '/app/goals' }, plan?.title || 'Plan']} />
   );
 };
 

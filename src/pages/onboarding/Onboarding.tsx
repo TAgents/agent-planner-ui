@@ -86,8 +86,8 @@ const Onboarding: React.FC = () => {
     return inlineToken(config.lines, token);
   }, [config, token]);
 
-  const onSuccess = () => navigate('/app');
-  const onSkip = () => navigate('/app');
+  const onSuccess = () => navigate('/app/chat');
+  const onSkip = () => navigate('/app/chat');
 
   return (
     <div className="min-h-screen bg-bg text-text">
