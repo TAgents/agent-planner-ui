@@ -141,13 +141,23 @@ const PlanTree: React.FC = () => {
   // Activate gate: a draft plan is just an idea — agents won't pick up its
   // tasks (no token cost) until it's activated here.
   const { updatePlan } = usePlans(1, 100, undefined, false);
-  const activate = async () => {
+  const setPlanStatus = async (status: 'active' | 'draft' | 'archived') => {
     if (!plan) return;
-    await updatePlan.mutateAsync({ planId: plan.id, data: { status: 'active' } });
+    await updatePlan.mutateAsync({ planId: plan.id, data: { status } });
     // usePlan's query key includes userId, which the mutation's invalidation
     // doesn't match — refetch explicitly so the banner/badge update immediately.
     await refetchPlan();
   };
+  const activate = () => setPlanStatus('active');
+  const archive = () => {
+    if (!plan) return;
+    if (window.confirm(`Archive "${plan.title}"? Agents stop working on it; you can unarchive later.`)) {
+      setPlanStatus('archived');
+    }
+  };
+  // Steering (activate/archive) needs write access; "Done" has no button —
+  // completion is derived from the work reaching 100%.
+  const canSteer = !plan?.role || ['owner', 'admin', 'editor'].includes(plan.role);
 
   const selectedNode = useMemo(
     () => (selected ? flat.find((n) => n.id === selected) || null : flat[0] || null),
@@ -169,6 +179,13 @@ const PlanTree: React.FC = () => {
                 {plan.description}
               </p>
             )}
+            {plan && (plan.owner || plan.organization) && (
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">
+                {plan.owner && <>By {plan.owner.name}</>}
+                {plan.organization && <> · {plan.organization.name}</>}
+                {plan.role && plan.role !== 'owner' && <> · your role: {plan.role}</>}
+              </p>
+            )}
           </div>
           {plan && (
             <div className="flex flex-shrink-0 items-center gap-2">
@@ -179,10 +196,15 @@ const PlanTree: React.FC = () => {
                   {plan.status === 'active' ? 'Active' : 'Inactive'}
                 </Pill>
               )}
-              {plan.status === 'draft' && (
+              {plan.status === 'draft' && canSteer && (
                 <PrimaryButton onClick={activate} disabled={updatePlan.isLoading}>
                   {updatePlan.isLoading ? 'Activating…' : 'Activate →'}
                 </PrimaryButton>
+              )}
+              {plan.status === 'archived' && canSteer && (
+                <GhostButton onClick={activate} disabled={updatePlan.isLoading}>
+                  {updatePlan.isLoading ? '…' : 'Unarchive →'}
+                </GhostButton>
               )}
               {plan.visibility === 'public' && <Pill color="slate">Public</Pill>}
               <Link
@@ -199,6 +221,11 @@ const PlanTree: React.FC = () => {
               <GhostButton onClick={() => setShowSaveAsBlueprint(true)}>
                 Save as Blueprint →
               </GhostButton>
+              {plan.status !== 'archived' && canSteer && (
+                <GhostButton onClick={archive} disabled={updatePlan.isLoading}>
+                  Archive
+                </GhostButton>
+              )}
             </div>
           )}
         </div>

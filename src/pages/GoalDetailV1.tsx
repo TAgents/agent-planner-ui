@@ -37,6 +37,19 @@ function relTime(iso?: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+/** Org name from the session's membership list (goals you can open are always
+ *  in one of your orgs — cross-org goals 403 on this page). */
+function orgNameFor(orgId?: string | null): string | null {
+  if (!orgId) return null;
+  try {
+    const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
+    const orgs: { id: string; name: string }[] = session?.user?.organizations || [];
+    return orgs.find((o) => o.id === orgId)?.name || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Goal Detail — single goal opened up. Composes Goal Compass,
  * Quality score, Tension Hotspots, and the Critical Path subway
@@ -205,6 +218,8 @@ const GoalDetailV1: React.FC = () => {
               </Pill>
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
                 created {relTime(goal.createdAt)}
+                {goal.ownerName && <> · by {goal.ownerName}</>}
+                {orgNameFor(goal.organizationId) && <> · {orgNameFor(goal.organizationId)}</>}
               </span>
               <WorkspaceChip goal={goal} />
             </div>
