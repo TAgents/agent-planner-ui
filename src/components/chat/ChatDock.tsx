@@ -18,6 +18,7 @@ import { useUI } from '../../contexts/UIContext';
 import { useConversations, useConversationMessages } from '../../hooks/useConversations';
 import { conversationService, type ChatMessage } from '../../services/conversations.service';
 import { streamChat } from '../../hooks/useChatStream';
+import { GOAL_STARTER, PLAN_STARTER, placeholderRange } from './starters';
 import {
   md,
   relTime,
@@ -39,8 +40,8 @@ const ACTIVE_KEY = 'ap-chat-active';
  * the route, so it survives navigation between Mission / Goals / Knowledge / etc.
  */
 const ChatDock: React.FC = () => {
-  const { state, setChatDockOpen, setChatDockWidth } = useUI();
-  const { open, width } = state.chatDock;
+  const { state, setChatDockOpen, setChatDockWidth, clearChatDockDraft } = useUI();
+  const { open, width, draft } = state.chatDock;
 
   const [activeId, setActiveId] = useState<string | undefined>(() => {
     try {
@@ -70,6 +71,7 @@ const ChatDock: React.FC = () => {
   const [pendingUser, setPendingUser] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
   // The in-flight stream and the conversation it belongs to. Lets us cancel it
   // (Stop button, unmount) and detect a switch to a *different* conversation —
@@ -85,6 +87,31 @@ const ChatDock: React.FC = () => {
   // Cancel any in-flight stream when the dock unmounts (e.g. logout).
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Put a starter into the composer, focus it, and select the [placeholder]
+  // so the user's first keystroke replaces it with their own words.
+  const insertStarter = useCallback((text: string) => {
+    setInput(text);
+    requestAnimationFrame(() => {
+      const ta = composerRef.current;
+      if (!ta) return;
+      ta.focus();
+      const range = placeholderRange(text);
+      if (range) {
+        ta.setSelectionRange(range[0], range[1]);
+        // Starters put the placeholder up top; keep it in view rather than
+        // letting the grown textarea rest scrolled to its end.
+        ta.scrollTop = 0;
+      }
+    });
+  }, []);
+
+  // Create-flow handoff: a page pushed a starter into the dock via UIContext.
+  useEffect(() => {
+    if (!draft) return;
+    insertStarter(draft);
+    clearChatDockDraft();
+  }, [draft, insertStarter, clearChatDockDraft]);
+
   // Reset transient turn state when switching conversations. A send may set
   // activeId itself (new-conversation flow) — that's the stream's own thread,
   // so leave it alone; switching to any *other* thread cancels the stream.
@@ -96,6 +123,15 @@ const ChatDock: React.FC = () => {
     setStreamText('');
     setStreamEvents([]);
   }, [activeId]);
+
+  // Grow the composer with its content (starters are multi-paragraph);
+  // the max-h class caps it and scrolling takes over beyond that.
+  useEffect(() => {
+    const ta = composerRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+  }, [input]);
 
   const scrollToBottom = useCallback(() => {
     const el = threadRef.current;
@@ -391,14 +427,21 @@ const ChatDock: React.FC = () => {
                   your behalf and ask before deleting things.
                 </p>
                 <div className="mt-5 flex flex-col gap-2">
-                  {['How are my goals doing?', 'What should I focus on next?', 'Create a goal and a plan to reach it'].map((s) => (
+                  {(
+                    [
+                      { label: 'How are my goals doing?', insert: 'How are my goals doing?' },
+                      { label: 'What should I focus on next?', insert: 'What should I focus on next?' },
+                      { label: 'Create a well-formed goal', insert: GOAL_STARTER },
+                      { label: 'Plan a piece of work', insert: PLAN_STARTER },
+                    ] as const
+                  ).map((s) => (
                     <button
-                      key={s}
+                      key={s.label}
                       type="button"
-                      onClick={() => setInput(s)}
+                      onClick={() => insertStarter(s.insert)}
                       className="rounded-full border border-border bg-surface px-3 py-1.5 text-[12px] text-text-sec transition-colors hover:bg-surface-hi hover:text-text"
                     >
-                      {s}
+                      {s.label}
                     </button>
                   ))}
                 </div>
@@ -456,6 +499,7 @@ const ChatDock: React.FC = () => {
         <div data-tour="chat-composer" className="border-t border-border bg-bg px-3 py-3">
           <div className="flex items-end gap-2">
             <textarea
+              ref={composerRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {

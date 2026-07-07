@@ -14,7 +14,8 @@ import {
 import { usePlans } from '../hooks/usePlans';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { useGoalsTree, type GoalV2 } from '../hooks/useGoalsV2';
-import { CreateGoalDialog } from './GoalsV2';
+import { useUI } from '../contexts/UIContext';
+import { GOAL_STARTER, PLAN_STARTER } from '../components/chat/starters';
 import type { Plan, PlanStatus } from '../types';
 import { agentActivityKind } from './PlansList.helpers';
 
@@ -259,121 +260,6 @@ const GoalSectionHeader: React.FC<{
   );
 };
 
-function CreatePlanDialog({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
-  const { createPlan } = usePlans();
-  const { data: wsData } = useWorkspaces();
-  const workspaces = wsData?.workspaces ?? [];
-  const defaultWs = workspaces.find((w) => w.isDefault) ?? workspaces[0];
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  // New plans start inactive — an idea agents won't burn tokens on until activated.
-  const [active, setActive] = useState(false);
-  const [workspaceId, setWorkspaceId] = useState<string | undefined>(defaultWs?.id);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const payload: any = { title, description, active };
-      if (workspaceId) payload.workspace_id = workspaceId;
-      const newPlan = await createPlan.mutateAsync(payload);
-      const planId = newPlan?.id || (newPlan as any)?.plan?.id;
-      onClose();
-      if (planId) navigate(`/app/plans/${planId}`);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || 'Failed to create plan');
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-[460px] rounded-[10px] border border-border bg-surface p-5 shadow-xl"
-      >
-        <h3 className="mb-4 font-display text-base font-semibold text-text">Create plan</h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
-              Title
-            </label>
-            <input
-              placeholder="What are we shipping?"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              autoFocus
-              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
-              Description
-            </label>
-            <textarea
-              placeholder="Optional — what's the shape of this work?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
-                Start as
-              </label>
-              <select
-                value={active ? 'active' : 'inactive'}
-                onChange={(e) => setActive(e.target.value === 'active')}
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-amber focus:outline-none"
-                title="Inactive plans are just an idea — agents won't work on them (no token cost) until activated."
-              >
-                <option value="inactive">Inactive — idea only</option>
-                <option value="active">Active — agents work on it</option>
-              </select>
-            </div>
-            {workspaces.length > 1 && (
-              <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
-                  Workspace
-                </label>
-                <select
-                  value={workspaceId ?? ''}
-                  onChange={(e) => setWorkspaceId(e.target.value || undefined)}
-                  className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-amber focus:outline-none"
-                >
-                  {workspaces.map((w) => (
-                    <option key={w.id} value={w.id}>{w.title}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-          {error && <div className="rounded-md bg-red/10 px-3 py-2 text-xs text-red">{error}</div>}
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs text-text-sec transition-colors hover:bg-surface-hi"
-            >
-              Cancel
-            </button>
-            <PrimaryButton type="submit" disabled={createPlan.isLoading || !title.trim()}>
-              {createPlan.isLoading ? 'Creating…' : 'Create plan'}
-            </PrimaryButton>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 const GoalsList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading } = usePlans(1, 100);
@@ -382,9 +268,8 @@ const GoalsList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<SortKey>('updated');
   const [query, setQuery] = useState('');
-  const [showCreatePlan, setShowCreatePlan] = useState(false);
-  const [showCreateGoal, setShowCreateGoal] = useState(false);
   const [showEmptyGoals, setShowEmptyGoals] = useState(false);
+  const { openChatDockWithDraft } = useUI();
   const workspaceFilter = searchParams.get('workspace') || 'all';
   const setWorkspaceFilter = (id: string) => {
     const next = new URLSearchParams(searchParams);
@@ -523,13 +408,14 @@ const GoalsList: React.FC = () => {
               : `${goalCount} goal${goalCount === 1 ? '' : 's'} · ${plans.length} plan${plans.length === 1 ? '' : 's'} · ${counts.active} active`}
           </p>
         </div>
+        {/* Create flows hand off to the assistant (agent-first: the LLM
+            refines intent into structure — type, criteria, phases, deps —
+            instead of a form collecting raw fields). */}
         <div className="flex items-center gap-2" data-tour="create-actions">
-          <GhostButton onClick={() => setShowCreateGoal(true)}>+ New goal</GhostButton>
-          <PrimaryButton onClick={() => setShowCreatePlan(true)}>+ New plan</PrimaryButton>
+          <GhostButton onClick={() => openChatDockWithDraft(GOAL_STARTER)}>+ New goal</GhostButton>
+          <PrimaryButton onClick={() => openChatDockWithDraft(PLAN_STARTER)}>+ New plan</PrimaryButton>
         </div>
       </header>
-      {showCreatePlan && <CreatePlanDialog onClose={() => setShowCreatePlan(false)} />}
-      {showCreateGoal && <CreateGoalDialog onClose={() => setShowCreateGoal(false)} />}
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3" data-tour="plan-filters">
         <div className="flex flex-wrap gap-2">
@@ -616,7 +502,12 @@ const GoalsList: React.FC = () => {
             ) : (
               <>
                 <p className="font-display text-base font-semibold text-text">No goals here yet</p>
-                <p className="mt-2 text-sm text-text-sec">Create your first goal to get started.</p>
+                <p className="mt-2 text-sm text-text-sec">
+                  Tell the assistant what you want to achieve — it will shape it into a goal with you.
+                </p>
+                <PrimaryButton className="mt-4" onClick={() => openChatDockWithDraft(GOAL_STARTER)}>
+                  Start with the assistant →
+                </PrimaryButton>
               </>
             )}
           </div>

@@ -4,6 +4,9 @@ import { SidebarState, NodeDetailsState, AppSidebarState } from '../types';
 interface ChatDockState {
   open: boolean;
   width: number;
+  /** One-shot composer prefill — set by create-flow handoffs, consumed (and
+   *  cleared) by ChatDock on its next render. Never persisted. */
+  draft: string | null;
 }
 
 interface UIState {
@@ -27,7 +30,9 @@ type UIAction =
   | { type: 'SET_DARK_MODE'; payload: boolean }
   | { type: 'TOGGLE_CHAT_DOCK' }
   | { type: 'SET_CHAT_DOCK_OPEN'; payload: boolean }
-  | { type: 'SET_CHAT_DOCK_WIDTH'; payload: number };
+  | { type: 'SET_CHAT_DOCK_WIDTH'; payload: number }
+  | { type: 'OPEN_CHAT_DOCK_WITH_DRAFT'; payload: string }
+  | { type: 'CLEAR_CHAT_DOCK_DRAFT' };
 
 interface UIContextProps {
   state: UIState;
@@ -44,6 +49,9 @@ interface UIContextProps {
   toggleChatDock: () => void;
   setChatDockOpen: (open: boolean) => void;
   setChatDockWidth: (width: number) => void;
+  /** Open the dock with the composer prefilled (create-flow handoff). */
+  openChatDockWithDraft: (draft: string) => void;
+  clearChatDockDraft: () => void;
 }
 
 const defaultState: UIState = {
@@ -62,6 +70,7 @@ const defaultState: UIState = {
   chatDock: {
     open: true,
     width: 380,
+    draft: null,
   },
 };
 
@@ -158,6 +167,16 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         ...state,
         chatDock: { ...state.chatDock, width: action.payload },
       };
+    case 'OPEN_CHAT_DOCK_WITH_DRAFT':
+      return {
+        ...state,
+        chatDock: { ...state.chatDock, open: true, draft: action.payload },
+      };
+    case 'CLEAR_CHAT_DOCK_DRAFT':
+      return {
+        ...state,
+        chatDock: { ...state.chatDock, draft: null },
+      };
     default:
       return state;
   }
@@ -242,6 +261,9 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   const toggleChatDock = () => dispatch({ type: 'TOGGLE_CHAT_DOCK' });
   const setChatDockOpen = (open: boolean) => dispatch({ type: 'SET_CHAT_DOCK_OPEN', payload: open });
   const setChatDockWidth = (width: number) => dispatch({ type: 'SET_CHAT_DOCK_WIDTH', payload: width });
+  const openChatDockWithDraft = (draft: string) =>
+    dispatch({ type: 'OPEN_CHAT_DOCK_WITH_DRAFT', payload: draft });
+  const clearChatDockDraft = () => dispatch({ type: 'CLEAR_CHAT_DOCK_DRAFT' });
 
 
   return (
@@ -261,6 +283,8 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
         toggleChatDock,
         setChatDockOpen,
         setChatDockWidth,
+        openChatDockWithDraft,
+        clearChatDockDraft,
       }}
     >
       {children}

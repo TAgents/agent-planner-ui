@@ -154,9 +154,7 @@ function bdiSparkSeries(goal: GoalV2): number[] {
   return buckets;
 }
 
-// Exported for GoalsList (the routed goals index) — this page component itself
-// is unrouted but stays the canonical home of the create-goal flow.
-export function CreateGoalDialog({ onClose }: { onClose: () => void }) {
+function CreateGoalDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const createGoal = useCreateGoal();
   const [title, setTitle] = useState('');
