@@ -265,7 +265,7 @@ const GoalsList: React.FC = () => {
   const { plans, isLoading } = usePlans(1, 100);
   const { data: goalTree, isLoading: goalsLoading } = useGoalsTree();
   const { data: wsData } = useWorkspaces();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [sort, setSort] = useState<SortKey>('updated');
   const [query, setQuery] = useState('');
   const [showEmptyGoals, setShowEmptyGoals] = useState(false);
