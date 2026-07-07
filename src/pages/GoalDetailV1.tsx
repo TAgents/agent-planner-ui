@@ -15,7 +15,7 @@ import {
   SectionHead,
   type PillColor,
 } from '../components/v1';
-import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, useRecordCriterion, type GoalStateResult } from '../hooks/useGoalsV2';
+import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, useRecordCriterion, type GoalStateResult, type GoalStatus } from '../hooks/useGoalsV2';
 import { criteriaAttainment, normalizeCriteria, isMeasurableCriterion, isCriterionMet, type GoalCriterion } from '../utils/goalCriteria';
 import { goalHealthBadge } from '../utils/goalHealth';
 import { usePlans } from '../hooks/usePlans';
@@ -71,6 +71,15 @@ const GoalDetailV1: React.FC = () => {
 
   const [tab, setTab] = useState<Tab>('overview');
   const [showMove, setShowMove] = useState(false);
+
+  // Lifecycle steering — the human's half of the contract (agents build,
+  // humans direct). Measurable goals close themselves via auto-achieve when
+  // criteria are recorded met; these controls cover the judgment calls.
+  const updateGoal = useUpdateGoal();
+  const setGoalStatus = async (status: GoalStatus, confirmMsg?: string) => {
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    await updateGoal.mutateAsync({ id: goalId!, status });
+  };
 
   const goal = goalQ.data;
   const path = pathQ.data;
@@ -237,6 +246,39 @@ const GoalDetailV1: React.FC = () => {
               ◆ Knowledge →
             </Link>
             <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
+            {/* Mark achieved only for qualitative goals — measurable ones close
+                themselves when their criteria are recorded met (auto-achieve). */}
+            {(goal.status === 'active' || goal.status === 'draft') &&
+              attainment.measurable_count === 0 && (
+                <GhostButton onClick={() => setGoalStatus('achieved')} disabled={updateGoal.isLoading}>
+                  ✓ Mark achieved
+                </GhostButton>
+              )}
+            {goal.status === 'active' && (
+              <GhostButton onClick={() => setGoalStatus('paused')} disabled={updateGoal.isLoading}>
+                Pause
+              </GhostButton>
+            )}
+            {goal.status === 'paused' && (
+              <GhostButton onClick={() => setGoalStatus('active')} disabled={updateGoal.isLoading}>
+                Resume
+              </GhostButton>
+            )}
+            {(goal.status === 'active' || goal.status === 'paused' || goal.status === 'draft') && (
+              <GhostButton
+                onClick={() =>
+                  setGoalStatus('abandoned', `Abandon "${goal.title}"? Agents stop pursuing it; you can reactivate later.`)
+                }
+                disabled={updateGoal.isLoading}
+              >
+                Abandon
+              </GhostButton>
+            )}
+            {(goal.status === 'abandoned' || goal.status === 'achieved' || goal.status === 'archived') && (
+              <GhostButton onClick={() => setGoalStatus('active')} disabled={updateGoal.isLoading}>
+                Reactivate
+              </GhostButton>
+            )}
           </div>
         </div>
       </header>
