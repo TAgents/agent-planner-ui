@@ -23,7 +23,7 @@ const ProductFlowSection: React.FC = () => (
         Reuse, fork, align, execute.
       </h2>
 
-      <ol className="mt-7 grid list-none grid-cols-1 overflow-hidden border border-border sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="mt-7 grid list-none grid-cols-1 overflow-hidden rounded-xl border border-border sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s, i) => (
           <li
             key={s.n}

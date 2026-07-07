@@ -26,7 +26,7 @@ const QuickConnectCard: React.FC = () => {
   }, [client]);
 
   return (
-    <div className="overflow-hidden border border-border-hi bg-surface text-left">
+    <div className="overflow-hidden rounded-xl border border-border-hi bg-surface text-left">
       {/* Card header */}
       <div className="flex items-center justify-between border-b border-border bg-surface-hi px-4 py-2.5">
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-sec">
@@ -49,7 +49,7 @@ const QuickConnectCard: React.FC = () => {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setClientId(id)}
-                className={`border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                className={`rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors ${
                   active
                     ? 'border-amber bg-amber-soft text-amber'
                     : 'border-border bg-bg text-text-sec hover:border-border-hi hover:text-text'
@@ -69,7 +69,7 @@ const QuickConnectCard: React.FC = () => {
         {/* Token + test handoff — auth lives on /connect/:client */}
         <Link
           to={client.connectPath}
-          className="mt-3 block w-full rounded-[3px] bg-amber px-4 py-2.5 text-center font-medium text-bg transition-opacity hover:opacity-90"
+          className="mt-3 block w-full rounded-lg bg-amber px-4 py-2.5 text-center font-medium text-bg transition-opacity hover:opacity-90"
         >
           Get your token &amp; test the connection →
         </Link>

@@ -23,7 +23,7 @@ const LandingHeader: React.FC = () => {
             <span className="font-display text-[19px] font-semibold tracking-[0.01em] text-text">
               AgentPlanner
             </span>
-            <span className="border border-border-hi bg-surface px-1.5 py-[2px] font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-text-sec">
+            <span className="rounded-md border border-border-hi bg-surface px-1.5 py-[2px] font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-text-sec">
               Alpha
             </span>
           </Link>
@@ -62,13 +62,13 @@ const LandingHeader: React.FC = () => {
           </a>
           <Link
             to="/login"
-            className="hidden rounded-[3px] border border-border-hi bg-surface px-4 py-1.5 font-medium text-text transition-colors hover:bg-surface-hi sm:inline"
+            className="hidden rounded-lg border border-border-hi bg-surface px-4 py-1.5 font-medium text-text transition-colors hover:bg-surface-hi sm:inline"
           >
             Open chat
           </Link>
           <Link
             to="/connect"
-            className="rounded-[3px] bg-amber px-4 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
+            className="rounded-lg bg-amber px-4 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
           >
             Connect an agent →
           </Link>

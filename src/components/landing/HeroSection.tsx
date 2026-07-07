@@ -25,8 +25,8 @@ const HeroSection: React.FC = () => {
       <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-14 sm:px-9 md:pt-16">
         {/* Centered headline */}
         <div className="landing-fade-up text-center">
-          <span className="inline-flex items-center gap-2 border border-border-hi bg-surface px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-text-sec">
-            <span aria-hidden className="h-[6px] w-[6px] bg-amber" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-border-hi bg-surface px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-text-sec">
+            <span aria-hidden className="h-[6px] w-[6px] rounded-full bg-amber" />
             Operating system for repeatable work
           </span>
           <h1 className="mt-6 font-display text-[44px] font-semibold leading-[1.02] tracking-[-0.01em] text-text sm:text-[58px]">
@@ -38,7 +38,7 @@ const HeroSection: React.FC = () => {
 
         {/* Path toggle */}
         <div className="landing-fade-up landing-delay-1 mt-8 flex justify-center">
-          <div className="flex gap-1 border border-border-hi bg-surface p-1" role="tablist" aria-label="How are you arriving?">
+          <div className="flex gap-1 rounded-xl border border-border-hi bg-surface p-1" role="tablist" aria-label="How are you arriving?">
             {(
               [
                 { id: 'agent', label: '⚙ Connect an agent' },
@@ -51,7 +51,7 @@ const HeroSection: React.FC = () => {
                 role="tab"
                 aria-selected={path === t.id}
                 onClick={() => setPath(t.id)}
-                className={`px-5 py-2 text-[13px] font-medium transition-colors ${
+                className={`rounded-lg px-5 py-2 text-[13px] font-medium transition-colors ${
                   path === t.id ? 'bg-amber text-bg' : 'text-text-sec hover:text-text'
                 }`}
               >
@@ -68,7 +68,7 @@ const HeroSection: React.FC = () => {
               {AGENT_STEPS.map((s, i) => (
                 <li key={s.title} className="flex gap-4">
                   <div className="flex flex-col items-center">
-                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center border-[1.5px] border-amber bg-surface font-mono text-[11px] font-bold text-amber">
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-amber bg-surface font-mono text-[11px] font-bold text-amber">
                       {i + 1}
                     </span>
                     {i < AGENT_STEPS.length - 1 && (
@@ -104,7 +104,7 @@ const HeroSection: React.FC = () => {
               <div className="mt-6 flex items-center gap-4">
                 <Link
                   to="/login"
-                  className="rounded-[3px] bg-amber px-5 py-2.5 font-medium text-bg transition-opacity hover:opacity-90"
+                  className="rounded-lg bg-amber px-5 py-2.5 font-medium text-bg transition-opacity hover:opacity-90"
                 >
                   Open chat →
                 </Link>
@@ -119,7 +119,7 @@ const HeroSection: React.FC = () => {
             </div>
 
             {/* Static chat preview */}
-            <Link to="/login" className="block overflow-hidden border border-border-hi bg-surface transition-colors hover:border-amber/50">
+            <Link to="/login" className="block overflow-hidden rounded-xl border border-border-hi bg-surface transition-colors hover:border-amber/50">
               <div className="flex items-center gap-2 border-b border-border bg-surface-hi px-4 py-2.5">
                 <span aria-hidden className="h-[6px] w-[6px] animate-pulse rounded-full bg-emerald" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-sec">
@@ -128,27 +128,27 @@ const HeroSection: React.FC = () => {
               </div>
               <div className="flex flex-col gap-3 p-4">
                 <div className="flex gap-2.5">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-violet/20 font-mono text-[9px] font-bold text-violet">
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-violet/20 font-mono text-[9px] font-bold text-violet">
                     ap
                   </span>
-                  <p className="max-w-[340px] border border-border bg-bg px-3 py-2.5 text-[12px] leading-[1.55] text-text">
+                  <p className="max-w-[340px] rounded-xl rounded-tl-sm border border-border bg-bg px-3 py-2.5 text-[12px] leading-[1.55] text-text">
                     Atlas launch is <span className="text-emerald">on track</span>. One decision is
                     waiting on you.
                   </p>
                 </div>
                 <div className="flex gap-2.5">
                   <span aria-hidden className="h-6 w-6 flex-shrink-0" />
-                  <div className="max-w-[340px] border border-amber/40 bg-bg px-3 py-2.5">
+                  <div className="max-w-[340px] rounded-xl border border-amber/40 bg-bg px-3 py-2.5">
                     <p className="text-[12px] font-semibold text-text">
                       Ship v0.9 with the fallback parser?
                     </p>
                     <div className="mt-2 flex gap-1.5">
-                      <span className="bg-emerald px-3 py-1 text-[10.5px] font-semibold text-bg">Approve</span>
-                      <span className="border border-border-hi px-3 py-1 text-[10.5px] text-text-sec">Hold</span>
+                      <span className="rounded-md bg-emerald px-3 py-1 text-[10.5px] font-semibold text-bg">Approve</span>
+                      <span className="rounded-md border border-border-hi px-3 py-1 text-[10.5px] text-text-sec">Hold</span>
                     </div>
                   </div>
                 </div>
-                <div className="mt-1 flex items-center gap-2 border border-border bg-bg px-3.5 py-2.5">
+                <div className="mt-1 flex items-center gap-2 rounded-lg border border-border bg-bg px-3.5 py-2.5">
                   <span className="flex-1 text-[12px] text-text-muted">Ask anything…</span>
                   <span aria-hidden className="landing-caret h-3.5 w-[2px] bg-amber" />
                 </div>

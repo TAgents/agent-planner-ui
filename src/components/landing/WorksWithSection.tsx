@@ -20,10 +20,10 @@ const WorksWithSection: React.FC = () => (
             <Link
               key={id}
               to={c.connectPath}
-              className="group relative border border-border bg-surface-hi p-4 transition-colors hover:border-border-hi"
+              className="group relative rounded-[10px] border border-border bg-surface-hi p-4 transition-colors hover:border-border-hi"
             >
               {c.recommended && (
-                <span className="absolute -top-2 right-2.5 bg-amber px-2 py-[2px] font-mono text-[8px] font-bold uppercase tracking-[0.14em] text-bg">
+                <span className="absolute -top-2 right-2.5 rounded-full bg-amber px-2 py-[2px] font-mono text-[8px] font-bold uppercase tracking-[0.14em] text-bg">
                   Easiest
                 </span>
               )}

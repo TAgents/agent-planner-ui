@@ -14,13 +14,13 @@ const FinalCtaSection: React.FC = () => (
       <div className="mt-7 flex flex-wrap justify-center gap-3">
         <Link
           to="/connect"
-          className="rounded-[3px] bg-amber px-6 py-3 font-medium text-bg transition-opacity hover:opacity-90"
+          className="rounded-lg bg-amber px-6 py-3 font-medium text-bg transition-opacity hover:opacity-90"
         >
           Connect an agent →
         </Link>
         <Link
           to="/login"
-          className="rounded-[3px] border border-border-hi bg-surface px-6 py-3 font-medium text-text transition-colors hover:bg-surface-hi"
+          className="rounded-lg border border-border-hi bg-surface px-6 py-3 font-medium text-text transition-colors hover:bg-surface-hi"
         >
           Open chat
         </Link>
