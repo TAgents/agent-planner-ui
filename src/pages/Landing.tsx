@@ -2,8 +2,6 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import LandingHeader from '../components/landing/LandingHeader';
 import HeroSection from '../components/landing/HeroSection';
-import WorksWithSection from '../components/landing/WorksWithSection';
-import ProductFlowSection from '../components/landing/ProductFlowSection';
 import FinalCtaSection from '../components/landing/FinalCtaSection';
 import Footer from '../components/landing/Footer';
 
@@ -32,14 +30,12 @@ const Landing: React.FC = () => {
         <link rel="canonical" href="https://agentplanner.io/" />
       </Helmet>
 
-      {/* Lean "Flow v2" structure: hero (path toggle) → works-with → how it
-          works → final CTA. The deeper WhyDifferent / UseCases /
-          Differentiation sections are unmounted but kept on disk. */}
+      {/* Lovable-style minimal landing: the hero (big human chat box, agent
+          quick-connect behind the toggle) does all the work; one closing CTA.
+          Deeper marketing sections are unmounted but kept on disk. */}
       <div className="min-h-screen bg-bg font-body text-text">
         <LandingHeader />
         <HeroSection />
-        <WorksWithSection />
-        <ProductFlowSection />
         <FinalCtaSection />
         <Footer />
       </div>

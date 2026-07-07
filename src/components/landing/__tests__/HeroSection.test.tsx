@@ -14,43 +14,51 @@ const renderHero = () =>
   );
 
 /**
- * Path-toggle hero ("Flow v2" structure). Asserts the headline, the kicker,
- * the agent/human toggle, and each path's primary affordance: the agent path
- * leads with the quick-connect card (chips + connect handoff), the human
- * path leads with the chat framing.
+ * Lovable-style hero: headline over a Human/Agents toggle. Human (default)
+ * = one big prompt box whose submit stashes the question for the ChatDock;
+ * Agents = quick-connect card with per-client handoff into /connect/:client.
  */
 describe('HeroSection', () => {
+  afterEach(() => localStorage.clear());
+
   it('renders the goals-and-plans headline', () => {
     renderHero();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Define goals and plans/i);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Agents implement/i);
   });
 
-  it('renders the "Operating system for repeatable work" kicker', () => {
+  it('defaults to the human path: big prompt box with suggestions', () => {
     renderHero();
-    expect(screen.getByText(/Operating system for repeatable work/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Ask the assistant/i)).toBeInTheDocument();
+    expect(screen.getByText(/How are my goals doing\?/i)).toBeInTheDocument();
   });
 
-  it('defaults to the agent path with the quick-connect card', () => {
+  it('submitting the prompt stashes the question for the ChatDock', () => {
     renderHero();
+    const box = screen.getByLabelText(/Ask the assistant/i);
+    fireEvent.change(box, { target: { value: 'What is blocked?' } });
+    fireEvent.click(screen.getByRole('button', { name: /Send/i }));
+    expect(localStorage.getItem('ap-chat-landing-draft')).toBe('What is blocked?');
+  });
+
+  it('a suggestion chip fills the prompt box', () => {
+    renderHero();
+    fireEvent.click(screen.getByText(/What should I focus on next\?/i));
+    expect(screen.getByLabelText(/Ask the assistant/i)).toHaveValue(
+      'What should I focus on next?',
+    );
+  });
+
+  it('the Agents tab shows the quick-connect card with the connect handoff', () => {
+    renderHero();
+    fireEvent.click(screen.getByRole('tab', { name: /Agents/i }));
     expect(screen.getByText(/Quick connect/i)).toBeInTheDocument();
-    // Claude Desktop leads and its handoff routes into its connect guide.
     const handoff = screen.getByText(/Get your token/i).closest('a');
     expect(handoff).toHaveAttribute('href', '/connect/claude-desktop');
-  });
-
-  it('switching client chips retargets the connect handoff', () => {
-    renderHero();
     fireEvent.click(screen.getByRole('tab', { name: 'Cursor' }));
-    const handoff = screen.getByText(/Get your token/i).closest('a');
-    expect(handoff).toHaveAttribute('href', '/connect/cursor');
-  });
-
-  it('the human path shows the chat framing and routes to /login', () => {
-    renderHero();
-    fireEvent.click(screen.getByRole('tab', { name: /I’m human/i }));
-    expect(screen.getByText(/as a conversation/i)).toBeInTheDocument();
-    const cta = screen.getByText(/Open chat →/i).closest('a');
-    expect(cta).toHaveAttribute('href', '/login');
+    expect(screen.getByText(/Get your token/i).closest('a')).toHaveAttribute(
+      'href',
+      '/connect/cursor',
+    );
   });
 });

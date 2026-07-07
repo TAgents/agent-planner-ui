@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import QuickConnectCard from './QuickConnectCard';
 import { getSession } from '../../services/api-client';
 
@@ -15,15 +15,20 @@ const AGENT_STEPS = [
   { title: 'Test the connection', desc: 'Your agent calls briefing() and starts working.' },
 ];
 
+const SUGGESTIONS = [
+  'How are my goals doing?',
+  'What should I focus on next?',
+  'Create a goal and a plan to reach it',
+];
+
 /**
- * Hero — layout from the "AgentPlanner Flow v2" design, drawn in the current
- * design language: centered headline over a path toggle that splits the page
- * by who is arriving. Agents (the primary audience) get a steps rail and the
- * interactive quick-connect card; humans get the workspace-as-conversation
- * framing and a chat preview.
+ * Hero — centered headline over a Human/Agents toggle. Humans (the default)
+ * get one big Lovable-style prompt box that carries the question through
+ * sign-in into the real chat; agents get the steps rail + the interactive
+ * quick-connect card.
  */
 const HeroSection: React.FC = () => {
-  const [path, setPath] = useState<HeroPath>('agent');
+  const [path, setPath] = useState<HeroPath>('human');
   const [ask, setAsk] = useState('');
   const navigate = useNavigate();
 
@@ -63,8 +68,8 @@ const HeroSection: React.FC = () => {
           <div className="flex gap-1 rounded-xl border border-border-hi bg-surface p-1" role="tablist" aria-label="How are you arriving?">
             {(
               [
-                { id: 'agent', label: '⚙ Connect an agent' },
-                { id: 'human', label: '◯ I’m human — open chat' },
+                { id: 'human', label: '◯ Human' },
+                { id: 'agent', label: '⚙ Agents' },
               ] as const
             ).map((t) => (
               <button
@@ -110,84 +115,53 @@ const HeroSection: React.FC = () => {
           </div>
         )}
 
-        {/* Human path — workspace as a conversation + chat preview */}
+        {/* Human path (default) — one big Lovable-style prompt box. The
+            question is carried through sign-in into the real chat. */}
         {path === 'human' && (
-          <div className="landing-fade-up mt-10 grid items-center gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
-            <div>
-              <h2 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text">
-                Your workspace,
-                <br />
-                as a conversation.
-              </h2>
-              <p className="mt-3 max-w-[36ch] text-[13px] leading-[1.6] text-text-sec">
-                Ask what&rsquo;s blocked. Approve decisions. Steer plans. Your agents keep the
-                memory current underneath.
-              </p>
-              <div className="mt-6 flex items-center gap-4">
-                <Link
-                  to="/login"
-                  className="rounded-lg bg-amber px-5 py-2.5 font-medium text-bg transition-opacity hover:opacity-90"
-                >
-                  Open chat →
-                </Link>
+          <div className="landing-fade-up mx-auto mt-10 max-w-[760px]">
+            <form
+              onSubmit={submitAsk}
+              className="rounded-2xl border border-border-hi bg-surface p-2 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.7)] transition-colors focus-within:border-amber/60"
+            >
+              <textarea
+                value={ask}
+                onChange={(e) => setAsk(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                rows={3}
+                autoFocus
+                placeholder="Ask anything about your work — goals, plans, decisions, blockers…"
+                aria-label="Ask the assistant"
+                className="w-full resize-none bg-transparent px-3.5 py-3 text-[15px] leading-[1.6] text-text outline-none placeholder:text-text-muted"
+              />
+              <div className="flex items-center justify-between gap-3 px-2 pb-1.5">
+                <span className="hidden font-mono text-[10px] text-text-muted sm:inline">
+                  Your agents keep the memory current underneath.
+                </span>
                 <button
-                  type="button"
-                  onClick={() => setPath('agent')}
-                  className="text-[12px] text-text-muted underline underline-offset-4 transition-colors hover:text-text-sec"
+                  type="submit"
+                  disabled={!ask.trim()}
+                  className="ml-auto rounded-lg bg-amber px-5 py-2 text-[13px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
-                  Connecting an agent?
+                  Send ↑
                 </button>
               </div>
-            </div>
-
-            {/* Chat preview — the composer is live: submit carries the
-                question through sign-in into the real chat. */}
-            <div className="overflow-hidden rounded-xl border border-border-hi bg-surface">
-              <div className="flex items-center gap-2 border-b border-border bg-surface-hi px-4 py-2.5">
-                <span aria-hidden className="h-[6px] w-[6px] animate-pulse rounded-full bg-emerald" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-sec">
-                  Chat · your workspace
-                </span>
-              </div>
-              <div className="flex flex-col gap-3 p-4">
-                <div className="flex gap-2.5">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-violet/20 font-mono text-[9px] font-bold text-violet">
-                    ap
-                  </span>
-                  <p className="max-w-[340px] rounded-xl rounded-tl-sm border border-border bg-bg px-3 py-2.5 text-[12px] leading-[1.55] text-text">
-                    Atlas launch is <span className="text-emerald">on track</span>. One decision is
-                    waiting on you.
-                  </p>
-                </div>
-                <div className="flex gap-2.5">
-                  <span aria-hidden className="h-6 w-6 flex-shrink-0" />
-                  <div className="max-w-[340px] rounded-xl border border-amber/40 bg-bg px-3 py-2.5">
-                    <p className="text-[12px] font-semibold text-text">
-                      Ship v0.9 with the fallback parser?
-                    </p>
-                    <div className="mt-2 flex gap-1.5">
-                      <span className="rounded-md bg-emerald px-3 py-1 text-[10.5px] font-semibold text-bg">Approve</span>
-                      <span className="rounded-md border border-border-hi px-3 py-1 text-[10.5px] text-text-sec">Hold</span>
-                    </div>
-                  </div>
-                </div>
-                <form onSubmit={submitAsk} className="mt-1 flex items-center gap-2 rounded-lg border border-border bg-bg py-1.5 pl-3.5 pr-1.5 transition-colors focus-within:border-amber/60">
-                  <input
-                    value={ask}
-                    onChange={(e) => setAsk(e.target.value)}
-                    placeholder="Ask anything — it lands in your chat…"
-                    aria-label="Ask the assistant"
-                    className="flex-1 bg-transparent text-[12px] text-text outline-none placeholder:text-text-muted"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!ask.trim()}
-                    className="rounded-md bg-amber px-3 py-1.5 text-[11px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-40"
-                  >
-                    Send ↑
-                  </button>
-                </form>
-              </div>
+            </form>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setAsk(s)}
+                  className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] text-text-sec transition-colors hover:border-border-hi hover:text-text"
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           </div>
         )}
