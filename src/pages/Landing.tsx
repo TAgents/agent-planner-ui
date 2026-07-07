@@ -2,11 +2,8 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import LandingHeader from '../components/landing/LandingHeader';
 import HeroSection from '../components/landing/HeroSection';
-import SocialProofSection from '../components/landing/SocialProofSection';
-import WhyDifferentSection from '../components/landing/WhyDifferentSection';
+import WorksWithSection from '../components/landing/WorksWithSection';
 import ProductFlowSection from '../components/landing/ProductFlowSection';
-import UseCasesSection from '../components/landing/UseCasesSection';
-import DifferentiationSection from '../components/landing/DifferentiationSection';
 import FinalCtaSection from '../components/landing/FinalCtaSection';
 import Footer from '../components/landing/Footer';
 
@@ -35,14 +32,14 @@ const Landing: React.FC = () => {
         <link rel="canonical" href="https://agentplanner.io/" />
       </Helmet>
 
+      {/* Lean "Flow v2" structure: hero (path toggle) → works-with → how it
+          works → final CTA. The deeper WhyDifferent / UseCases /
+          Differentiation sections are unmounted but kept on disk. */}
       <div className="min-h-screen bg-bg font-body text-text">
         <LandingHeader />
         <HeroSection />
-        <SocialProofSection />
-        <WhyDifferentSection />
+        <WorksWithSection />
         <ProductFlowSection />
-        <UseCasesSection />
-        <DifferentiationSection />
         <FinalCtaSection />
         <Footer />
       </div>

@@ -1,63 +1,161 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import OntologyDiagram from './OntologyDiagram';
+import QuickConnectCard from './QuickConnectCard';
+
+type HeroPath = 'agent' | 'human';
+
+const AGENT_STEPS = [
+  { title: 'Pick your client', desc: 'Claude, Cursor, ChatGPT, OpenClaw — anything MCP.' },
+  { title: 'Add AgentPlanner to it', desc: 'One paste. The snippet is ready on the right.' },
+  { title: 'Test the connection', desc: 'Your agent calls briefing() and starts working.' },
+];
 
 /**
- * Hero as thesis: the shared-brain claim on the left, the product's mental
- * model drawn as an actual working drawing (FIG. 01) on the right. The
- * section sits on a faint drafting grid; the diagram carries the boldness,
- * everything else stays quiet.
+ * Hero — layout from the "AgentPlanner Flow v2" design, drawn in the current
+ * design language: centered headline over a path toggle that splits the page
+ * by who is arriving. Agents (the primary audience) get a steps rail and the
+ * interactive quick-connect card; humans get the workspace-as-conversation
+ * framing and a chat preview.
  */
 const HeroSection: React.FC = () => {
+  const [path, setPath] = useState<HeroPath>('agent');
+
   return (
-    <section className="bp-grid-faint relative">
-      <div className="mx-auto grid max-w-[1180px] items-center gap-12 px-6 py-16 sm:px-9 md:py-20 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
-        {/* Left — copy + CTAs */}
-        <div className="landing-fade-up">
+    <section className="bp-grid-faint relative border-b border-border">
+      <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-14 sm:px-9 md:pt-16">
+        {/* Centered headline */}
+        <div className="landing-fade-up text-center">
           <span className="inline-flex items-center gap-2 border border-border-hi bg-surface px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-text-sec">
             <span aria-hidden className="h-[6px] w-[6px] bg-amber" />
             Operating system for repeatable work
           </span>
-          <h1 className="mt-6 font-display text-[52px] font-semibold leading-[0.98] tracking-[-0.01em] text-text sm:text-[68px] lg:text-[74px]">
-            Your agents need
+          <h1 className="mt-6 font-display text-[44px] font-semibold leading-[1.02] tracking-[-0.01em] text-text sm:text-[58px]">
+            Define goals and plans.
             <br />
-            a <span className="text-amber">shared brain</span>.
+            <span className="text-amber">Agents implement.</span>
           </h1>
-          <p className="mt-6 max-w-[54ch] text-[15px] leading-[1.65] text-text-sec">
-            AgentPlanner is the shared workspace agents and humans run on.
-            Fork a reusable Blueprint into a live Workspace, wire goals to
-            plans, and keep every dependency, decision, and learning, even
-            when the context window doesn't.
-          </p>
+        </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              to="/login"
-              className="rounded-[3px] bg-amber px-5 py-2.5 font-medium text-bg transition-opacity hover:opacity-90"
-            >
-              Create a workspace →
-            </Link>
-            <Link
-              to="/explore"
-              className="rounded-[3px] border border-border-hi bg-surface px-5 py-2.5 font-medium text-text transition-colors hover:bg-surface-hi"
-            >
-              Explore blueprints
-            </Link>
-          </div>
-
-          <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-text-muted">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em]">Built for</span>
-            <span>Founders</span>
-            <span aria-hidden className="opacity-40">/</span>
-            <span>Operators</span>
-            <span aria-hidden className="opacity-40">/</span>
-            <span>Agencies</span>
+        {/* Path toggle */}
+        <div className="landing-fade-up landing-delay-1 mt-8 flex justify-center">
+          <div className="flex gap-1 border border-border-hi bg-surface p-1" role="tablist" aria-label="How are you arriving?">
+            {(
+              [
+                { id: 'agent', label: '⚙ Connect an agent' },
+                { id: 'human', label: '◯ I’m human — open chat' },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={path === t.id}
+                onClick={() => setPath(t.id)}
+                className={`px-5 py-2 text-[13px] font-medium transition-colors ${
+                  path === t.id ? 'bg-amber text-bg' : 'text-text-sec hover:text-text'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="landing-fade-up landing-delay-2">
-          <OntologyDiagram />
-        </div>
+        {/* Agent path — steps rail + quick connect */}
+        {path === 'agent' && (
+          <div className="landing-fade-up mt-10 grid items-center gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
+            <ol className="list-none">
+              {AGENT_STEPS.map((s, i) => (
+                <li key={s.title} className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center border-[1.5px] border-amber bg-surface font-mono text-[11px] font-bold text-amber">
+                      {i + 1}
+                    </span>
+                    {i < AGENT_STEPS.length - 1 && (
+                      <span aria-hidden className="w-px flex-1 bg-border-hi" style={{ minHeight: 26 }} />
+                    )}
+                  </div>
+                  <div className="pb-6 pt-1">
+                    <div className="font-display text-[15px] font-semibold tracking-[-0.01em] text-text">
+                      {s.title}
+                    </div>
+                    <div className="mt-0.5 text-[12px] leading-[1.5] text-text-muted">{s.desc}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <QuickConnectCard />
+          </div>
+        )}
+
+        {/* Human path — workspace as a conversation + chat preview */}
+        {path === 'human' && (
+          <div className="landing-fade-up mt-10 grid items-center gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
+            <div>
+              <h2 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text">
+                Your workspace,
+                <br />
+                as a conversation.
+              </h2>
+              <p className="mt-3 max-w-[36ch] text-[13px] leading-[1.6] text-text-sec">
+                Ask what&rsquo;s blocked. Approve decisions. Steer plans. Your agents keep the
+                memory current underneath.
+              </p>
+              <div className="mt-6 flex items-center gap-4">
+                <Link
+                  to="/login"
+                  className="rounded-[3px] bg-amber px-5 py-2.5 font-medium text-bg transition-opacity hover:opacity-90"
+                >
+                  Open chat →
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setPath('agent')}
+                  className="text-[12px] text-text-muted underline underline-offset-4 transition-colors hover:text-text-sec"
+                >
+                  Connecting an agent?
+                </button>
+              </div>
+            </div>
+
+            {/* Static chat preview */}
+            <Link to="/login" className="block overflow-hidden border border-border-hi bg-surface transition-colors hover:border-amber/50">
+              <div className="flex items-center gap-2 border-b border-border bg-surface-hi px-4 py-2.5">
+                <span aria-hidden className="h-[6px] w-[6px] animate-pulse rounded-full bg-emerald" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-sec">
+                  Chat · your workspace
+                </span>
+              </div>
+              <div className="flex flex-col gap-3 p-4">
+                <div className="flex gap-2.5">
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-violet/20 font-mono text-[9px] font-bold text-violet">
+                    ap
+                  </span>
+                  <p className="max-w-[340px] border border-border bg-bg px-3 py-2.5 text-[12px] leading-[1.55] text-text">
+                    Atlas launch is <span className="text-emerald">on track</span>. One decision is
+                    waiting on you.
+                  </p>
+                </div>
+                <div className="flex gap-2.5">
+                  <span aria-hidden className="h-6 w-6 flex-shrink-0" />
+                  <div className="max-w-[340px] border border-amber/40 bg-bg px-3 py-2.5">
+                    <p className="text-[12px] font-semibold text-text">
+                      Ship v0.9 with the fallback parser?
+                    </p>
+                    <div className="mt-2 flex gap-1.5">
+                      <span className="bg-emerald px-3 py-1 text-[10.5px] font-semibold text-bg">Approve</span>
+                      <span className="border border-border-hi px-3 py-1 text-[10.5px] text-text-sec">Hold</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-1 flex items-center gap-2 border border-border bg-bg px-3.5 py-2.5">
+                  <span className="flex-1 text-[12px] text-text-muted">Ask anything…</span>
+                  <span aria-hidden className="landing-caret h-3.5 w-[2px] bg-amber" />
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -277,6 +277,15 @@ html.dark {
 .landing-delay-6 { animation-delay: 0.7s; }
 .landing-delay-7 { animation-delay: 0.85s; }
 
+/* Blinking composer caret in the hero chat preview */
+@keyframes landingCaret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.landing-caret {
+  animation: landingCaret 1.1s steps(1) infinite;
+}
+
 /* The one orchestrated moment: the hero sheet draws itself in.
    Solid strokes use pathLength=100 + dashoffset; annotations fade after. */
 @keyframes bpDraw {

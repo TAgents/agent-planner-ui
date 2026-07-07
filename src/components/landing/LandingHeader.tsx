@@ -62,9 +62,15 @@ const LandingHeader: React.FC = () => {
           </a>
           <Link
             to="/login"
+            className="hidden rounded-[3px] border border-border-hi bg-surface px-4 py-1.5 font-medium text-text transition-colors hover:bg-surface-hi sm:inline"
+          >
+            Open chat
+          </Link>
+          <Link
+            to="/connect"
             className="rounded-[3px] bg-amber px-4 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
           >
-            Get started →
+            Connect an agent →
           </Link>
         </nav>
       </div>
