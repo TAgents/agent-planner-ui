@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useOpenChatLink } from './useOpenChatLink';
 
 /**
  * Closing CTA (structure from the "Flow v2" design): one centered promise,
  * the two arrival paths as buttons, and the terms in a single mono line.
  */
-const FinalCtaSection: React.FC = () => (
+const FinalCtaSection: React.FC = () => {
+  const openChat = useOpenChatLink();
+  return (
   <section className="bp-grid-faint relative">
     <div className="mx-auto max-w-[1080px] px-6 py-20 text-center sm:px-9">
       <h3 className="font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.01em] text-text sm:text-[36px]">
@@ -19,7 +22,8 @@ const FinalCtaSection: React.FC = () => (
           Connect an agent →
         </Link>
         <Link
-          to="/login"
+          to={openChat.to}
+          onClick={openChat.onClick}
           className="rounded-lg border border-border-hi bg-surface px-6 py-3 font-medium text-text transition-colors hover:bg-surface-hi"
         >
           Open chat
@@ -30,6 +34,7 @@ const FinalCtaSection: React.FC = () => (
       </p>
     </div>
   </section>
-);
+  );
+};
 
 export default FinalCtaSection;

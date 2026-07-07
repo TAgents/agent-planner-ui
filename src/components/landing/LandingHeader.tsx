@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useOpenChatLink } from './useOpenChatLink';
 
 /**
  * Top navigation for the landing page. The mark is a drafting glyph — a
@@ -7,6 +8,7 @@ import { Link } from 'react-router-dom';
  * Docs/Explore/API links + ultramarine Get Started CTA on the right.
  */
 const LandingHeader: React.FC = () => {
+  const openChat = useOpenChatLink();
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-6 py-3.5 sm:px-9">
@@ -61,7 +63,8 @@ const LandingHeader: React.FC = () => {
             API
           </a>
           <Link
-            to="/login"
+            to={openChat.to}
+            onClick={openChat.onClick}
             className="hidden rounded-lg border border-border-hi bg-surface px-4 py-1.5 font-medium text-text transition-colors hover:bg-surface-hi sm:inline"
           >
             Open chat

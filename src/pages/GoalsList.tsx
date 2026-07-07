@@ -263,7 +263,7 @@ const GoalSectionHeader: React.FC<{
 const GoalsList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading } = usePlans(1, 100);
-  const { data: goalTree, isLoading: goalsLoading } = useGoalsTree();
+  const { data: goalTree, isLoading: goalsLoading, isError: goalsError } = useGoalsTree();
   const { data: wsData } = useWorkspaces();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [sort, setSort] = useState<SortKey>('updated');
@@ -405,7 +405,7 @@ const GoalsList: React.FC = () => {
           <p className="mt-1 text-[13px] text-text-sec">
             {loading
               ? 'Loading…'
-              : `${goalCount} goal${goalCount === 1 ? '' : 's'} · ${plans.length} plan${plans.length === 1 ? '' : 's'} · ${counts.active} active`}
+              : `${goalsError ? '– goals' : `${goalCount} goal${goalCount === 1 ? '' : 's'}`} · ${plans.length} plan${plans.length === 1 ? '' : 's'} · ${counts.active} active`}
           </p>
         </div>
         {/* Create flows hand off to the assistant (agent-first: the LLM
