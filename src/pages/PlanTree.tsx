@@ -182,7 +182,7 @@ const PlanTree: React.FC = () => {
             {plan && (plan.owner || plan.organization) && (
               <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">
                 {plan.owner && <>By {plan.owner.name}</>}
-                {plan.organization && <> · {plan.organization.name}</>}
+                {plan.organization && <> · org {plan.organization.name}</>}
                 {plan.role && plan.role !== 'owner' && <> · your role: {plan.role}</>}
               </p>
             )}
