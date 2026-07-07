@@ -138,12 +138,12 @@ const PlanTree: React.FC = () => {
   const [showSaveAsBlueprint, setShowSaveAsBlueprint] = useState(false);
   const [showMove, setShowMove] = useState(false);
 
-  // Activate gate: an inactive plan is just an idea — agents won't pick up its
+  // Activate gate: a draft plan is just an idea — agents won't pick up its
   // tasks (no token cost) until it's activated here.
   const { updatePlan } = usePlans(1, 100, undefined, false);
   const activate = async () => {
     if (!plan) return;
-    await updatePlan.mutateAsync({ planId: plan.id, data: { active: true } as any });
+    await updatePlan.mutateAsync({ planId: plan.id, data: { status: 'active' } });
     // usePlan's query key includes userId, which the mutation's invalidation
     // doesn't match — refetch explicitly so the banner/badge update immediately.
     await refetchPlan();
@@ -172,13 +172,14 @@ const PlanTree: React.FC = () => {
           </div>
           {plan && (
             <div className="flex flex-shrink-0 items-center gap-2">
-              <Pill color={plan.active ? 'emerald' : 'slate'}>
-                {plan.active ? 'Active' : 'Inactive'}
-              </Pill>
-              {(plan.status === 'completed' || plan.status === 'archived') && (
+              {plan.status === 'completed' || plan.status === 'archived' ? (
                 <Pill color={plan.status === 'completed' ? 'emerald' : 'slate'}>{plan.status}</Pill>
+              ) : (
+                <Pill color={plan.status === 'active' ? 'emerald' : 'slate'}>
+                  {plan.status === 'active' ? 'Active' : 'Inactive'}
+                </Pill>
               )}
-              {!plan.active && (
+              {plan.status === 'draft' && (
                 <PrimaryButton onClick={activate} disabled={updatePlan.isLoading}>
                   {updatePlan.isLoading ? 'Activating…' : 'Activate →'}
                 </PrimaryButton>
@@ -203,7 +204,7 @@ const PlanTree: React.FC = () => {
         </div>
       </header>
 
-      {plan && !plan.active && (
+      {plan && plan.status === 'draft' && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-border bg-surface px-4 py-3">
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">

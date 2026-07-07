@@ -126,8 +126,9 @@ const PlanRow: React.FC<{
   plan: Plan;
   workspacesById: Map<string, { id: string; title: string }>;
 }> = ({ plan, workspacesById }) => {
-  const stale = plan.active && daysSince(plan.updated_at) > 5;
-  const accent: PillColor = stale ? 'red' : plan.active ? 'amber' : 'slate';
+  const isActive = plan.status === 'active';
+  const stale = isActive && daysSince(plan.updated_at) > 5;
+  const accent: PillColor = stale ? 'red' : isActive ? 'amber' : 'slate';
   return (
     <Link to={`/app/plans/${plan.id}`} className="block">
       <StatusSpine accent={accent}>
@@ -143,12 +144,12 @@ const PlanRow: React.FC<{
                 </span>
               )}
               {stale && <Pill color="red">Stale · {daysSince(plan.updated_at)}d</Pill>}
-              <Pill color={plan.active ? 'emerald' : 'slate'}>
-                {plan.active ? 'Active' : 'Inactive'}
-              </Pill>
-              {/* Surface terminal lifecycle states alongside the execution flag */}
-              {(plan.status === 'completed' || plan.status === 'archived') && (
+              {plan.status === 'completed' || plan.status === 'archived' ? (
                 <Pill color={STATUS_COLOR[plan.status]}>{plan.status}</Pill>
+              ) : (
+                <Pill color={isActive ? 'emerald' : 'slate'}>
+                  {isActive ? 'Active' : 'Inactive'}
+                </Pill>
               )}
               {(() => {
                 const wsId = (plan as any).workspace_id || (plan as any).workspaceId;

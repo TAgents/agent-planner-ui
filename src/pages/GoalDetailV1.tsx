@@ -116,10 +116,20 @@ const GoalDetailV1: React.FC = () => {
     );
   }
   if (!goal) {
+    // A 403 is access, not existence — plans can be shared across orgs while
+    // their tethered goal stays private, so say which case this is.
+    const noAccess = (goalQ.error as any)?.response?.status === 403;
     return (
       <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10">
         <Card pad={20}>
-          <p className="font-display text-base font-semibold">Goal not found</p>
+          <p className="font-display text-base font-semibold">
+            {noAccess ? 'You don’t have access to this goal' : 'Goal not found'}
+          </p>
+          {noAccess && (
+            <p className="mt-1 text-sm text-text-sec">
+              It belongs to another organization. Ask its owner for access, or switch organizations.
+            </p>
+          )}
           <p className="mt-2 text-sm text-text-sec">
             <Link to="/app/goals" className="underline">Back to goals →</Link>
           </p>

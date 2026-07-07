@@ -120,13 +120,12 @@ export interface Plan {
   id: string;
   title: string;
   description: string;
-  status: PlanStatus;
   /**
-   * Agent-execution gate, independent of `status`. false = inactive (just an
-   * idea — agents won't work on it, so it costs no tokens); true = active.
-   * New plans default to inactive.
+   * The agent-execution gate. `draft` = just an idea — agents won't work on
+   * it, so it costs no tokens; `active` = agents may execute. (The old
+   * separate `active` boolean was folded into `status` server-side.)
    */
-  active: boolean;
+  status: PlanStatus;
   owner_id: string;
   visibility?: PlanVisibility;
   created_at: string;
