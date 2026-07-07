@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import QuickConnectCard from './QuickConnectCard';
+import { getSession } from '../../services/api-client';
 
 type HeroPath = 'agent' | 'human';
+
+/** localStorage key the ChatDock drains on mount — carries a question typed
+ *  on the public landing through the login flow into the real chat. */
+export const LANDING_CHAT_DRAFT_KEY = 'ap-chat-landing-draft';
 
 const AGENT_STEPS = [
   { title: 'Pick your client', desc: 'Claude, Cursor, ChatGPT, OpenClaw — anything MCP.' },
@@ -19,6 +24,23 @@ const AGENT_STEPS = [
  */
 const HeroSection: React.FC = () => {
   const [path, setPath] = useState<HeroPath>('agent');
+  const [ask, setAsk] = useState('');
+  const navigate = useNavigate();
+
+  // The landing composer is functional: the question is stashed and the
+  // ChatDock picks it up right after sign-in (or immediately, if a session
+  // already exists).
+  const submitAsk = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = ask.trim();
+    if (!text) return;
+    try {
+      localStorage.setItem(LANDING_CHAT_DRAFT_KEY, text);
+    } catch {
+      /* ignore */
+    }
+    navigate(getSession() ? '/app/dashboard' : '/login');
+  };
 
   return (
     <section className="bp-grid-faint relative border-b border-border">
@@ -118,8 +140,9 @@ const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Static chat preview */}
-            <Link to="/login" className="block overflow-hidden rounded-xl border border-border-hi bg-surface transition-colors hover:border-amber/50">
+            {/* Chat preview — the composer is live: submit carries the
+                question through sign-in into the real chat. */}
+            <div className="overflow-hidden rounded-xl border border-border-hi bg-surface">
               <div className="flex items-center gap-2 border-b border-border bg-surface-hi px-4 py-2.5">
                 <span aria-hidden className="h-[6px] w-[6px] animate-pulse rounded-full bg-emerald" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-sec">
@@ -148,12 +171,24 @@ const HeroSection: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-1 flex items-center gap-2 rounded-lg border border-border bg-bg px-3.5 py-2.5">
-                  <span className="flex-1 text-[12px] text-text-muted">Ask anything…</span>
-                  <span aria-hidden className="landing-caret h-3.5 w-[2px] bg-amber" />
-                </div>
+                <form onSubmit={submitAsk} className="mt-1 flex items-center gap-2 rounded-lg border border-border bg-bg py-1.5 pl-3.5 pr-1.5 transition-colors focus-within:border-amber/60">
+                  <input
+                    value={ask}
+                    onChange={(e) => setAsk(e.target.value)}
+                    placeholder="Ask anything — it lands in your chat…"
+                    aria-label="Ask the assistant"
+                    className="flex-1 bg-transparent text-[12px] text-text outline-none placeholder:text-text-muted"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!ask.trim()}
+                    className="rounded-md bg-amber px-3 py-1.5 text-[11px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-40"
+                  >
+                    Send ↑
+                  </button>
+                </form>
               </div>
-            </Link>
+            </div>
           </div>
         )}
       </div>

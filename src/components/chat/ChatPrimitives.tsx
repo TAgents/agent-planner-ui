@@ -4,7 +4,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Loader2, Check, AlertTriangle, Sparkles } from 'lucide-react';
+import { Loader2, Check, AlertTriangle } from 'lucide-react';
 import { GhostButton, PrimaryButton, cn } from '../v1';
 import type { ChatMessage } from '../../services/conversations.service';
 
@@ -60,18 +60,32 @@ export const ToolChip: React.FC<{ status: string; label: string }> = ({ status, 
   </span>
 );
 
-export const AssistantHeader: React.FC = () => (
-  <div className="mb-1.5 flex items-center gap-1.5">
-    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-soft text-amber">
-      <Sparkles className="h-3 w-3" />
-    </span>
-    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Assistant</span>
-  </div>
+/** The assistant's `ap` mark — anchors every agent turn (Flow v2 chat anatomy). */
+export const AssistantAvatar: React.FC = () => (
+  <span
+    aria-label="Assistant"
+    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-violet/20 font-mono text-[10px] font-bold text-violet"
+  >
+    ap
+  </span>
+);
+
+/** Three pulsing dots — the agent is thinking / streaming hasn't produced text yet. */
+export const TypingDots: React.FC = () => (
+  <span className="inline-flex items-center gap-1.5 py-1" aria-label="Assistant is thinking">
+    {[0, 0.2, 0.4].map((delay) => (
+      <span
+        key={delay}
+        className="h-[5px] w-[5px] animate-pulse rounded-full bg-text-muted"
+        style={{ animationDelay: `${delay}s` }}
+      />
+    ))}
+  </span>
 );
 
 export const UserBubble: React.FC<{ content: string }> = ({ content }) => (
   <li className="flex justify-end">
-    <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-surface-hi px-3.5 py-2.5 text-[14px] text-text">
+    <div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-tr-sm border border-amber/25 bg-amber-soft px-3.5 py-2.5 text-[13.5px] leading-[1.55] text-text">
       {content}
     </div>
   </li>
@@ -95,14 +109,17 @@ export const ConfirmCard: React.FC<{
     return <div className="mt-2 text-[12px] text-red">Failed — {action.result || action.description}</div>;
   }
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber/50 bg-amber-soft px-3.5 py-2.5">
-      <span className="flex items-center gap-2 text-[13px] text-text">
+    <div className="mt-2 rounded-xl border border-amber/40 bg-surface px-3.5 py-3">
+      <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.18em] text-amber">
+        ◆ Pending decision
+      </span>
+      <span className="flex items-center gap-2 text-[13px] font-semibold text-text">
         <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber" />
         {action.description}?
       </span>
-      <div className="flex items-center gap-2">
-        <GhostButton onClick={() => onConfirm(action.id, false)}>Cancel</GhostButton>
-        <PrimaryButton onClick={() => onConfirm(action.id, true)}>Confirm</PrimaryButton>
+      <div className="mt-2.5 flex items-center gap-2">
+        <PrimaryButton onClick={() => onConfirm(action.id, true)}>Approve</PrimaryButton>
+        <GhostButton onClick={() => onConfirm(action.id, false)}>Hold</GhostButton>
       </div>
     </div>
   );
@@ -117,27 +134,29 @@ export const MessageRow: React.FC<{
   const toolEvents: any[] = message.metadata?.tool_events || [];
   const pending: any[] = message.metadata?.pending_actions || [];
   return (
-    <li>
-      <AssistantHeader />
-      {toolEvents.filter((e) => e.type === 'tool').length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {toolEvents
-            .filter((e) => e.type === 'tool')
-            .map((e, i) => (
-              <ToolChip key={i} status={e.status} label={e.summary || e.name} />
-            ))}
-        </div>
-      )}
-      {message.content && (
-        <div className="text-[14px] leading-relaxed text-text-sec">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={md as any}>
-            {message.content}
-          </ReactMarkdown>
-        </div>
-      )}
-      {pending.map((a) => (
-        <ConfirmCard key={a.id} action={a} onConfirm={onConfirm} />
-      ))}
+    <li className="flex gap-2.5">
+      <AssistantAvatar />
+      <div className="min-w-0 flex-1">
+        {toolEvents.filter((e) => e.type === 'tool').length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {toolEvents
+              .filter((e) => e.type === 'tool')
+              .map((e, i) => (
+                <ToolChip key={i} status={e.status} label={e.summary || e.name} />
+              ))}
+          </div>
+        )}
+        {message.content && (
+          <div className="rounded-xl rounded-tl-sm border border-border bg-surface px-3.5 py-2.5 text-[13.5px] leading-[1.6] text-text">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={md as any}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
+        {pending.map((a) => (
+          <ConfirmCard key={a.id} action={a} onConfirm={onConfirm} />
+        ))}
+      </div>
     </li>
   );
 };

@@ -8,7 +8,6 @@ import {
   Square,
   Trash2,
   Sparkles,
-  Loader2,
   History,
   PanelLeftClose,
   PanelLeftOpen,
@@ -23,7 +22,8 @@ import {
   md,
   relTime,
   ToolChip,
-  AssistantHeader,
+  AssistantAvatar,
+  TypingDots,
   UserBubble,
   ConfirmCard,
   MessageRow,
@@ -101,8 +101,27 @@ const ChatDock: React.FC = () => {
         // Starters put the placeholder up top; keep it in view rather than
         // letting the grown textarea rest scrolled to its end.
         ta.scrollTop = 0;
+      } else {
+        // Plain drafts (e.g. a question typed on the landing page): caret at
+        // the end, ready to send or keep typing.
+        ta.setSelectionRange(text.length, text.length);
       }
     });
+  }, []);
+
+  // Landing handoff: a visitor typed a question on the public page before
+  // signing in. Drain the stash into the composer once per mount.
+  useEffect(() => {
+    try {
+      const stash = localStorage.getItem('ap-chat-landing-draft');
+      if (!stash) return;
+      localStorage.removeItem('ap-chat-landing-draft');
+      setChatDockOpen(true);
+      insertStarter(stash);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Create-flow handoff: a page pushed a starter into the dock via UIContext.
@@ -454,33 +473,33 @@ const ChatDock: React.FC = () => {
 
                 {pendingUser !== null && <UserBubble content={pendingUser} />}
                 {streaming && (
-                  <li>
-                    <AssistantHeader />
-                    {streamEvents.length > 0 && (
-                      <div className="mb-2 flex flex-wrap gap-1.5">
-                        {streamEvents
-                          .filter((e) => e.kind === 'tool')
-                          .map((e, i) => (
-                            <ToolChip key={i} status={e.status} label={e.summary || e.name} />
-                          ))}
-                      </div>
-                    )}
-                    <div className="text-[14px] leading-relaxed text-text-sec">
-                      {streamText ? (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={md as any}>
-                          {streamText}
-                        </ReactMarkdown>
-                      ) : (
-                        <span className="inline-flex items-center gap-2 text-text-muted">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> thinking…
-                        </span>
+                  <li className="flex gap-2.5">
+                    <AssistantAvatar />
+                    <div className="min-w-0 flex-1">
+                      {streamEvents.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {streamEvents
+                            .filter((e) => e.kind === 'tool')
+                            .map((e, i) => (
+                              <ToolChip key={i} status={e.status} label={e.summary || e.name} />
+                            ))}
+                        </div>
                       )}
+                      <div className="rounded-xl rounded-tl-sm border border-border bg-surface px-3.5 py-2.5 text-[13.5px] leading-[1.6] text-text">
+                        {streamText ? (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={md as any}>
+                            {streamText}
+                          </ReactMarkdown>
+                        ) : (
+                          <TypingDots />
+                        )}
+                      </div>
+                      {streamEvents
+                        .filter((e) => e.kind === 'confirm')
+                        .map((a) => (
+                          <ConfirmCard key={a.id} action={{ ...a, status: 'pending' }} onConfirm={onConfirm} />
+                        ))}
                     </div>
-                    {streamEvents
-                      .filter((e) => e.kind === 'confirm')
-                      .map((a) => (
-                        <ConfirmCard key={a.id} action={{ ...a, status: 'pending' }} onConfirm={onConfirm} />
-                      ))}
                   </li>
                 )}
 
@@ -497,7 +516,9 @@ const ChatDock: React.FC = () => {
 
         {/* Composer */}
         <div data-tour="chat-composer" className="border-t border-border bg-bg px-3 py-3">
-          <div className="flex items-end gap-2">
+          {/* One rounded container holds the input and the send control
+              (Flow v2 composer anatomy). */}
+          <div className="flex items-end gap-1.5 rounded-xl border border-border bg-surface p-1.5 transition-colors focus-within:border-amber/60">
             <textarea
               ref={composerRef}
               value={input}
@@ -509,15 +530,15 @@ const ChatDock: React.FC = () => {
                 }
               }}
               rows={1}
-              placeholder="Message the assistant…"
-              className="max-h-[160px] min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-muted focus:border-amber focus:outline-none"
+              placeholder="Ask about goals, plans, or decisions…"
+              className="max-h-[160px] min-h-[36px] flex-1 resize-none bg-transparent px-2.5 py-2 text-[14px] text-text outline-none placeholder:text-text-muted"
             />
             <PrimaryButton
               onClick={streaming ? stopStreaming : handleSend}
               disabled={!streaming && !input.trim()}
               aria-label={streaming ? 'Stop generating' : 'Send message'}
               title={streaming ? 'Stop generating' : 'Send'}
-              className="h-[44px] w-[44px] !p-0"
+              className="h-[36px] w-[36px] flex-shrink-0 !p-0"
             >
               {streaming ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             </PrimaryButton>

@@ -147,7 +147,9 @@ export function AppShell({
   secondary = SECONDARY_NAV,
   footer,
   logoText = 'ap',
-  logoTo = '/app',
+  // The mark opens the public landing (per the Flow v2 design) — in-app
+  // navigation lives in the nav rail, so "home" here means the front door.
+  logoTo = '/',
   children,
 }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
