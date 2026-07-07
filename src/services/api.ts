@@ -7,14 +7,40 @@ import { decisionsApi, agentRequestApi } from './decisions.service';
 import { graphitiService, coherenceService, knowledgeLoopService } from './knowledge.service';
 import { goalDashboardService, nodeViewService, goalBdiService } from './goals.service';
 
+/**
+ * Keep the cached `auth_session` in sync after profile / org edits. The session
+ * is only written at login, so without this the sidebar / top bar / org switcher
+ * keep showing the stale login-time name until the next sign-in.
+ */
+export function syncCachedSessionUser(patch: { name?: string; avatar_url?: string }): void {
+  try {
+    const raw = localStorage.getItem('auth_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s?.user) return;
+    if (patch.name !== undefined) s.user.name = patch.name;
+    if (patch.avatar_url !== undefined) s.user.avatar_url = patch.avatar_url;
+    localStorage.setItem('auth_session', JSON.stringify(s));
+  } catch { /* non-fatal — display will catch up on next login */ }
+}
+
+export function syncCachedSessionOrg(orgId: string, patch: { name?: string }): void {
+  try {
+    const raw = localStorage.getItem('auth_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s?.user || !Array.isArray(s.user.organizations)) return;
+    s.user.organizations = s.user.organizations.map((o: any) =>
+      o && o.id === orgId ? { ...o, ...patch } : o,
+    );
+    localStorage.setItem('auth_session', JSON.stringify(s));
+  } catch { /* non-fatal */ }
+}
+
 // Authentication endpoints - now using your API instead of direct Supabase
 export const authService = {
   login: async (email: string, password: string) => {
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Attempting login to:', `${API_CONFIG.BASE_URL}/auth/login`);
-        console.log('With credentials:', { email, password: '***' });
-      }
 
       const response = await request<{
         user: any;
@@ -25,25 +51,13 @@ export const authService = {
         data: { email, password }
       });
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Login response received (user only):', {
-          hasSession: !!response.session,
-          hasUser: !!response.user,
-          userEmail: response.user?.email
-        });
-      }
 
       // Store the session in localStorage (include user data for useAuth)
       if (response.session) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Storing session in localStorage');
-        }
         localStorage.setItem('auth_session', JSON.stringify({
           ...response.session,
           user: response.user,
         }));
-      } else if (process.env.NODE_ENV === 'development') {
-        console.warn('No session in response');
       }
 
       return {
@@ -91,9 +105,6 @@ export const authService = {
 
       // Store the session if registration is successful (include user data for useAuth)
       if (response.session) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Registration successful, storing session');
-        }
         localStorage.setItem('auth_session', JSON.stringify({
           ...response.session,
           user: response.user,
@@ -220,6 +231,8 @@ export const authService = {
         url: '/auth/profile',
         data
       });
+      // Refresh the cached session so the new name shows everywhere immediately.
+      syncCachedSessionUser({ name: data.name, avatar_url: data.avatar_url });
       return { status: 200, data: response };
     } catch (error: any) {
       if (process.env.NODE_ENV === 'development') {
@@ -380,9 +393,6 @@ export const searchService = {
 
   // New comprehensive plan search endpoint
   searchPlanContents: async (planId: string, query: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[api.ts] Searching plan ${planId} for: ${query}`);
-    }
     return request<ApiResponse<{
       query: string;
       results: Array<{
@@ -405,7 +415,6 @@ export const searchService = {
 // Logs endpoints
 export const logService = {
   getLogs: async (planId: string, nodeId: string) => {
-    console.log(`[api.ts] Getting logs for plan=${planId}, node=${nodeId}`);
     try {
       // First check if the node exists by getting node details
       await request<any>({
@@ -413,14 +422,12 @@ export const logService = {
         url: `/plans/${planId}/nodes/${nodeId}`,
       });
 
-      console.log('[api.ts] Node exists, fetching logs');
 
       // Now get the logs
       const response = await request<any>({
         method: 'GET',
         url: `/plans/${planId}/nodes/${nodeId}/logs`,
       });
-      console.log('[api.ts] Logs API response:', response);
       return response;
     } catch (error) {
       console.error('[api.ts] Error fetching logs:', error);
@@ -430,14 +437,12 @@ export const logService = {
   },
 
   addLogEntry: async (planId: string, nodeId: string, logData: { content: string; log_type: string; tags?: string[]; metadata?: object }) => {
-    console.log(`[api.ts] Adding log entry for plan=${planId}, node=${nodeId}:`, logData);
     try {
       const response = await request<ApiResponse<Log>>({
         method: 'POST',
         url: `/plans/${planId}/nodes/${nodeId}/log`,
         data: logData,
       });
-      console.log('[api.ts] Add log response:', response);
       return response;
     } catch (error) {
       console.error('[api.ts] Error adding log entry:', error);
@@ -449,13 +454,11 @@ export const logService = {
 // Debug endpoints
 export const debugService = {
   debugTokens: async () => {
-    console.log('Calling debug tokens endpoint...');
     try {
       const result = await request<any>({
         method: 'GET',
         url: '/debug/tokens',
       });
-      console.log('Debug tokens response:', result);
       return result;
     } catch (error) {
       console.error('Error in debugService.debugTokens:', error);
@@ -546,17 +549,11 @@ export const collaborationService = {
 // API Tokens endpoints
 export const tokenService = {
   getTokens: async () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Fetching tokens from API...');
-    }
     try {
       const result = await request<ApiToken[] | ApiResponse<ApiToken[]>>({
         method: 'GET',
         url: '/auth/token',
       });
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Tokens fetched (count):', Array.isArray(result) ? result.length : 'N/A');
-      }
       return result;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -567,9 +564,6 @@ export const tokenService = {
   },
 
   createToken: async (name: string, permissions?: TokenPermission[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Creating token with name:', name, 'permissions:', permissions);
-    }
     try {
       const result = await request<ApiToken | ApiResponse<ApiToken>>({
         method: 'POST',
@@ -578,7 +572,6 @@ export const tokenService = {
       });
       if (process.env.NODE_ENV === 'development') {
         // Don't log the actual token value for security
-        console.log('Token created successfully');
       }
       return result;
     } catch (error) {
@@ -590,17 +583,11 @@ export const tokenService = {
   },
 
   revokeToken: async (tokenId: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Revoking token:', tokenId);
-    }
     try {
       const result = await request<any>({
         method: 'DELETE',
         url: `/auth/token/${tokenId}`,
       });
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Token revoked successfully');
-      }
       return result;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -622,18 +609,12 @@ export interface SmartQuestion {
 export const aiService = {
   // Analyze a prompt and return clarifying questions
   analyzePrompt: async (prompt: string): Promise<{ success: boolean; questions: SmartQuestion[]; usage?: { inputTokens: number; outputTokens: number } }> => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('aiService.analyzePrompt called with prompt length:', prompt.length);
-    }
     try {
       const result = await request<{ success: boolean; questions: SmartQuestion[]; usage?: { inputTokens: number; outputTokens: number } }>({
         method: 'POST',
         url: '/ai/analyze-prompt',
         data: { prompt },
       });
-      if (process.env.NODE_ENV === 'development') {
-        console.log('analyzePrompt result:', result);
-      }
       return result;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -797,6 +778,8 @@ export const organizationService = {
 
   update: async (orgId: string, data: { name?: string; description?: string; avatarUrl?: string }) => {
     const res = await api.put(`/organizations/${orgId}`, data);
+    // Keep the cached session's org name in sync so the top bar / switcher update.
+    if (data.name !== undefined) syncCachedSessionOrg(orgId, { name: data.name });
     return res.data as Organization;
   },
 

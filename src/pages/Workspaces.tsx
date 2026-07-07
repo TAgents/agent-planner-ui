@@ -7,7 +7,6 @@ import {
   PrimaryButton,
   Progress,
   StatusDot,
-  TopBar,
   cn,
   type ProgressColor,
 } from '../components/v1';
@@ -135,19 +134,23 @@ const Workspaces: React.FC = () => {
   }, [all, filter, me, query, sourceFilter, ownerFilter, healthByWorkspace]);
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        kicker="Workspaces"
-        title="Live work in motion"
-        subtitle="Every workspace is a folder under your organization that owns its goals and plans."
-        actions={(
-          <div className="flex items-center gap-2">
-            <GhostButton onClick={() => navigate('/app/blueprints')}>Fork from Blueprint</GhostButton>
-            <PrimaryButton onClick={() => setShowCreate(true)}>Create Workspace</PrimaryButton>
-          </div>
-        )}
-      />
-      <div className="flex flex-1 flex-col gap-4 overflow-auto bg-bg p-6">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Kicker className="mb-2">◆ Workspaces</Kicker>
+          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+            Live work in motion
+          </h1>
+          <p className="mt-1 text-[13px] text-text-sec">
+            Every workspace is a folder under your organization that owns its goals and plans.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <GhostButton onClick={() => navigate('/app/blueprints')}>Fork from Blueprint</GhostButton>
+          <PrimaryButton onClick={() => setShowCreate(true)}>Create Workspace</PrimaryButton>
+        </div>
+      </header>
+      <div className="flex flex-col gap-4">
         <React.Fragment>
           <Filters
             filter={filter} setFilter={setFilter} counts={counts}
@@ -280,7 +283,7 @@ const Filters: React.FC<{
   setOwnerFilter: (o: OwnerFilter) => void;
 }> = ({ filter, setFilter, counts, query, setQuery, sourceFilter, setSourceFilter, ownerFilter, setOwnerFilter }) => (
   <div className="flex flex-wrap items-center gap-3">
-    <div className="flex items-center rounded-lg border border-border bg-surface p-[3px]">
+    <div className="flex flex-wrap gap-2">
       {FILTERS.map((f) => {
         const on = f.id === filter;
         return (
@@ -288,13 +291,13 @@ const Filters: React.FC<{
             key={f.id}
             type="button"
             onClick={() => setFilter(f.id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-[12px] transition-colors',
-              on ? 'bg-surface-hi font-semibold text-text' : 'font-medium text-text-sec hover:text-text',
-            )}
+            className={`rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
+              on
+                ? 'border-amber bg-amber-soft text-amber'
+                : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
+            }`}
           >
-            {f.label}
-            <span className="font-mono text-[9.5px] text-text-muted">{counts[f.id] ?? 0}</span>
+            {f.label} · {counts[f.id] ?? 0}
           </button>
         );
       })}

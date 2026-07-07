@@ -1,126 +1,82 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { ApiToken, TokenPermission } from '../types';
 import { tokenService } from '../services/api';
+import { getSession } from '../services/api-client';
 
+const TOKENS_KEY = 'api-tokens';
+
+function unwrap(response: any): ApiToken[] {
+  if (Array.isArray(response)) return response;
+  if (response && Array.isArray(response.data)) return response.data;
+  return [];
+}
+
+/**
+ * API tokens via React Query — one shared cache across all mounts
+ * (SettingsLayout, ConnectAgentBanner, IntegrationsSettings…), so the list
+ * is fetched once per staleTime instead of per component.
+ */
 export const useTokens = () => {
-  const [tokens, setTokens] = useState<ApiToken[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
   const [newToken, setNewToken] = useState<ApiToken | null>(null);
+  const userId = getSession()?.user?.id;
+  const queryKey = [TOKENS_KEY, userId];
 
-  // Fetch all tokens
+  const query = useQuery<ApiToken[], any>(
+    queryKey,
+    async () => unwrap(await tokenService.getTokens()),
+    { enabled: !!userId, staleTime: 30_000 },
+  );
+
+  const createMutation = useMutation(
+    async ({ name, permissions }: { name: string; permissions?: TokenPermission[] }) => {
+      const response: any = await tokenService.createToken(name, permissions);
+      return (response && response.data ? response.data : response) as ApiToken;
+    },
+    {
+      onSuccess: (token) => {
+        setNewToken(token);
+        qc.invalidateQueries(TOKENS_KEY);
+      },
+    },
+  );
+
+  const revokeMutation = useMutation((tokenId: string) => tokenService.revokeToken(tokenId), {
+    onSuccess: (_data, tokenId) => {
+      qc.setQueryData<ApiToken[]>(queryKey, (prev) => (prev || []).filter((t) => t.id !== tokenId));
+    },
+  });
+
+  const createToken = useCallback(
+    (name: string, permissions?: TokenPermission[]) => createMutation.mutateAsync({ name, permissions }),
+    [createMutation],
+  );
+  const revokeToken = useCallback(
+    async (tokenId: string) => {
+      await revokeMutation.mutateAsync(tokenId);
+    },
+    [revokeMutation],
+  );
   const fetchTokens = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await tokenService.getTokens();
-      console.log('Tokens API response:', response);
-      
-      if (Array.isArray(response)) {
-        // Handle direct array response
-        console.log('Setting tokens (direct array):', response);
-        setTokens(response);
-      } else if ('data' in response && Array.isArray(response.data)) {
-        // Handle wrapped array response
-        console.log('Setting tokens (wrapped array):', response.data);
-        setTokens(response.data);
-      } else {
-        // Handle unexpected response format
-        console.log('Unexpected response format:', response);
-        setTokens([]);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch API tokens');
-      console.error('Error fetching tokens:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await query.refetch();
+  }, [query]);
+  const clearNewToken = useCallback(() => setNewToken(null), []);
 
-  // Create a new token
-  const createToken = useCallback(async (name: string, permissions?: TokenPermission[]) => {
-    setLoading(true);
-    setError(null);
-    setNewToken(null);
-    
-    try {
-      console.log('Creating token with name:', name, 'and permissions:', permissions);
-      const response = await tokenService.createToken(name, permissions);
-      console.log('Create token response:', response);
-      
-      // Handle different response formats
-      if (response && 'data' in response && response.data) {
-        console.log('Setting new token from response.data:', response.data);
-        setNewToken(response.data);
-      } else {
-        console.log('Setting new token directly from response:', response);
-        setNewToken(response as ApiToken);
-      }
-      
-      // Refresh the token list - wait a moment to ensure DB consistency
-      setTimeout(() => {
-        console.log('Refreshing token list after creation');
-        fetchTokens();
-      }, 500);
-      
-      return 'data' in response ? response.data : response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create API token');
-      console.error('Error creating token:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchTokens]);
-
-  // Revoke a token
-  const revokeToken = useCallback(async (tokenId: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await tokenService.revokeToken(tokenId);
-      
-      // Update the local state to remove the revoked token
-      setTokens(prevTokens => prevTokens.filter(token => token.id !== tokenId));
-    } catch (err: any) {
-      setError(err.message || 'Failed to revoke API token');
-      console.error('Error revoking token:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Clear the displayed new token after it's been viewed
-  const clearNewToken = useCallback(() => {
-    setNewToken(null);
-  }, []);
-
-  // Load tokens on initial render
-  useEffect(() => {
-    console.log('useTokens hook mounted, fetching tokens...');
-    fetchTokens();
-    
-    // Set up an interval to refresh tokens periodically (every 30 seconds)
-    const intervalId = setInterval(() => {
-      console.log('Refreshing tokens on interval...');
-      fetchTokens();
-    }, 30000);
-    
-    // Clean up interval on unmount
-    return () => clearInterval(intervalId);
-  }, [fetchTokens]);
+  const errOf = (e: any) => e?.message || null;
 
   return {
-    tokens,
-    loading,
-    error,
+    tokens: query.data || [],
+    loading: query.isLoading || createMutation.isLoading || revokeMutation.isLoading,
+    error:
+      errOf(query.error) ||
+      errOf(createMutation.error) ||
+      errOf(revokeMutation.error),
     newToken,
     fetchTokens,
     createToken,
     revokeToken,
-    clearNewToken
+    clearNewToken,
   };
 };
 

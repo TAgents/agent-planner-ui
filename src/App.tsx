@@ -1,7 +1,7 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { UIProvider } from './contexts/UIContext';
+import { UIProvider, useUI } from './contexts/UIContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { PresenceProvider } from './contexts/PresenceContext';
 
@@ -12,7 +12,7 @@ import PublicLayout from './components/layout/PublicLayout';
 // Pages
 import Landing from './pages/Landing';
 import Explore from './pages/Explore';
-import PlansList from './pages/PlansList';
+import GoalsList from './pages/GoalsList';
 import PlanTree from './pages/PlanTree';
 import PublicPlan from './pages/PublicPlanV1';
 import PublicBlueprint from './pages/PublicBlueprint';
@@ -29,7 +29,6 @@ import NotificationsSettings from './pages/settings/NotificationsSettings';
 import BillingSettings from './pages/settings/BillingSettings';
 import DangerZone from './pages/settings/DangerZone';
 import SettingsLayout from './components/settings/SettingsLayout';
-import GoalsList from './pages/GoalsV2';
 import GoalDetail from './pages/GoalDetailV1';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProfileSettings from './pages/settings/ProfileSettings';
@@ -65,6 +64,27 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * The assistant is now a persistent dock (see components/chat/ChatDock), not a
+ * page. Legacy /app/chat links open the dock and land on Mission; a conversation
+ * id in the URL is stashed so the dock selects it on its next mount.
+ */
+const ChatRoute: React.FC = () => {
+  const { conversationId } = useParams<{ conversationId?: string }>();
+  const { setChatDockOpen } = useUI();
+  useEffect(() => {
+    setChatDockOpen(true);
+    if (conversationId) {
+      try {
+        localStorage.setItem('ap-chat-active', conversationId);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [conversationId, setChatDockOpen]);
+  return <Navigate to="/app/dashboard" replace />;
+};
 
 const App: React.FC = () => {
   return (
@@ -108,25 +128,30 @@ const App: React.FC = () => {
                 <Route path="/connect/:client" element={<ConnectPage />} />
                 <Route path="/explore/clone/:sourceId" element={<ExploreClone />} />
                 <Route path="/app" element={<MainLayout />}>
-                  <Route index element={<MissionControl />} />
+                  {/* Mission is the default landing; the assistant rides along as a dock. */}
+                  <Route index element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="dashboard" element={<MissionControl />} />
-                  {/* Insights / Strategy / Portfolio folded into the unified Mission home */}
-                  <Route path="insights" element={<Navigate to="/app" replace />} />
-                  <Route path="strategy" element={<Navigate to="/app" replace />} />
+                  {/* Insights / Strategy / Portfolio folded into the Mission dashboard */}
+                  <Route path="insights" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="strategy" element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="workspaces" element={<ErrorBoundary><Workspaces /></ErrorBoundary>} />
                   <Route path="workspaces/:id" element={<ErrorBoundary><WorkspaceDetail /></ErrorBoundary>} />
                   <Route path="blueprints" element={<ErrorBoundary><Blueprints /></ErrorBoundary>} />
                   <Route path="blueprints/:id" element={<ErrorBoundary><BlueprintDetail /></ErrorBoundary>} />
-                  <Route path="plans" element={<PlansList />} />
+                  {/* Goals lead the work surface; the Goals page is the goal-grouped overview. */}
+                  <Route path="goals" element={<GoalsList />} />
+                  {/* Plans are folded into goals — the flat list redirects into Goals. */}
+                  <Route path="plans" element={<Navigate to="/app/goals" replace />} />
                   <Route path="plans/create" element={<CreatePlan />} />
                   <Route path="plans/:planId" element={<PlanTree />} />
-                  <Route path="goals" element={<ErrorBoundary><GoalsList /></ErrorBoundary>} />
+                  <Route path="chat" element={<ChatRoute />} />
+                  <Route path="chat/:conversationId" element={<ChatRoute />} />
                   <Route path="goals/:goalId" element={<ErrorBoundary><GoalDetail /></ErrorBoundary>} />
                   <Route path="knowledge" element={<ErrorBoundary><KnowledgeOverview /></ErrorBoundary>} />
                   <Route path="knowledge/timeline" element={<ErrorBoundary><KnowledgeTimeline /></ErrorBoundary>} />
                   <Route path="knowledge/coverage" element={<ErrorBoundary><KnowledgeCoverage /></ErrorBoundary>} />
                   <Route path="knowledge/graph" element={<ErrorBoundary><KnowledgeGraph /></ErrorBoundary>} />
-                  <Route path="portfolio" element={<Navigate to="/app" replace />} />
+                  <Route path="portfolio" element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="settings" element={<SettingsLayout />}>
                     <Route index element={<Navigate to="profile" replace />} />
                     <Route path="profile" element={<ProfileSettings />} />

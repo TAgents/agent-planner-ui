@@ -125,10 +125,10 @@ const Register: React.FC = () => {
         const orgs = session.user?.organizations || [];
 
         if (orgs.length > 1 && !localStorage.getItem('active_org_id')) {
-          navigate('/select-org', { state: { from: '/app/plans' }, replace: true });
+          navigate('/select-org', { state: { from: '/app/chat' }, replace: true });
         } else {
           if (orgs.length === 1) localStorage.setItem('active_org_id', orgs[0].id);
-          navigate('/app/plans', { replace: true });
+          navigate('/app/chat', { replace: true });
         }
       }, 1500);
     } catch (error: any) {
@@ -158,7 +158,7 @@ const Register: React.FC = () => {
 
   return (
     <AuthSplitLayout
-      kicker="◆ Create account"
+      kicker="Create account"
       title="Set up your workspace"
       altCta={
         <span>
@@ -278,7 +278,7 @@ const Register: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-[3px] bg-amber px-4 py-2.5 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
               <>

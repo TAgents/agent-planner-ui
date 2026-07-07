@@ -3,13 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { planService } from '../services/plans.service';
 import { useGoalV2 } from '../hooks/useGoalsV2';
-import { Card, FilterChip, Pill } from '../components/v1';
+import { Card, Pill } from '../components/v1';
 import {
   useGraphitiEpisodes,
   useGraphitiStatus,
 } from '../hooks/useGraphitiKnowledge';
 import type { GraphitiEpisode } from '../services/knowledge.service';
-import { displayEpisodeName, entityChips, normalizeEpisodeType, scopeChips } from './KnowledgeTimelineV1.helpers';
+import { displayEpisodeName, entityChips } from './KnowledgeTimelineV1.helpers';
+import KnowledgeTabs from '../components/knowledge/KnowledgeTabs';
 import KnowledgeHeader from '../components/knowledge/KnowledgeHeader';
 
 function formatDay(iso: string): { dayKey: string; label: string } {
@@ -92,11 +93,8 @@ const KnowledgeTimelineV1: React.FC = () => {
       if (src.includes('agent') || src.match(/researcher|planner|implementer/)) c.agents += 1;
       else c.you += 1;
       if ((e.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1) c.cross_plan += 1;
-      // A contradiction = an episode the coherence engine linked with
-      // link_type='contradicts' (the same persisted signal the goal coherence
-      // reads). The old source_description text-match never matched, so this
-      // counter was stuck at 0 even when goals showed contradictions.
-      if ((e.links || []).some((l) => l.link_type === 'contradicts')) c.contradictions += 1;
+      const desc = (e.source_description || '').toLowerCase();
+      if (desc.includes('contradict') || desc.includes('superseded')) c.contradictions += 1;
     }
     return c;
   }, [allEpisodes]);
@@ -143,7 +141,10 @@ const KnowledgeTimelineV1: React.FC = () => {
         (e) => (e.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1,
       );
     } else if (filter === 'contradictions') {
-      list = list.filter((e) => (e.links || []).some((l) => l.link_type === 'contradicts'));
+      list = list.filter((e) => {
+        const desc = (e.source_description || '').toLowerCase();
+        return desc.includes('contradict') || desc.includes('superseded');
+      });
     }
 
     // Search across name + content + entity names + plan/task titles.
@@ -203,7 +204,7 @@ const KnowledgeTimelineV1: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
       <KnowledgeHeader
         stats={[
           { value: atEpisodeCap ? `${counts.all}+` : counts.all, label: 'episodes' },
@@ -212,8 +213,7 @@ const KnowledgeTimelineV1: React.FC = () => {
         search={search}
         onSearchChange={setSearch}
       />
-      <div className="flex-1 overflow-auto bg-bg">
-        <div className="mx-auto max-w-[1080px] px-6 py-8 sm:px-9">
+      <KnowledgeTabs />
 
       {/* Filter row */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
@@ -221,17 +221,25 @@ const KnowledgeTimelineV1: React.FC = () => {
           <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-text-muted mr-1">
             Filter
           </span>
-          {FILTERS.map((f) => (
-            <FilterChip
-              key={f.id}
-              active={filter === f.id}
-              tone={f.tone === 'red' && f.count > 0 ? 'red' : 'default'}
-              count={f.count}
-              onClick={() => setFilter(f.id)}
-            >
-              {f.label}
-            </FilterChip>
-          ))}
+          {FILTERS.map((f) => {
+            const active = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={`rounded-full border px-3 py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
+                  active
+                    ? 'border-amber bg-amber-soft text-amber'
+                    : f.tone === 'red' && f.count > 0
+                      ? 'border-border bg-surface text-red hover:bg-surface-hi'
+                      : 'border-border bg-surface text-text-sec hover:bg-surface-hi'
+                }`}
+              >
+                {f.label} · {f.count}
+              </button>
+            );
+          })}
         </div>
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
           {`Last ${Math.min(maxEpisodes, counts.all)} episodes`}
@@ -316,8 +324,6 @@ const KnowledgeTimelineV1: React.FC = () => {
           </button>
         </div>
       )}
-        </div>
-      </div>
     </div>
   );
 };
@@ -328,12 +334,13 @@ const KnowledgeTimelineV1: React.FC = () => {
  * optional contradiction red-callout + fact tags as code chips.
  */
 const EpisodeCard: React.FC<{ episode: GraphitiEpisode }> = ({ episode: ep }) => {
-  const isContradiction = (ep.links || []).some((l) => l.link_type === 'contradicts');
+  const desc = (ep.source_description || '').toLowerCase();
+  const isContradiction = desc.includes('contradict') || desc.includes('superseded');
   const isCrossPlan =
     (ep.links || []).map((l) => l.plan_id).filter((v, i, a) => a.indexOf(v) === i).length > 1;
   const dotColor = isContradiction ? 'bg-red' : isCrossPlan ? 'bg-violet' : 'bg-amber';
-  const type = normalizeEpisodeType(ep);
-  const scopes = scopeChips(ep);
+  const sourceLabel = ep.source_description || 'agent';
+  const firstLink = (ep.links || [])[0];
 
   return (
     <li className="relative flex gap-3">
@@ -356,20 +363,18 @@ const EpisodeCard: React.FC<{ episode: GraphitiEpisode }> = ({ episode: ep }) =>
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11.5px]">
-          <Pill color={type.tone}>{type.label}</Pill>
-          {scopes.map((s) => (
-            <Link
-              key={`${s.plan_id}:${s.node_id || ''}`}
-              to={s.node_id ? `/app/plans/${s.plan_id}?node=${s.node_id}` : `/app/plans/${s.plan_id}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-hi/40 px-1.5 py-[1.5px] text-text-sec transition-colors hover:text-text"
-              title={s.node_title ? `${s.node_title} — ${s.plan_title}` : s.plan_title}
-            >
-              <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-text-muted">
-                {s.node_id ? 'task' : 'plan'}
-              </span>
-              <span className="max-w-[20ch] truncate">{s.node_title || s.plan_title}</span>
-            </Link>
-          ))}
+          <Pill color={isContradiction ? 'red' : 'violet'}>{sourceLabel}</Pill>
+          {firstLink && (
+            <>
+              <span className="text-text-muted">·</span>
+              <Link
+                to={`/app/plans/${firstLink.plan_id}`}
+                className="text-text-sec hover:text-text"
+              >
+                {firstLink.plan_title}
+              </Link>
+            </>
+          )}
           {isCrossPlan && (
             <span className="rounded-md border border-violet/40 bg-violet/10 px-1.5 py-[1.5px] font-mono text-[9px] uppercase tracking-[0.12em] text-violet">
               Cross-plan

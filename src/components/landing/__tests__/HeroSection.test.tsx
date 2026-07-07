@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import HeroSection from '../HeroSection';
@@ -14,34 +14,51 @@ const renderHero = () =>
   );
 
 /**
- * Workspace-first hero (v1.1). Asserts the two primary CTAs and the
- * top-of-hero kicker copy. The old "Connects to" inline client list
- * was removed when the hero was reframed around Workspace + Blueprint —
- * /connect/* deep links still work; they just aren't on the hero.
+ * Lovable-style hero: headline over a Human/Agents toggle. Human (default)
+ * = one big prompt box whose submit stashes the question for the ChatDock;
+ * Agents = quick-connect card with per-client handoff into /connect/:client.
  */
 describe('HeroSection', () => {
-  it('renders the workspace-first headline', () => {
+  afterEach(() => localStorage.clear());
+
+  it('renders the goals-and-plans headline', () => {
     renderHero();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn repeatable work into/i);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/live workspaces/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Define goals and plans/i);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Agents implement/i);
   });
 
-  it('CTA "Create Workspace" links to /login', () => {
+  it('defaults to the human path: big prompt box with suggestions', () => {
     renderHero();
-    const cta = screen.getByText(/Create Workspace/i).closest('a');
-    expect(cta).not.toBeNull();
-    expect(cta).toHaveAttribute('href', '/login');
+    expect(screen.getByLabelText(/Ask the assistant/i)).toBeInTheDocument();
+    expect(screen.getByText(/How are my goals doing\?/i)).toBeInTheDocument();
   });
 
-  it('CTA "Explore Blueprints" links to /explore', () => {
+  it('submitting the prompt stashes the question for the ChatDock', () => {
     renderHero();
-    const cta = screen.getByText(/Explore Blueprints/i).closest('a');
-    expect(cta).not.toBeNull();
-    expect(cta).toHaveAttribute('href', '/explore');
+    const box = screen.getByLabelText(/Ask the assistant/i);
+    fireEvent.change(box, { target: { value: 'What is blocked?' } });
+    fireEvent.click(screen.getByRole('button', { name: /Send/i }));
+    expect(localStorage.getItem('ap-chat-landing-draft')).toBe('What is blocked?');
   });
 
-  it('renders the "Operating system for repeatable work" kicker', () => {
+  it('a suggestion chip fills the prompt box', () => {
     renderHero();
-    expect(screen.getByText(/Operating system for repeatable work/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/What should I focus on next\?/i));
+    expect(screen.getByLabelText(/Ask the assistant/i)).toHaveValue(
+      'What should I focus on next?',
+    );
+  });
+
+  it('the Agents tab shows the quick-connect card with the connect handoff', () => {
+    renderHero();
+    fireEvent.click(screen.getByRole('tab', { name: /Agents/i }));
+    expect(screen.getByText(/Quick connect/i)).toBeInTheDocument();
+    const handoff = screen.getByText(/Get your token/i).closest('a');
+    expect(handoff).toHaveAttribute('href', '/connect/claude-desktop');
+    fireEvent.click(screen.getByRole('tab', { name: 'Cursor' }));
+    expect(screen.getByText(/Get your token/i).closest('a')).toHaveAttribute(
+      'href',
+      '/connect/cursor',
+    );
   });
 });

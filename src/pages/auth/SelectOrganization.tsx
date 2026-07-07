@@ -22,7 +22,7 @@ const SelectOrganization: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
-  const destination = state?.from || '/app';
+  const destination = state?.from || '/app/chat';
 
   const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
   const orgs: Organization[] = session.user?.organizations || [];

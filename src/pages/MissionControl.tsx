@@ -6,8 +6,6 @@ import {
   ObjectChip,
   Pill,
   Spark,
-  TopBar,
-  type PillColor,
 } from '../components/v1';
 import { useQuery } from 'react-query';
 import {
@@ -21,7 +19,7 @@ import { goalHealthBadge } from '../utils/goalHealth';
 import { request } from '../services/api-client';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { usePlans } from '../hooks/usePlans';
-import AgentStatusNudge from '../components/dashboard/AgentStatusNudge';
+import ConnectAgentBanner from '../components/connect/ConnectAgentBanner';
 import type { Plan, Workspace } from '../types';
 
 function relTime(iso?: string): string {
@@ -142,61 +140,58 @@ const MissionControl: React.FC = () => {
   });
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        kicker="◆ Mission Control"
-        title={
-          <>
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-7 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <Kicker className="mb-2">◆ Mission Control</Kicker>
+          <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
             <span>{timeOfDayGreeting()}, </span>
             <span className="text-amber">
               {goalsInMotion} {goalsInMotion === 1 ? 'goal' : 'goals'} in motion
             </span>
-          </>
-        }
-        subtitle={
-          goals.length > 0 ? (
-            <>
-              {onTrackCount} on track
-              {needAttentionCount > 0 && (
-                <span className="text-amber"> · {needAttentionCount} need a look</span>
-              )}{' '}
-              · what needs you, and where to focus next.
-            </>
-          ) : (
-            <>What's in motion, what needs you, and what's drifting.</>
-          )
-        }
-        actions={
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
-            {healthScore !== null && (
+          </h1>
+          <p className="mt-1 text-[13px] leading-[1.5] text-text-sec">
+            {goals.length > 0 ? (
               <>
-                <span
-                  className="flex items-center gap-1.5 text-text-sec"
-                  title={contradictions > 0 ? `${contradictions} contradiction${contradictions === 1 ? '' : 's'} to review` : 'Knowledge is consistent'}
-                >
-                  <span
-                    className={`inline-block h-1.5 w-1.5 rounded-full ${healthScore >= 80 ? 'bg-emerald' : healthScore >= 60 ? 'bg-amber' : 'bg-red'}`}
-                  />
-                  Health {healthScore}
-                  {contradictions > 0 && (
-                    <span className="text-amber"> · △{contradictions} tension{contradictions === 1 ? '' : 's'}</span>
-                  )}
-                </span>
-                <span aria-hidden>·</span>
+                {onTrackCount} on track
+                {needAttentionCount > 0 && (
+                  <span className="text-amber"> · {needAttentionCount} need a look</span>
+                )}{' '}
+                · what needs you, and where to focus next.
               </>
+            ) : (
+              <>What's in motion, what needs you, and what's drifting.</>
             )}
-            <span>{summary.data?.active_plans_count ?? '—'} plans active</span>
-            <span aria-hidden>·</span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" />
-              live
-            </span>
-          </div>
-        }
-      />
-      <div className="flex-1 overflow-auto bg-bg">
-        <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-9">
-      <AgentStatusNudge />
+          </p>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
+          {healthScore !== null && (
+            <>
+              <span
+                className="flex items-center gap-1.5 text-text-sec"
+                title={contradictions > 0 ? `${contradictions} contradiction${contradictions === 1 ? '' : 's'} to review` : 'Knowledge is consistent'}
+              >
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${healthScore >= 80 ? 'bg-emerald' : healthScore >= 60 ? 'bg-amber' : 'bg-red'}`}
+                />
+                Health {healthScore}
+                {contradictions > 0 && <span className="text-amber"> · △{contradictions}</span>}
+              </span>
+              <span aria-hidden>·</span>
+            </>
+          )}
+          <span>{summary.data?.active_plans_count ?? '—'} plans active</span>
+          <span aria-hidden>·</span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" />
+            live
+          </span>
+        </div>
+      </header>
+
+      {/* Activation: the agent connector is the enabling step for everything
+          below, so it leads the dashboard until a connection exists. */}
+      <ConnectAgentBanner />
 
       <div className="mb-8">
         <Card pad={20}>
@@ -229,13 +224,13 @@ const MissionControl: React.FC = () => {
                 Awaiting your call
                 <Pill color={allPending.length > 0 ? 'amber' : 'slate'}>{allPending.length}</Pill>
               </span>
+              {/* The decision queue lives here on Mission Control — there's no
+                  separate decisions page, so show an overflow hint instead of a
+                  dead link when there are more pending than the few listed. */}
               {pending.data?.total !== undefined && pending.data.total > allPending.length && (
-                <Link
-                  to="/app/decisions"
-                  className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted hover:text-text"
-                >
-                  View all →
-                </Link>
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-text-muted">
+                  +{pending.data.total - allPending.length} more
+                </span>
               )}
             </div>
             {allPending.length === 0 ? (
@@ -310,8 +305,6 @@ const MissionControl: React.FC = () => {
       <CollapsibleSection label="Workspaces & recent forks">
         <WorkspacesStrip />
       </CollapsibleSection>
-        </div>
-      </div>
     </div>
   );
 };
@@ -381,7 +374,7 @@ const CollapsibleConstellation: React.FC<{
 const CollapsibleSection: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
   const [open, setOpen] = React.useState(false);
   return (
-    <section className="border-t border-dashed border-border pt-5">
+    <section className="pt-5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -549,8 +542,6 @@ const GoalConstellationCard: React.FC<{
   const blockedPct = goal.linked_plan_progress?.percent_blocked ?? 0;
   const pendingDecisions = goal.pending_decision_count ?? 0;
   const attainmentPct = goal.attainment_pct ?? null;
-  const measurable = goal.attainment?.measurable_count ?? 0;
-  const met = goal.attainment?.met_count ?? 0;
   // Tasks moving but the outcome metric is flat — mirrors the backend health rule.
   const outcomesLagging = attainmentPct != null && pct >= 50 && pct - attainmentPct >= 30;
   // Per-goal contradiction count would require a /goals/:id/coherence
@@ -597,9 +588,7 @@ const GoalConstellationCard: React.FC<{
         )}
       </div>
 
-      {/* Execution — task completion (+ blocked). */}
       <div className="mt-3 flex items-center gap-3">
-        <span className="w-[44px] flex-shrink-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-text-muted">exec</span>
         <div
           className="flex h-[3px] flex-1 overflow-hidden rounded-full bg-surface-hi"
           role="img"
@@ -608,24 +597,8 @@ const GoalConstellationCard: React.FC<{
           {pct > 0 && <div className="bg-emerald" style={{ width: `${pct - blockedPct}%` }} />}
           {blockedPct > 0 && <div className="bg-red" style={{ width: `${blockedPct}%` }} />}
         </div>
-        <span className="w-[34px] flex-shrink-0 text-right font-mono text-[11px] tabular-nums text-text">{pct}%</span>
+        <span className="font-mono text-[11px] tabular-nums text-text">{pct}%</span>
       </div>
-
-      {/* Attainment — measurable criteria met (the outcome). Only when measurable. */}
-      {measurable > 0 && (
-        <div className="mt-1.5 flex items-center gap-3" title={`${met}/${measurable} measurable criteria met`}>
-          <span className="w-[44px] flex-shrink-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-text-muted">attain</span>
-          <div className="flex h-[3px] flex-1 overflow-hidden rounded-full bg-surface-hi" role="img" aria-label={`${attainmentPct ?? 0}% attained`}>
-            {attainmentPct != null && attainmentPct > 0 && (
-              <div
-                className={attainmentPct >= 100 ? 'bg-emerald' : 'bg-violet'}
-                style={{ width: `${attainmentPct}%` }}
-              />
-            )}
-          </div>
-          <span className="w-[34px] flex-shrink-0 text-right font-mono text-[11px] tabular-nums text-text-sec">{attainmentPct ?? 0}%</span>
-        </div>
-      )}
 
       <div className="mt-2 flex items-center justify-between font-mono text-[9.5px] uppercase tracking-[0.12em] text-text-muted">
         <span>

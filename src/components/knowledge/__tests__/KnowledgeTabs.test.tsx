@@ -12,6 +12,7 @@ const renderAt = (path: string) =>
 
 describe('KnowledgeTabs', () => {
   const expected: Array<[string, string]> = [
+    ['Overview', '/app/knowledge'],
     ['Timeline', '/app/knowledge/timeline'],
     ['Coverage', '/app/knowledge/coverage'],
     ['Graph', '/app/knowledge/graph'],
@@ -34,9 +35,9 @@ describe('KnowledgeTabs', () => {
     expect(active).toHaveAttribute('href', '/app/knowledge/coverage');
   });
 
-  it('exposes exactly three nav links', () => {
+  it('exposes exactly the four lens links', () => {
     renderAt('/app/knowledge/timeline');
     const nav = screen.getByRole('navigation', { name: /knowledge views/i });
-    expect(within(nav).getAllByRole('link')).toHaveLength(3);
+    expect(within(nav).getAllByRole('link')).toHaveLength(expected.length);
   });
 });

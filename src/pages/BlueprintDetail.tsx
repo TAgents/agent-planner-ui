@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Breadcrumb,
   Card,
   GhostButton,
   Kicker,
   ObjectChip,
   PrimaryButton,
   ProposedChip,
-  TopBar,
   cn,
 } from '../components/v1';
 import { useBlueprint, useBlueprintForks, useForkBlueprint } from '../hooks/useBlueprints';
@@ -36,31 +36,32 @@ const BlueprintDetail: React.FC = () => {
   const deps = bp.payload?.dependencies ?? [];
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        breadcrumb={[{ label: 'Blueprints', to: '/app/blueprints' }, bp.title]}
-        kicker={
-          <span className="inline-flex items-center gap-2">
-            <span className={cn(
-              'rounded border bg-bg px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.16em]',
-              isWs ? 'border-amber/50 text-amber' : 'border-violet/50 text-violet',
-            )}>{isWs ? 'WORKSPACE BLUEPRINT' : 'PLAN BLUEPRINT'}</span>
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-text-muted">
-              v{bp.version} · {bp.visibility}
-            </span>
-          </span>
-        }
-        title={bp.title}
-        subtitle={bp.description ?? '—'}
-        actions={(
-          <div className="flex items-center gap-2">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-7">
+        <Breadcrumb items={[{ label: 'Blueprints', to: '/app/blueprints' }, bp.title]} />
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
+              <Kicker>◆ {isWs ? 'Workspace' : 'Plan'} Blueprint</Kicker>
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-text-muted">
+                v{bp.version} · {bp.visibility}
+              </span>
+            </div>
+            <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+              {bp.title}
+            </h1>
+            <p className="mt-2 max-w-[64ch] text-[13px] leading-[1.55] text-text-sec">
+              {bp.description ?? '—'}
+            </p>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
             <GhostButton onClick={() => alert('Edit blueprint structure — coming soon.')}>Edit structure</GhostButton>
             <PrimaryButton onClick={() => setShowForkModal(true)}>{ctaLabel}</PrimaryButton>
           </div>
-        )}
-      />
+        </div>
+      </header>
 
-      <div className="flex flex-1 flex-col gap-4 overflow-auto bg-bg p-6">
+      <div className="flex flex-col gap-4">
         <MetaStrip bp={bp} phaseCount={phases.length} taskCount={tasks.length} depCount={deps.length} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
           <StructurePreview nodes={nodes} />

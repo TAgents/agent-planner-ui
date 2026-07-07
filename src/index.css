@@ -8,35 +8,44 @@
  * `rgb(var(--token) / <alpha-value>)`. Legacy --ob-* vars are still defined in
  * tailwind.config.js for in-flight components during migration.
  */
+/*
+ * "Working drawings" identity on the Warm Obsidian palette. Light mode is
+ * warm cream drafting paper with gold ink; dark mode is warm obsidian — a
+ * near-black with a deliberate amber/warm cast on the greys (the "yellow
+ * tint"), not neutral-cool. `--amber` keeps its NAME (brand-accent token
+ * consumed everywhere) and its VALUE is warm gold.
+ */
 :root {
-  --bg:          250 250 247; /* #fafaf7 */
-  --surface:     255 255 255; /* #ffffff */
+  --bg:          250 250 247; /* #fafaf7 — warm cream paper */
+  --surface:     255 255 255; /* #ffffff — sheet white */
   --surface-hi:  244 242 236; /* #f4f2ec */
   --border:      232 228 220; /* #e8e4dc */
   --border-hi:   212 207 197; /* #d4cfc5 */
-  --text:         22  20  15; /* #16140f */
+  --text:         22  20  15; /* #16140f — ink */
   --text-sec:     90  84  72; /* #5a5448 */
-  --text-muted:  138 132 116; /* #8a8474 */
-  --amber:       184 136  46; /* #b8882e */
+  --text-muted:  112 106  94; /* #706a5e — WCAG AA on cream paper */
+  --amber:       184 136  46; /* #b8882e — gold ink (brand accent) */
   --emerald:      61 122 110; /* #3d7a6e */
   --red:         176  56  56; /* #b03838 */
-  --violet:       93  79 138; /* #5d4f8a */
+  --violet:       93  79 138; /* #5d4f8a — blueprint object hue */
   --slate:       160 152 130; /* #a09882 */
 }
 .dark {
+  /* Warm Obsidian: warm near-black with an amber cast on the greys so the
+     "yellow tint" reads. Accent gold + warm print-white text. */
   --bg:           14  12  10; /* #0e0c0a */
-  --surface:      22  20  15; /* #16140f */
-  --surface-hi:   30  27  21; /* #1e1b15 */
-  --border:       42  38  30; /* #2a261e */
-  --border-hi:    58  53  40; /* #3a3528 */
-  --text:        237 232 223; /* #ede8df */
-  --text-sec:    160 152 130; /* #a09882 */
-  --text-muted:  107  99  84; /* #6b6354 */
-  --amber:       212 162  78; /* #d4a24e */
+  --surface:      20  18  15; /* #14120f */
+  --surface-hi:   29  26  21; /* #1d1a15 */
+  --border:       44  40  33; /* #2c2821 */
+  --border-hi:    60  54  44; /* #3c362c */
+  --text:        237 233 226; /* #ede9e2 — warm print white */
+  --text-sec:    168 160 146; /* #a8a092 */
+  --text-muted:  146 138 124; /* #928a7c — WCAG AA on obsidian */
+  --amber:       212 162  78; /* #d4a24e — warm gold accent */
   --emerald:      91 168 154; /* #5ba89a */
   --red:         201  74  74; /* #c94a4a */
   --violet:      138 124 184; /* #8a7cb8 */
-  --slate:        74  68  56; /* #4a4438 */
+  --slate:       120 110  92; /* #786e5c */
 }
 
 /* Outside @layer so it has higher specificity — prevents white flash and overscroll */
@@ -44,7 +53,7 @@ html {
   background-color: #ffffff;
 }
 html.dark {
-  background-color: #0e0c0a; /* obsidian-900 — warm black */
+  background-color: #0e0c0a; /* warm obsidian (matches --bg) */
 }
 
 @layer base {
@@ -52,28 +61,27 @@ html.dark {
     @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-white;
   }
 
-  /* Dark mode: use Figtree as body font */
   .dark body {
-    font-family: 'Figtree', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Override text-white in dark mode to use warm cream */
+  /* Override text-white in dark mode to use the warm print-white token */
   .dark .text-white,
   .dark [class*="dark:text-white"] {
-    color: #ede8df;
+    color: #ede9e2;
   }
 
-  /* Focus rings: amber instead of blue in dark mode */
-  .dark a:focus, .dark button:focus, .dark input:focus, .dark select:focus, .dark textarea:focus {
-    @apply outline-none ring-2 ring-opacity-50;
-    --tw-ring-color: #d4a24e;
-  }
-
-  /* Light mode focus */
-  a:focus, button:focus, input:focus, select:focus, textarea:focus {
-    @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+  /* Keyboard-focus rings: amber in both themes (was blue in light mode), and
+     only on keyboard focus (:focus-visible) so mouse clicks don't flash a ring. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-2;
+    --tw-ring-color: rgb(var(--amber) / 0.6);
   }
 
   /* Custom scrollbar styling */
@@ -232,101 +240,104 @@ html.dark {
   animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Landing Page Styles ─────────────────────────────────── */
+/* ── Landing / public surface — "working drawings" kit ───────────────── */
 
-/* Noise texture overlay — scoped to landing */
-.landing-noise::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
+/* Drafting grid: fine 16px grid with a bolder major line every 80px.
+   Drawn from the accent ink token so it flips correctly in dark mode. */
+.bp-grid {
+  background-image:
+    linear-gradient(to right,  rgb(var(--amber) / 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--amber) / 0.16) 1px, transparent 1px),
+    linear-gradient(to right,  rgb(var(--amber) / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--amber) / 0.07) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
 }
 
-/* Landing animations */
+/* Faint sheet-edge grid for section backdrops (much quieter). */
+.bp-grid-faint {
+  background-image:
+    linear-gradient(to right,  rgb(var(--amber) / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--amber) / 0.05) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Landing entrance */
 @keyframes landingFadeUp {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.4; }
-  50%      { opacity: 0.8; }
-}
-
-@keyframes gridSlide {
-  from { transform: translateY(0); }
-  to   { transform: translateY(40px); }
-}
-
-@keyframes scanLine {
-  0%   { top: -2px; }
-  100% { top: 100%; }
-}
-
 .landing-fade-up {
-  animation: landingFadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: landingFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.landing-delay-1 { animation-delay: 0.08s; }
+.landing-delay-2 { animation-delay: 0.16s; }
+.landing-delay-3 { animation-delay: 0.28s; }
+.landing-delay-4 { animation-delay: 0.4s; }
+.landing-delay-5 { animation-delay: 0.55s; }
+.landing-delay-6 { animation-delay: 0.7s; }
+.landing-delay-7 { animation-delay: 0.85s; }
+
+/* Blinking composer caret in the hero chat preview */
+@keyframes landingCaret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.landing-caret {
+  animation: landingCaret 1.1s steps(1) infinite;
 }
 
-.landing-delay-1 { animation-delay: 0.1s; }
-.landing-delay-2 { animation-delay: 0.2s; }
-.landing-delay-3 { animation-delay: 0.35s; }
-.landing-delay-4 { animation-delay: 0.5s; }
-.landing-delay-5 { animation-delay: 0.65s; }
-.landing-delay-6 { animation-delay: 0.8s; }
-.landing-delay-7 { animation-delay: 0.95s; }
+/* The one orchestrated moment: the hero sheet draws itself in.
+   Solid strokes use pathLength=100 + dashoffset; annotations fade after. */
+@keyframes bpDraw {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes bpInk {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes bpStamp {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.bp-draw {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: bpDraw 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.bp-ink {
+  opacity: 0;
+  animation: bpInk 0.55s ease-out forwards;
+}
+.bp-stamp {
+  opacity: 0;
+  transform-origin: center;
+  animation: bpStamp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.bp-d1 { animation-delay: 0.15s; }
+.bp-d2 { animation-delay: 0.45s; }
+.bp-d3 { animation-delay: 0.75s; }
+.bp-d4 { animation-delay: 1.0s; }
+.bp-d5 { animation-delay: 1.25s; }
+.bp-d6 { animation-delay: 1.5s; }
 
-/* Hero ambient glow */
-.hero-glow::before {
-  content: '';
-  position: absolute;
-  top: -180px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 700px;
-  height: 500px;
-  background: radial-gradient(ellipse at center, rgba(212, 162, 78, 0.25) 0%, transparent 70%);
-  pointer-events: none;
-  animation: glowPulse 6s ease-in-out infinite;
+/* Live agent pulse (used on "live" dots) */
+@keyframes bpPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.bp-pulse {
+  animation: bpPulse 2.4s ease-in-out infinite;
 }
 
-/* Hero dot grid */
-.hero-dots::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle at center, #2a261e 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: 0.3;
-  animation: gridSlide 8s linear infinite;
-  pointer-events: none;
-  mask-image: radial-gradient(ellipse 60% 70% at 50% 30%, black 20%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 30%, black 20%, transparent 70%);
-}
-
-/* Code block scan line */
-.code-scan::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(212, 162, 78, 0.08), transparent);
-  animation: scanLine 4s linear infinite;
-  pointer-events: none;
-}
-
-/* Code block top glow line */
-.code-glow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 162, 78, 0.25), transparent);
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade-up,
+  .bp-draw,
+  .bp-ink,
+  .bp-stamp,
+  .bp-pulse {
+    animation: none;
+  }
+  .bp-draw { stroke-dashoffset: 0; }
+  .bp-ink, .bp-stamp { opacity: 1; transform: none; }
 }

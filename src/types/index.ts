@@ -120,6 +120,11 @@ export interface Plan {
   id: string;
   title: string;
   description: string;
+  /**
+   * The agent-execution gate. `draft` = just an idea — agents won't work on
+   * it, so it costs no tokens; `active` = agents may execute. (The old
+   * separate `active` boolean was folded into `status` server-side.)
+   */
   status: PlanStatus;
   owner_id: string;
   visibility?: PlanVisibility;
@@ -148,6 +153,11 @@ export interface Plan {
   rollup?: PlanRollup;
   /** Goals that link to this plan (bulk-fetched server-side). */
   goal_tethers?: Array<{ goal_id: string; goal_title: string }>;
+  /** Provenance (detail reads): who owns this plan and in which org. */
+  owner?: { id: string; name: string; email?: string } | null;
+  organization?: { id: string; name: string } | null;
+  /** The caller's role on this plan (owner | admin | editor | viewer). */
+  role?: string;
   /** Most recent plan_node_log timestamp — used to detect agent activity. */
   last_agent_log_at?: string | null;
   // GitHub integration fields

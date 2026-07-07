@@ -13,10 +13,9 @@ import {
   Pill,
   PrimaryButton,
   SectionHead,
-  TopBar,
   type PillColor,
 } from '../components/v1';
-import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, useRecordCriterion, type GoalStateResult } from '../hooks/useGoalsV2';
+import { useGoalV2, useGoalPath, useGoalKnowledgeGaps, useUpdateGoal, useGoalState, useRecordCriterion, type GoalStateResult, type GoalStatus } from '../hooks/useGoalsV2';
 import { criteriaAttainment, normalizeCriteria, isMeasurableCriterion, isCriterionMet, type GoalCriterion } from '../utils/goalCriteria';
 import { goalHealthBadge } from '../utils/goalHealth';
 import { usePlans } from '../hooks/usePlans';
@@ -36,6 +35,19 @@ function relTime(iso?: string): string {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+/** Org name from the session's membership list (goals you can open are always
+ *  in one of your orgs — cross-org goals 403 on this page). */
+function orgNameFor(orgId?: string | null): string | null {
+  if (!orgId) return null;
+  try {
+    const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
+    const orgs: { id: string; name: string }[] = session?.user?.organizations || [];
+    return orgs.find((o) => o.id === orgId)?.name || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -59,6 +71,15 @@ const GoalDetailV1: React.FC = () => {
 
   const [tab, setTab] = useState<Tab>('overview');
   const [showMove, setShowMove] = useState(false);
+
+  // Lifecycle steering — the human's half of the contract (agents build,
+  // humans direct). Measurable goals close themselves via auto-achieve when
+  // criteria are recorded met; these controls cover the judgment calls.
+  const updateGoal = useUpdateGoal();
+  const setGoalStatus = async (status: GoalStatus, confirmMsg?: string) => {
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    await updateGoal.mutateAsync({ id: goalId!, status });
+  };
 
   const goal = goalQ.data;
   const path = pathQ.data;
@@ -111,16 +132,26 @@ const GoalDetailV1: React.FC = () => {
 
   if (goalQ.isLoading) {
     return (
-      <div className="mx-auto max-w-[1080px] px-6 py-10">
+      <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10">
         <Card pad={20}>Loading goal…</Card>
       </div>
     );
   }
   if (!goal) {
+    // A 403 is access, not existence — plans can be shared across orgs while
+    // their tethered goal stays private, so say which case this is.
+    const noAccess = (goalQ.error as any)?.response?.status === 403;
     return (
-      <div className="mx-auto max-w-[1080px] px-6 py-10">
+      <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10">
         <Card pad={20}>
-          <p className="font-display text-base font-semibold">Goal not found</p>
+          <p className="font-display text-base font-semibold">
+            {noAccess ? 'You don’t have access to this goal' : 'Goal not found'}
+          </p>
+          {noAccess && (
+            <p className="mt-1 text-sm text-text-sec">
+              It belongs to another organization. Ask its owner for access, or switch organizations.
+            </p>
+          )}
           <p className="mt-2 text-sm text-text-sec">
             <Link to="/app/goals" className="underline">Back to goals →</Link>
           </p>
@@ -177,13 +208,16 @@ const GoalDetailV1: React.FC = () => {
     : STATUS_BADGE[goal.status] ?? goalHealthBadge(undefined);
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        breadcrumb={<GoalBreadcrumb goal={goal} />}
-        title={goal.title}
-        subtitle={
-          <>
-            <div className="flex flex-wrap items-center gap-2">
+    <div className="mx-auto max-w-[1180px] 2xl:max-w-[1600px] px-6 py-10 sm:px-9">
+      <header className="mb-7">
+        <GoalBreadcrumb goal={goal} />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Kicker className="mb-1">◆ Goal</Kicker>
+            <h1 className="font-display text-[28px] font-bold tracking-[-0.035em] text-text">
+              {goal.title}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <Pill color="violet">▲ {goal.type}</Pill>
               <Pill color={health.color}>● {health.label}</Pill>
               {/* Commitment (promoted_at) — surfaced consistently here rather
@@ -193,16 +227,18 @@ const GoalDetailV1: React.FC = () => {
               </Pill>
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
                 created {relTime(goal.createdAt)}
+                {goal.ownerName && <> · by {goal.ownerName}</>}
+                {orgNameFor(goal.organizationId) && <> · {orgNameFor(goal.organizationId)}</>}
               </span>
               <WorkspaceChip goal={goal} />
             </div>
             {goal.description && (
-              <p className="mt-2 max-w-[64ch] leading-[1.55]">{goal.description}</p>
+              <p className="mt-3 max-w-[64ch] text-[13px] leading-[1.55] text-text-sec">
+                {goal.description}
+              </p>
             )}
-          </>
-        }
-        actions={
-          <>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
             <Link
               to={`/app/knowledge/timeline?goal=${goal.id}`}
               className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-text-sec transition-colors hover:border-amber hover:text-text"
@@ -210,11 +246,42 @@ const GoalDetailV1: React.FC = () => {
               ◆ Knowledge →
             </Link>
             <GhostButton onClick={() => setShowMove(true)}>Move →</GhostButton>
-          </>
-        }
-      />
-      <div className="flex-1 overflow-auto bg-bg">
-        <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-9">
+            {/* Mark achieved only for qualitative goals — measurable ones close
+                themselves when their criteria are recorded met (auto-achieve). */}
+            {(goal.status === 'active' || goal.status === 'draft') &&
+              attainment.measurable_count === 0 && (
+                <GhostButton onClick={() => setGoalStatus('achieved')} disabled={updateGoal.isLoading}>
+                  ✓ Mark achieved
+                </GhostButton>
+              )}
+            {goal.status === 'active' && (
+              <GhostButton onClick={() => setGoalStatus('paused')} disabled={updateGoal.isLoading}>
+                Pause
+              </GhostButton>
+            )}
+            {goal.status === 'paused' && (
+              <GhostButton onClick={() => setGoalStatus('active')} disabled={updateGoal.isLoading}>
+                Resume
+              </GhostButton>
+            )}
+            {(goal.status === 'active' || goal.status === 'paused' || goal.status === 'draft') && (
+              <GhostButton
+                onClick={() =>
+                  setGoalStatus('abandoned', `Abandon "${goal.title}"? Agents stop pursuing it; you can reactivate later.`)
+                }
+                disabled={updateGoal.isLoading}
+              >
+                Abandon
+              </GhostButton>
+            )}
+            {(goal.status === 'abandoned' || goal.status === 'achieved' || goal.status === 'archived') && (
+              <GhostButton onClick={() => setGoalStatus('active')} disabled={updateGoal.isLoading}>
+                Reactivate
+              </GhostButton>
+            )}
+          </div>
+        </div>
+      </header>
       {isAchieved && (
         <div className="mb-6 flex items-center gap-3 rounded-lg border border-emerald/40 bg-emerald/[0.07] px-4 py-3">
           <span className="font-display text-[18px] leading-none text-emerald">✓</span>
@@ -417,8 +484,6 @@ const GoalDetailV1: React.FC = () => {
           <SubjectTimeline subjectType="goal" subjectId={goal.id} />
         </Card>
       )}
-        </div>
-      </div>
     </div>
   );
 };
