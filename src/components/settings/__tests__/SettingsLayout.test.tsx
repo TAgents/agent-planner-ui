@@ -64,4 +64,24 @@ describe('SettingsLayout', () => {
     const hrefs = allLinks.map((a) => a.getAttribute('href'));
     expect(hrefs).toContain(expectedHref);
   });
+
+  it('shows the active organization membership role, not a hardcoded Member', () => {
+    localStorage.setItem(
+      'auth_session',
+      JSON.stringify({
+        user: {
+          name: 'Michael Malka',
+          organizations: [
+            { id: 'org-1', name: 'Talking Agents', role: 'owner' },
+            { id: 'org-2', name: 'Other', role: 'member' },
+          ],
+        },
+      }),
+    );
+    localStorage.setItem('active_org_id', 'org-1');
+    renderAt('/app/settings/profile');
+    expect(screen.getByText('Owner')).toBeInTheDocument();
+    expect(screen.queryByText('Member')).not.toBeInTheDocument();
+    localStorage.clear();
+  });
 });

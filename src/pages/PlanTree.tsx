@@ -240,7 +240,9 @@ const PlanTree: React.FC = () => {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
           <StatusLegend />
           <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
-            <span>{stats.total} node{stats.total === 1 ? '' : 's'}</span>
+            {/* The rollup counts execution units (tasks/milestones), not tree
+                rows — label it distinctly from the tree's node count below. */}
+            <span>{stats.total} task{stats.total === 1 ? '' : 's'}</span>
             <span aria-hidden>·</span>
             <span>{stats.done} done</span>
             <span aria-hidden>·</span>

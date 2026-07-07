@@ -34,8 +34,11 @@ function readUser(): { name: string; role: string } {
   try {
     const session = JSON.parse(localStorage.getItem('auth_session') || '{}');
     const name = session?.user?.name || session?.name || 'You';
-    const role = session?.user?.role || 'Member';
-    return { name, role };
+    // Roles are per-organization — read the active org's membership.
+    const orgs: { id: string; role?: string }[] = session?.user?.organizations || [];
+    const activeId = localStorage.getItem('active_org_id');
+    const role = orgs.find((o) => o.id === activeId)?.role || 'member';
+    return { name, role: role.charAt(0).toUpperCase() + role.slice(1) };
   } catch {
     return { name: 'You', role: 'Member' };
   }

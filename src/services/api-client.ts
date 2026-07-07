@@ -13,12 +13,6 @@ export const API_CONFIG = {
   },
 };
 
-if (process.env.NODE_ENV === 'development') {
-  console.log('API Configuration:', {
-    BASE_URL: API_CONFIG.BASE_URL,
-    ENV_VAR: process.env.REACT_APP_API_URL
-  });
-}
 
 export const api = axios.create({
   baseURL: API_CONFIG.BASE_URL,
@@ -63,8 +57,6 @@ api.interceptors.request.use(
     const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (process.env.NODE_ENV === 'development') {
-      console.warn('No auth token found in auth_session');
     }
     const activeOrgId = localStorage.getItem('active_org_id');
     if (activeOrgId) {
@@ -91,35 +83,27 @@ api.interceptors.response.use(
   }
 );
 
-const debugApiCall = (method: string, url: string, data?: any) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔶 API ${method}: ${API_CONFIG.BASE_URL}${url}`, data || '');
-    console.log('Headers:', {
-      'Authorization': localStorage.getItem('auth_session') ? 'Bearer [TOKEN]' : 'None',
-      'Content-Type': 'application/json'
-    });
-  }
-};
-
 class ApiError extends Error {
   code?: string;
-  constructor(message: string, code?: string) {
+  /** HTTP status of the failed response, when there was one. */
+  status?: number;
+  constructor(message: string, code?: string, status?: number) {
     super(message);
     this.code = code;
+    this.status = status;
     this.name = 'ApiError';
   }
 }
 
 export const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
   try {
-    debugApiCall(config.method?.toUpperCase() || 'GET', config.url || '', config.data);
     const response: AxiosResponse<T> = await api(config);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       const code = error.response?.data?.code;
-      throw new ApiError(message, code);
+      throw new ApiError(message, code, error.response?.status);
     }
     throw error;
   }

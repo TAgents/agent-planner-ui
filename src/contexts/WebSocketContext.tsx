@@ -17,6 +17,13 @@ interface WebSocketContextValue {
 // Context Creation
 // ============================================================================
 
+
+// Reconnect/keepalive tracing is invaluable while developing but is pure
+// noise (and mild info leakage) in production consoles.
+const wsLog = (...args: any[]) => {
+  if (process.env.NODE_ENV === 'development') console.log(...args);
+};
+
 const WebSocketContext = createContext<WebSocketContextValue | undefined>(undefined);
 
 // ============================================================================
@@ -93,7 +100,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     // Send ping every 30 seconds
     pingIntervalRef.current = setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        console.log('[WebSocket] Sending ping');
+        wsLog('[WebSocket] Sending ping');
         wsRef.current.send(JSON.stringify({ type: 'ping' }));
       }
     }, PING_INTERVAL);
@@ -113,7 +120,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
    * Dispatch message to event handlers
    */
   const dispatchMessage = useCallback((message: WebSocketMessage) => {
-    console.log('[WebSocket] Dispatching message:', message.type);
+    wsLog('[WebSocket] Dispatching message:', message.type);
 
     // Store last message
     setLastMessage(message);
@@ -129,7 +136,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         }
       });
     } else {
-      console.log(`[WebSocket] No handlers registered for event: ${message.type}`);
+      wsLog(`[WebSocket] No handlers registered for event: ${message.type}`);
     }
   }, []);
 
@@ -139,7 +146,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const connect = useCallback(() => {
     // Don't reconnect if we shouldn't
     if (!shouldReconnectRef.current) {
-      console.log('[WebSocket] Reconnection disabled, skipping connect');
+      wsLog('[WebSocket] Reconnection disabled, skipping connect');
       return;
     }
 
@@ -156,7 +163,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     const wsUrl = customUrl || apiUrl.replace(/^http/, 'ws') + '/ws/collaborate';
     const urlWithToken = `${wsUrl}?token=${token}`;
 
-    console.log('[WebSocket] Connecting to:', wsUrl);
+    wsLog('[WebSocket] Connecting to:', wsUrl);
     setStatus(ConnectionStatus.CONNECTING);
 
     try {
@@ -166,7 +173,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
       // Connection opened
       ws.onopen = () => {
-        console.log('[WebSocket] Connected successfully');
+        wsLog('[WebSocket] Connected successfully');
         setStatus(ConnectionStatus.CONNECTED);
         reconnectAttemptsRef.current = 0;
         startPingInterval();
@@ -176,11 +183,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data) as WebSocketMessage;
-          console.log('[WebSocket] Message received:', message.type);
+          wsLog('[WebSocket] Message received:', message.type);
 
           // Handle pong response
           if (message.type === 'pong') {
-            console.log('[WebSocket] Pong received');
+            wsLog('[WebSocket] Pong received');
             return;
           }
 
@@ -193,7 +200,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
       // Connection closed
       ws.onclose = (event) => {
-        console.log('[WebSocket] Connection closed:', event.code, event.reason);
+        wsLog('[WebSocket] Connection closed:', event.code, event.reason);
         stopPingInterval();
 
         // Don't reconnect on authentication/authorization failures
@@ -206,7 +213,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           (event.reason && /\b(401|403|unauthorized|forbidden|authentication|auth)\b/i.test(event.reason));
 
         if (isAuthError) {
-          console.log('[WebSocket] Authentication/authorization error - not reconnecting. User needs to re-login.');
+          wsLog('[WebSocket] Authentication/authorization error - not reconnecting. User needs to re-login.');
           shouldReconnectRef.current = false;
           setStatus(ConnectionStatus.DISCONNECTED);
           return;
@@ -215,14 +222,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         if (shouldReconnectRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           setStatus(ConnectionStatus.RECONNECTING);
           const delay = getReconnectDelay();
-          console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${MAX_RECONNECT_ATTEMPTS})`);
+          wsLog(`[WebSocket] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${MAX_RECONNECT_ATTEMPTS})`);
 
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current++;
             connect();
           }, delay);
         } else {
-          console.log('[WebSocket] Not reconnecting');
+          wsLog('[WebSocket] Not reconnecting');
           setStatus(ConnectionStatus.DISCONNECTED);
         }
       };
@@ -243,7 +250,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
    * Disconnect from WebSocket server
    */
   const disconnect = useCallback(() => {
-    console.log('[WebSocket] Disconnecting');
+    wsLog('[WebSocket] Disconnecting');
     shouldReconnectRef.current = false;
 
     // Clear reconnect timeout
@@ -268,7 +275,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
    * Subscribe to an event type
    */
   const subscribe = useCallback((eventType: EventType, handler: EventHandler): (() => void) => {
-    console.log(`[WebSocket] Subscribing to event: ${eventType}`);
+    wsLog(`[WebSocket] Subscribing to event: ${eventType}`);
 
     // Get or create handler set for this event type
     let handlers = eventHandlersRef.current.get(eventType);
@@ -282,7 +289,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     // Return unsubscribe function
     return () => {
-      console.log(`[WebSocket] Unsubscribing from event: ${eventType}`);
+      wsLog(`[WebSocket] Unsubscribing from event: ${eventType}`);
       const handlers = eventHandlersRef.current.get(eventType);
       if (handlers) {
         handlers.delete(handler);
@@ -298,7 +305,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
    */
   const send = useCallback((message: any) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('[WebSocket] Sending message:', message);
+      wsLog('[WebSocket] Sending message:', message);
       wsRef.current.send(JSON.stringify(message));
     } else {
       console.warn('[WebSocket] Cannot send message: Connection not open');
@@ -324,7 +331,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // Reconnect when token changes
   useEffect(() => {
     const handleAuthChange = () => {
-      console.log('[WebSocket] Auth changed, reconnecting');
+      wsLog('[WebSocket] Auth changed, reconnecting');
       disconnect();
       setTimeout(() => {
         shouldReconnectRef.current = true;

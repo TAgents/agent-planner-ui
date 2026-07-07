@@ -173,7 +173,11 @@ const ChatDock: React.FC = () => {
         setActive(cid);
       } catch (e: any) {
         // Surface the failure — a silently restored draft reads as a dead send button.
-        setError(e?.response?.data?.error || e?.message || 'Could not start a conversation');
+        const friendly =
+          (e?.status ?? e?.response?.status) === 404
+            ? 'The assistant backend isn’t available on this server yet — your message is kept below.'
+            : e?.response?.data?.error || e?.message || 'Could not start a conversation';
+        setError(friendly);
         setInput(text); // restore the draft so the message isn't lost
         return;
       }
