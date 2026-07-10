@@ -17,6 +17,7 @@ import { useSavePlanAsBlueprint } from '../hooks/useBlueprints';
 import type { Plan as PlanType, BlueprintVisibility } from '../types';
 import { logService } from '../services/api';
 import { SubjectTimeline } from '../components/timeline/SubjectTimeline';
+import ExportModal from '../components/plans/ExportModal';
 import { nodeService } from '../services/nodes.service';
 import { useNodeDependencies } from '../hooks/useDependencies';
 import { coherenceService } from '../services/knowledge.service';
@@ -137,6 +138,7 @@ const PlanTree: React.FC = () => {
   const [tab, setTab] = useState<DetailTab>('details');
   const [showSaveAsBlueprint, setShowSaveAsBlueprint] = useState(false);
   const [showMove, setShowMove] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   // Activate gate: a draft plan is just an idea — agents won't pick up its
   // tasks (no token cost) until it's activated here.
@@ -215,6 +217,9 @@ const PlanTree: React.FC = () => {
                 <span>◆ Knowledge</span>
                 <span aria-hidden>→</span>
               </Link>
+              <GhostButton onClick={() => setShowExport(true)}>
+                Export →
+              </GhostButton>
               <GhostButton onClick={() => setShowMove(true)}>
                 Move →
               </GhostButton>
@@ -260,6 +265,13 @@ const PlanTree: React.FC = () => {
         <MovePlanModal
           plan={plan}
           onClose={() => setShowMove(false)}
+        />
+      )}
+      {showExport && plan && (
+        <ExportModal
+          plan={plan}
+          nodes={(nodes as PlanNode[] | undefined) || []}
+          onClose={() => setShowExport(false)}
         />
       )}
 
