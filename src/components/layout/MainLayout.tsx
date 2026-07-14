@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Moon, Sun, HelpCircle } from 'lucide-react';
+import { Moon, Sun, HelpCircle, LogOut } from 'lucide-react';
 import { AppShell, type AppShellNavId } from '../v1';
 import { useUI } from '../../contexts/UIContext';
+import { useAuth } from '../../hooks/useAuth';
 import GuidedTour from '../help/GuidedTour';
 import ChatDock from '../chat/ChatDock';
 
@@ -33,8 +34,14 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { state, toggleDarkMode } = useUI();
+  const { signOut } = useAuth();
   const active = activeNavId(location.pathname);
   const [runTour, setRunTour] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   // Auto-launch the tour once, the first time a user lands in the app. The
   // "seen" flag is persisted so it never auto-opens again (they can still
@@ -114,6 +121,17 @@ const MainLayout: React.FC = () => {
               </span>
               <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium leading-none">
                 {userName || 'Profile'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="group flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-text-sec transition-colors hover:bg-surface-hi/60 hover:text-text"
+            >
+              <LogOut size={18} strokeWidth={2} className="flex-shrink-0 text-text-muted group-hover:text-text-sec" />
+              <span className="font-body text-[13.5px] font-medium leading-none">
+                Sign out
               </span>
             </button>
           </div>
