@@ -759,6 +759,61 @@ export interface OrgMember {
   };
 }
 
+export interface OrgActivityEntry {
+  id: string;
+  action?: string;          // audit entries
+  resourceType?: string;
+  resourceId?: string;
+  details?: Record<string, any> | null;
+  createdAt: string;
+  actorId?: string | null;
+  actorName?: string | null;
+  actorEmail?: string | null;
+  // tool-call entries
+  toolName?: string;
+  clientLabel?: string | null;
+  responseStatus?: number | null;
+  durationMs?: number | null;
+}
+
+export interface OrgPlanStat {
+  id: string;
+  title: string;
+  status: string;
+  visibility: string;
+  updatedAt: string;
+  createdAt: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  totalNodes: number;
+  completedNodes: number;
+}
+
+export interface OrgOverview {
+  counts: {
+    members: number;
+    plans: number;
+    activePlans: number;
+    tokens: number;
+    activeTokens: number;
+  };
+  plans: OrgPlanStat[];
+}
+
+export interface OrgToken {
+  id: string;
+  name: string;
+  permissions: string[];
+  createdAt: string;
+  lastUsed: string | null;
+  revoked: boolean;
+  owner: { id: string; name: string; email: string };
+  callCount: number;
+  errorCount: number;
+  lastCallAt: string | null;
+}
+
 // Organization API
 export const organizationService = {
   list: async () => {
@@ -810,6 +865,32 @@ export const organizationService = {
 
   listPlans: async (orgId: string) => {
     const res = await api.get(`/organizations/${orgId}/plans`);
+    return res.data;
+  },
+
+  // ─── Admin surfaces (owner/admin only) ───────────────────────────
+  getActivity: async (orgId: string, type: 'audit' | 'tools' = 'audit', limit = 50) => {
+    const res = await api.get(`/organizations/${orgId}/activity`, { params: { type, limit } });
+    return res.data as { type: 'audit' | 'tools'; entries: OrgActivityEntry[] };
+  },
+
+  getOverview: async (orgId: string) => {
+    const res = await api.get(`/organizations/${orgId}/overview`);
+    return res.data as OrgOverview;
+  },
+
+  listTokens: async (orgId: string) => {
+    const res = await api.get(`/organizations/${orgId}/tokens`);
+    return res.data as { tokens: OrgToken[] };
+  },
+
+  revokeToken: async (orgId: string, tokenId: string) => {
+    const res = await api.delete(`/organizations/${orgId}/tokens/${tokenId}`);
+    return res.data;
+  },
+
+  transferOwnership: async (orgId: string, userId: string) => {
+    const res = await api.post(`/organizations/${orgId}/transfer-ownership`, { userId });
     return res.data;
   },
 };
